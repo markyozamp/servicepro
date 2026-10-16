@@ -100,6 +100,33 @@ Compressor rooms, basements, walk-ins, rooftops behind steel: the tech must stil
 - **Service call → install handoff.** When a repair becomes a replacement, the service job hands off to the install team as a **linked install job** carrying everything: equipment record, photos, readings, notes, the approved quote. The install team gets its own board; the store sees one connected history.
 - **Job costing.** Every job tracks **quoted vs actual**: labor hours at the tech's cost rate, parts at cost, and the billed amount — so the contractor sees margin per job, per tech and per customer, and installs show budget vs actual as they progress.
 
+### 7. Diagnosis PO → lettered not-to-exceed POs (decided by Mark 2026-10-16)
+- **One PO number, lettered increases:** PO1100 = diagnosis; PO1100A = repair (not-to-exceed); PO1100B = additional repair (e.g. the repair revealed the original cause of failure); then C, D…
+- Each letter carries: reason category (repair / additional failure found / parts price change / after-hours / other), photos, amount, and who approved it at what limit and when (through the escalation chain).
+- Guardrail: past a set number of letters (default: C), the request goes to the maintenance manager automatically regardless of amount.
+- Stores whose accounting needs separate PO numbers can enter their own number on any letter; lettered format is the default.
+- The tech cannot exceed the current approved total; the invoice shows each letter's amount.
+
+### 8. Issue dropdown with preset diagnosis amounts (decided by Mark 2026-10-16)
+The store picks the problem from a list ("Walk-in freezer down", "Self-contained 2-door cooler down", "No heat"…); the system sets the diagnosis PO amount, priority and suggested equipment type. Layers:
+1. **Platform price list** — issue → default diagnosis amount + priority; Mark edits it from an admin screen (e.g. walk-in cooler/freezer down $250; self-contained 2-door cooler down $125).
+2. **Regional adjustment by %** — a small number of cost regions assigned by zip code (e.g. Los Angeles +40%, Cedar Rapids 0%).
+3. **After-hours multiplier** — nights, weekends, holidays.
+4. **Optional store–contractor agreement override.**
+- The amount is what the **store authorizes**, not a price contractors must charge; contractors bill actual up to it. (Have a business attorney review platform-wide amounts before launch.)
+- Later: set defaults from real completed-call data by issue and region.
+
+### 9. Maintenance agreements (Mark, 2026-10-16)
+For stores that already have an agreement with their contractor — and those that set one up because of the platform.
+- **Agreement record:** term dates, covered sites and equipment, monthly/quarterly/annual fee, and coverage type: PM only; PM + labor; full coverage (PM, labor and parts); with discounted rates for anything not covered.
+- **Response-time commitments** (e.g. emergency 4 hrs, normal next business day) tracked on every call and shown to the store: "Arrived in 2 h 10 m — within your 4-hour agreement." Misses are counted.
+- **Calls price themselves from the agreement:** covered work shows $0 or the discounted rate; the diagnosis amount comes from the agreement when one applies.
+- **PM in the agreement is scheduled automatically** and follows the PM-stays-on-dashboard rule.
+- **Agreement fee invoiced automatically** to QuickBooks on schedule.
+- **Store value report:** what the agreement covered vs. what it would have cost without it.
+- **Easy setup in the platform:** standard agreement templates the contractor offers in-app; the store accepts through its approval chain. Renewal reminders before expiry.
+- Basic agreements (coverage, response times, PM, billing) are in **Base**; the CRM side (agreement sales pipeline, renewal campaigns) is Enterprise.
+
 ### Order of work (proposed)
 1c Technician app → **PM plans + auto-scheduling** → notifications → AI nameplate reading → QuickBooks → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
