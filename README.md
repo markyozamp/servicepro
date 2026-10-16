@@ -10,7 +10,7 @@ their technicians, and the stores they serve.
 | `supabase/migrations/` | Database: tables, business rules, security | **Done, tested** |
 | `supabase/seed.sql` | Demo contractor, store, tech, parts, repair types | Done |
 | `supabase/tests/` | End-to-end test of a full service call (42 checks) | Passing |
-| `web/` | Contractor + customer portals (Next.js) | Next |
+| `web/` | Contractor + store portals (Next.js, deployed on Vercel) | First version |
 | `mobile/` | Technician app (Expo — iOS + Android) | After web |
 | `docs/` | Build plan and decisions | Ongoing |
 
