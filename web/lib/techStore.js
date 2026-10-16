@@ -60,7 +60,8 @@ export async function shrinkPhoto(file, max = 1600) {
 }
 
 // ---------- state ----------
-let state = { server: null, queue: [], problems: [], lastSync: null, syncing: false, online: true };
+// sent = actions the database accepted but that are not yet in a fresh download; still shown on screen.
+let state = { server: null, queue: [], sent: [], problems: [], lastSync: null, syncing: false, online: true };
 const subs = new Set();
 const emit = () => subs.forEach((f) => f());
 export function subscribe(f) { subs.add(f); return () => subs.delete(f); }
@@ -83,7 +84,7 @@ export function view() {
   const base = state.server;
   if (!base) return null;
   const s = JSON.parse(JSON.stringify(base));
-  for (const a of state.queue) applyLocal(s, a);
+  for (const a of [...state.sent, ...state.queue]) applyLocal(s, a);
   return s;
 }
 const findJob = (s, visitId) => s.jobs.find((j) => j.visit.id === visitId);
@@ -263,15 +264,17 @@ export async function sync({ refresh = true } = {}) {
         saveProblems([...state.problems, { id: a.id, fn: a.fn, label: a.meta?.label || a.fn, message: msg, at: a.at }]);
       }
       retries = 0;
+      set({ sent: [...state.sent, a] });
       saveQueue(state.queue.filter((x) => x.id !== a.id));
     }
     if (refresh && !stopped && state.queue.length === 0) {
+      const included = new Set(state.sent.map((x) => x.id));
       const { data, error } = await supabase.rpc('tech_jobs');
       if (!error && data) {
         write(K_SNAP, data);
         const now = new Date().toISOString();
         write(K_SYNCED, now);
-        set({ server: data, lastSync: now });
+        set({ server: data, lastSync: now, sent: state.sent.filter((x) => !included.has(x.id)) });
       } else if (error && isNetwork(error.message)) {
         set({ online: false });
       }
