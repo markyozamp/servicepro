@@ -490,6 +490,13 @@ function Finish({ job, cat, m, eqDone }) {
   if (w.kind === 'pm') {
     (w.checklist || []).forEach((it, i) => { if (it.required !== false && !w.checklist_results?.[String(i)]?.done) missing.push(`PM: ${it.item}`); });
   }
+  // Leaving for parts / a return / an approval still needs the basics on record.
+  const leaveMissing = [];
+  if (v.checkin_required && !(v.checkin_verified || v.checkin_local)) leaveMissing.push('Check in with the store');
+  if (w.kind === 'service' || w.kind === 'install') {
+    if (!eqDone) leaveMissing.push('Confirm the equipment (with nameplate photo)');
+    if (!kinds.has('before')) leaveMissing.push('Before photo');
+  }
   if (m.pending) missing.push(`Approval for ${m.pending.po} is still pending`);
   if (m.limit != null && m.used > m.limit) missing.push(`Cost ${money(m.used)} is over the approved ${money(m.limit)} — request more`);
 
@@ -507,10 +514,11 @@ function Finish({ job, cat, m, eqDone }) {
         <>
           {missing.length > 0 && <div className="small"><strong>Before you can complete:</strong><ul style={{ margin: '4px 0 0 18px', padding: 0 }}>{missing.map((x) => <li key={x}>{x}</li>)}</ul></div>}
           <button className="primary big" disabled={missing.length > 0} onClick={() => window.confirm('Complete the job? The store will be told the work is done.') && finish('completed')}>✓ Job complete</button>
+          {leaveMissing.length > 0 && <div className="small muted">To leave without completing, first: {leaveMissing.join(' · ')}</div>}
           <div className="row" style={{ gap: 8 }}>
-            <button style={{ flex: 1 }} onClick={() => setMode('parts')}>Parts needed</button>
-            <button style={{ flex: 1 }} onClick={() => setMode('return')}>Return needed</button>
-            {m.pending && <button style={{ flex: 1 }} onClick={() => setMode('quote')}>Quote sent — leaving</button>}
+            <button style={{ flex: 1 }} disabled={leaveMissing.length > 0} onClick={() => setMode('parts')}>Parts needed</button>
+            <button style={{ flex: 1 }} disabled={leaveMissing.length > 0} onClick={() => setMode('return')}>Return needed</button>
+            {m.pending && <button style={{ flex: 1 }} disabled={leaveMissing.length > 0} onClick={() => setMode('quote')}>Quote sent — leaving</button>}
           </div>
         </>
       )}
