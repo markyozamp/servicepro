@@ -189,6 +189,15 @@ Proof of temperature for bad-product claims, and early warning before product is
 - **One-off homeowners never log in.** The office adds them in one step (name, address, phone) and opens the call. Quotes above the diagnosis are approved from the same no-login link, or the office records a phone approval. The contractor pays the per-call fee; the homeowner pays nothing. Property managers pay store fees.
 - Until texting is built, the manager / office copies the link and sends it themselves.
 
+### 17. Not-to-exceed, live cost meter, emergency override (Mark, 2026-10-16) — agreed, build with the tech app
+- **A PO amount is a spending limit (not to exceed), not a price** — unless the contractor works flat rate (setting per contractor or repair type; then the letter is the price). Wording everywhere: "Approve up to $480 (not to exceed)", "Approved limit", bill shows "Actual cost $391 — under your $480 limit".
+- **Quotes split labor and parts:** tech/office enters estimated hours + parts from the list; the limit is calculated (hours × rate or after-hours rate + parts + trip). Bill shows estimate vs actual for labor and parts separately. Labor is firm (GPS time × contractor's rules); parts are firm (picked from list, photographed).
+- **Live meter on the tech's phone** (works offline): limit, used so far, labor + parts. At 80% the phone stops the tech: request the next letter before continuing. Before installing a part the tech adds it; if it would cross the limit, the app asks for the letter first. A server check every 5 minutes alerts office and store even if the phone is off.
+- **Over without approval:** the store is never billed above the approved limit unless they approve it; the job can't close or invoice while over.
+- **Emergency limit** set by each store/property (e.g. emergencies auto-approved up to $1,500).
+- **"Emergency: continue" button** on priority-1 calls only: tech gives a reason + photo, keeps working; the extra request goes to the emergency approver immediately and the store is told. The extra shows "pending approval" and cannot be invoiced until the store approves it or the contractor drops it. Override use is reported per contractor.
+- Proposed defaults, not yet confirmed by Mark: labor counts for the first 15 minutes while waiting for approval, then pauses; extra over the limit without approval is absorbed by the contractor unless the store approves it afterward.
+
 ### Order of work (proposed)
 Database v2 + portals v2 (done 2026-10-16) → 1c Technician app → notifications → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
