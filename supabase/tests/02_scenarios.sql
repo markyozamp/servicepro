@@ -500,7 +500,7 @@ select test.login(:LUIS);
 select test.put('el2', (request_quote(test.v('ew'), 4, '[{"part_id":"40000000-0000-0000-0000-000000000001","qty":2}]', 'Second condenser also failing')).id);
 select test.ok((select status = 'pending' and not emergency_preapproved from po_lines where id = test.v('el2')), 'above the emergency limit it needs a person to approve');
 
-\echo '=== 22. Tech at the door: store alerted, then team + office at 5 minutes'
+\echo '=== 22. Tech at the door: first, second, third person in the store''s own order'
 set role authenticated;
 select test.login(:SAM);
 select test.put('dw', (create_work_order(:S114, (select id from issue_types where code='self_contained_down'), 'Door test')).id);
@@ -509,21 +509,29 @@ select test.put('dv', (assign_work_order(test.v('dw'), :MIKE)).id);
 reset role; select test.backdate(test.v('dv'), 30); set role authenticated;
 select test.login(:MIKE);
 select from tech_start(test.v('dv'), now() - interval '25 minutes', 47.95, -97.10);
-select from tech_arrive(test.v('dv'), now() - interval '6 minutes', 47.9101, -97.0491);
-reset role;
-select test.ok(checkin_watch() >= 1, 'watcher finds the tech waiting at the door');
-set role authenticated;
-select test.login(:SAM);
-select test.ok((select count(*) >= 2 from notifications where work_order_id = test.v('dw') and type = 'checkin'), 'store manager alerted, then reminded at 5 minutes');
-select '      ' || message from notifications where work_order_id = test.v('dw') and type = 'checkin' order by created_at desc limit 1;
-select test.login(:MARIA);
-select test.ok((select count(*) >= 1 from notifications where work_order_id = test.v('dw') and message like 'STILL WAITING%'), 'maintenance manager alerted too');
-select test.login(:DANA);
-select test.ok((select count(*) >= 1 from notifications where work_order_id = test.v('dw') and message like '%has waited%'), 'contractor office told');
+select from tech_arrive(test.v('dv'), now() - interval '2 minutes', 47.9101, -97.0491);
 reset role;
 select checkin_watch();
-select test.ok((select count(*) = 1 from notifications n join profiles p on p.id = n.user_id
-  where n.work_order_id = test.v('dw') and p.id = :SAM and n.dedupe_key like 'door:%:5'), 'each reminder is sent once, not every minute');
+create temp view door as select p.full_name who, n.message from notifications n join profiles p on p.id = n.user_id
+  where n.work_order_id = test.v('dw') and n.dedupe_key like 'door:%';
+select test.ok((select count(*) = 1 from door where who = 'Sam Store Manager') and (select count(*) = 0 from door where who <> 'Sam Store Manager'),
+  'minute 2: only the first person (store manager) is alerted');
+create or replace function test.wait_more(p_visit uuid, p_mins int) returns void language plpgsql as $$
+begin perform _allow_internal(true); update visits set arrived_at = arrived_at - make_interval(mins => p_mins) where id = p_visit; perform _end_internal(); end $$;
+select test.wait_more(test.v('dv'), 4);
+select checkin_watch();
+select test.ok((select count(*) >= 1 from door where who = 'Maria Lopez') and (select count(*) >= 1 from door where who = 'Doug Reed'),
+  'minute 6: no answer → second person (maintenance manager) and her backup (director)');
+select '      ' || who || ': ' || message from door where who = 'Maria Lopez';
+select test.ok((select count(*) = 0 from notifications n join profiles p on p.id = n.user_id where n.work_order_id = test.v('dw')
+  and p.contractor_id is not null and n.dedupe_key like 'door:%'), 'contractor office not bothered yet');
+select test.wait_more(test.v('dv'), 5);
+select checkin_watch();
+select test.ok((select count(*) >= 1 from notifications n join profiles p on p.id = n.user_id where n.work_order_id = test.v('dw')
+  and p.contractor_id is not null and n.dedupe_key = 'door:' || test.v('dv') || ':office'), 'minute 11: third person + contractor office alerted');
+select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('dw') and flag = 'checkin_unverified'), 'the wait is flagged on the call');
+select checkin_watch();
+select test.ok((select count(*) = 1 from door where who = 'Sam Store Manager'), 'each person is alerted once per step, not every minute');
 
 reset role;
 \echo '=== 18. Audit'

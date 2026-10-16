@@ -205,7 +205,7 @@ Proof of temperature for bad-product claims, and early warning before product is
 
 ### 18. Waiting at the door (Mark, 2026-10-16) — built
 - **Labor starts at arrival** ("I'm here" or GPS), not at check-in — waiting for the store's code is paid time.
-- So the store must not miss it: the moment the tech arrives on a check-in call, everyone at that store is alerted; the store portal shows a **pulsing red banner with the code**, beeps every refresh and pops up a phone/computer notification (once alerts are turned on). At **5 minutes** the whole store team and the contractor office are alerted again ("STILL WAITING … about $X of labor so far"); at **10 minutes** it's flagged on the call. The tech sees how long they've waited and, after 10 minutes, is pointed to the backup code / name-only check-in.
+- So the store must not miss it: the moment the tech arrives on a check-in call, everyone at that store is alerted; the store portal shows a **pulsing red banner with the code**, beeps every refresh and pops up a phone/computer notification (once alerts are turned on). If nobody answers it **escalates person by person in the store's own approval-chain order** (Mark, 2026-10-16): **0 min** first person (store manager) → **5 min** second person and their backup (maintenance manager) → **10 min** third person (director) + the contractor office, and the wait is flagged on the call → **15 min** everyone who covers that store. People who don't cover the location are skipped; a store with no chain alerts everyone at once. The tech sees how long they've waited and, after 10 minutes, is pointed to the backup code / name-only check-in.
 - When texting is built, the arrival alert also goes out as a text to the store manager's phone.
 
 ### Order of work (proposed)

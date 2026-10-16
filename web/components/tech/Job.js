@@ -187,7 +187,7 @@ function CheckIn({ job }) {
       {v.arrived_at && (() => {
         const mins = Math.floor((Date.now() - new Date(v.arrived_at).getTime()) / 60000);
         return <div className={mins >= 5 ? 'notice small' : 'small muted'}>
-          Your time started when you arrived ({time(v.arrived_at)}) — waiting {mins} min. The store {mins >= 5 ? 'and your office have' : 'has'} been alerted{mins >= 5 ? ' again' : ''}.
+          Your time started when you arrived ({time(v.arrived_at)}) — waiting {mins} min. {mins < 5 ? 'The store has been alerted.' : mins < 10 ? 'No answer, so the store\'s second contact has been alerted.' : 'Still no answer — the store\'s third contact and your office have been alerted.'}
           {mins >= 10 && ' Still no one? Use the store backup code, or "No code available".'}
         </div>;
       })()}
