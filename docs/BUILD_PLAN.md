@@ -38,7 +38,7 @@ The problem: contractors forget to do the PM, and stores don't find out until so
 Design:
 - **PM plans** per store (or per unit): frequency (monthly / quarterly / semi-annual / annual), a task checklist, a parts kit (filters, belts, coil cleaner), expected labor, and pricing (flat per visit or time & materials).
 - **The system schedules the PM itself.** A daily job creates the PM work order ahead of the due date; the contractor doesn't have to remember.
-- **Missed PM is visible to the store.** "PM overdue 12 days" shows on the store's dashboard and is texted/emailed; the contractor sees a PM compliance % per customer.
+- **Every scheduled PM stays on the store manager's dashboard until it is completed** (decided by Mark 2026-10-15) — upcoming, due, and overdue ("PM overdue 12 days"), with text/email when it goes overdue. It cannot be hidden or dismissed; only completion removes it. The contractor sees a PM compliance % per customer.
 - **PM visits need proof**, like service calls: checklist items with required photos and readings (e.g. new filter photo, coil before/after, amp draw), parts from the kit.
 - Completing a PM schedules the next one from the completion date.
 
