@@ -31,6 +31,31 @@ is much larger than what two people should maintain.
 | PO warning | 80% of approved amount, configurable per contractor | Decided by Mark 2026-10-15 |
 | Invoiced jobs | Locked | Once in QuickBooks, the record is final |
 
+## Scope additions (Mark, 2026-10-15)
+
+### 1. Preventive maintenance (PM) — parts and labor
+The problem: contractors forget to do the PM, and stores don't find out until something fails.
+Design:
+- **PM plans** per store (or per unit): frequency (monthly / quarterly / semi-annual / annual), a task checklist, a parts kit (filters, belts, coil cleaner), expected labor, and pricing (flat per visit or time & materials).
+- **The system schedules the PM itself.** A daily job creates the PM work order ahead of the due date; the contractor doesn't have to remember.
+- **Missed PM is visible to the store.** "PM overdue 12 days" shows on the store's dashboard and is texted/emailed; the contractor sees a PM compliance % per customer.
+- **PM visits need proof**, like service calls: checklist items with required photos and readings (e.g. new filter photo, coil before/after, amp draw), parts from the kit.
+- Completing a PM schedules the next one from the completion date.
+
+### 2. All trades, residential and commercial
+- Trades: refrigeration, HVAC, plumbing, electrical, and others — a **trade** on every repair type, PM plan and work order.
+- **Residential:** the customer is a homeowner and the site is the home. No PO numbers; the spending cap becomes an **estimate the homeowner approves** (same approval flow). Payment likely by card rather than net-30 invoice.
+- **Equipment types move from a fixed list to a table** each contractor can extend (water heater, panel, sump pump, boiler, etc.).
+- Work order **kinds**: service call, PM visit, install, estimate/quote.
+
+### Order of work (proposed)
+1c Technician app → **PM plans + auto-scheduling** → notifications → AI nameplate reading → QuickBooks → pilot.
+The generalization changes (trades, equipment type table, work order kinds) are done first, before real data exists, because they are cheapest now.
+
+### Open questions
+- Residential platform fee: does the homeowner pay $5, or the contractor only?
+- PM pricing default: flat rate per visit under a contract, or time & materials?
+
 ## Phases
 
 - [x] **1a. Database foundation** — schema, rules, security, 42-check test. **Live on Supabase** (project `Servicepro`, us-east-1) since 2026-10-15; smoke-tested end to end on the live database
