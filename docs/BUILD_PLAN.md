@@ -63,6 +63,11 @@ Each customer adds its own people, beyond the store manager — maintenance mana
 - The same team model applies on the contractor side (owner, office, dispatchers, techs).
 This is part of the generalization step done first, since the current two customer roles would otherwise have to be migrated later.
 
+### 4. Meet-on-site and "5 minutes away" alert (Mark, 2026-10-15)
+- **Meet-on-site required** — an option per call, with a default per store: the technician must check in with a store person on arrival before starting work (and, optionally, check out with them before leaving). The person met is recorded on the call with the time. Verification method to decide (proposed: check-in code shown to the store person, entered by the tech).
+- **"Tech is 5 minutes away" alert** to the store person, from the phone's ETA (fits the ETA-only rule — the store still never sees live location). The 5 minutes is adjustable per store, and who receives it is set in each person's notification choices.
+- The alert needs the tech app to report ETA every few minutes while driving; delivery by text/push comes with the notifications phase.
+
 ### Order of work (proposed)
 1c Technician app → **PM plans + auto-scheduling** → notifications → AI nameplate reading → QuickBooks → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
