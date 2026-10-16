@@ -31,7 +31,9 @@ is much larger than what two people should maintain.
 | PO warning | 80% of approved amount, configurable per contractor | Decided by Mark 2026-10-15 |
 | Invoiced jobs | Locked | Once in QuickBooks, the record is final |
 
-## Positioning (decided by Mark 2026-10-15)
+## Positioning (decided by Mark 2026-10-15; store-first added 2026-10-16)
+**Store first, contractor second.** The store's experience (arrival/departure notices, ETA, PO caps and approvals, PM visibility) drives design priority; the store protections are in every tier.
+- **Known store-side competitors:** ServiceChannel (Fortive) and Corrigo (JLL) are customer-side platforms with technician check-in/out (app, phone IVR, GPS radius). They serve large national chains and require each contractor to work inside each client's portal. **Our gap:** independent and regional grocers, restaurant groups, c-stores and residential — simple and affordable — and the contractor runs their whole business in the same system instead of retyping into each chain's portal. Chains already on ServiceChannel/Corrigo are not early targets.
 **ServicePro replaces ServiceTitan for contractors who find it too complex** — and adds what ServiceTitan lacks: customer-side protection (PO caps, the store's own approval chain with dollar limits, PM that stays on the store dashboard until done, meet-on-site check-in codes) and enforced proof of work.
 - **Primary market:** stores and contractors **not using ServiceTitan — most likely not using any service software** today (paper, phone, QuickBooks). They need to be productive on day one with no training project.
 - **Remaining scope additions are expected to be few**; the goal is one connected source system from call to invoice.
