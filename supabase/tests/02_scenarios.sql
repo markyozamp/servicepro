@@ -449,6 +449,57 @@ select test.login(:DANA);
 select test.ok((select status = 'approved' and customer_decided_via = 'link' from po_lines where id = test.v('hl')), 'office sees: approved by the homeowner, by link');
 select test.ok((select used_from is not null or used_at is not null from approval_links where po_line_id = test.v('hl')), 'the tap is logged');
 
+
+\echo '=== 21. Tech app: live meter, stop point, quotes from hours + parts, emergency limit, no running over'
+set role authenticated;
+select test.login(:MARIA);
+select test.put('tw', (create_work_order(:S121, (select id from issue_types where code='self_contained_down'), 'Produce cooler warm')).id);
+select test.login(:PAT);
+select test.put('tv', (assign_work_order(test.v('tw'), :MIKE)).id);
+reset role; select test.backdate(test.v('tv'), 200); set role authenticated;
+select test.login(:MIKE);
+select test.ok((select jsonb_array_length(tech_jobs()->'jobs') >= 1), 'tech downloads his jobs for offline use');
+select test.ok((select bool_or((j->'wo'->>'id')::uuid = test.v('tw')) from jsonb_array_elements(tech_jobs()->'jobs') j), 'the new job is in the download');
+select test.ok((select count(*) = 0 from jsonb_array_elements(tech_jobs()->'jobs') j where j ? 'code'), 'the check-in code is never sent to the tech');
+select from tech_start(test.v('tv'), now() - interval '190 minutes', 47.95, -97.10);
+select from tech_arrive(test.v('tv'), now() - interval '100 minutes', 47.8936, -97.0632);
+select test.ok((select (job_meter(test.v('tw'))->>'limit')::numeric = 125), 'meter limit = the $125 diagnosis');
+select '      meter: ' || job_meter(test.v('tw'))::text;
+select test.ok((select (job_meter(test.v('tw'))->>'stop_at')::numeric < 125 * 0.8), 'small limit: stop point is earlier than 80% (room for the wait + wrap-up)');
+select test.ok((select job_meter(test.v('tw'))->>'state' in ('stop','over')), '100 min on site at $125/hr: the meter says STOP');
+reset role;
+select test.ok(meter_watch() >= 1, 'server check catches it even with the phone off');
+set role authenticated;
+select test.ok((select count(*) >= 1 from notifications where type = 'guardrail_flag' and message like 'Job #%STOP%'), 'tech is told to stop');
+select test.blocked($$select set_part_used(test.v('tv'), '40000000-0000-0000-0000-000000000005', 1)$$, 'over the approved', 'a part that would cross the limit cannot be added');
+select test.put('tq', (request_quote(test.v('tw'), 1.5, '[{"part_id":"40000000-0000-0000-0000-000000000005","qty":1}]', 'Contactor burned; replace and test')).id);
+select test.ok((select amount = round(1.5 * 125, 2) + 58 and (breakdown->>'labor')::numeric = 187.50 from po_lines where id = test.v('tq')),
+  'quote = 1.5 h × $125 + contactor $58 = $245.50, with labor and parts shown separately');
+select '      ' || po_label(work_order_id, seq) || ' not to exceed $' || amount || '  ' || breakdown::text from po_lines where id = test.v('tq');
+select test.login(:MARIA);
+select from decide_po_line(test.v('tq'), true);
+select test.login(:MIKE);
+select test.ok((select (set_part_used(test.v('tv'), '40000000-0000-0000-0000-000000000005', 1)).id is not null), 'after approval the part goes in');
+
+\echo '    -- emergency, pre-approved up to the store''s emergency limit'
+reset role;
+update sites set emergency_limit = 1500 where id = :S121;
+set role authenticated;
+select test.login(:MARIA);
+select test.put('ew', (create_work_order(:S121, (select id from issue_types where code='wi_cooler_down'), 'Walk-in cooler at 52°F', null, 1::smallint)).id);
+select test.login(:PAT);
+select test.put('ev', (assign_work_order(test.v('ew'), :LUIS)).id);
+select test.login(:LUIS);
+select from tech_start(test.v('ev')); select from tech_arrive(test.v('ev'), null, 47.8936, -97.0632);
+select test.ok((select job_meter(test.v('ew'))->>'emergency_limit' = '1500.00'), 'meter shows the emergency limit');
+select test.put('el', (request_quote(test.v('ew'), 3, '[{"part_id":"40000000-0000-0000-0000-000000000001","qty":1}]', 'Condenser fan motor seized — replace now, product at risk')).id);
+select test.ok((select status = 'approved' and emergency_preapproved from po_lines where id = test.v('el')), 'emergency letter within $1,500 goes ahead at once');
+select test.login(:MARIA);
+select test.ok((select count(*) >= 1 from notifications where message like 'EMERGENCY call%pre-approved emergency limit%'), 'store told immediately');
+select test.login(:LUIS);
+select test.put('el2', (request_quote(test.v('ew'), 4, '[{"part_id":"40000000-0000-0000-0000-000000000001","qty":2}]', 'Second condenser also failing')).id);
+select test.ok((select status = 'pending' and not emergency_preapproved from po_lines where id = test.v('el2')), 'above the emergency limit it needs a person to approve');
+
 reset role;
 \echo '=== 18. Audit'
 select test.ok((select count(*) > 50 from audit_log), 'every change is in the audit trail');
