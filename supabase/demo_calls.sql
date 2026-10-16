@@ -120,3 +120,8 @@ begin
   perform set_config('request.jwt.claim.sub', '', true);
   perform pm_generate();
 end $$;
+
+-- After the demo calls: emergency calls are pre-approved up to these totals (set by the customer).
+update sites set emergency_limit = 1500 where id in ('30000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000002');
+update sites set emergency_limit = 1000 where id = '30000000-0000-0000-0000-000000000004';
+

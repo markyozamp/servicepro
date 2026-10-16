@@ -151,3 +151,4 @@ insert into approval_chains (id, customer_id, name, all_sites, timeout_minutes, 
 insert into approval_chain_steps (chain_id, step_no, profile_id, backup_profile_id) values
  ('60000000-0000-0000-0000-000000000002',1,'00000000-0000-0000-0000-0000000000e2',null),
  ('60000000-0000-0000-0000-000000000002',2,'00000000-0000-0000-0000-0000000000e1',null);
+
