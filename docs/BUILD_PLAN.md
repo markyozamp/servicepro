@@ -203,6 +203,11 @@ Proof of temperature for bad-product claims, and early warning before product is
   - **Billable labor stops at the approved limit.** Minutes past it are recorded but not billable unless approved, so nothing over the limit ever reaches an invoice.
   - **Emergencies:** each store/property sets an emergency limit that is pre-approved (e.g. $1,500). "Emergency: continue" works only up to that pre-approved limit (reason + photo, store told immediately). Above it the request runs up the chain to someone with authority (the chain should end with a no-limit approver); if nobody answers, the tech secures the equipment and stops. No unapproved work, so neither side carries the risk. Override use is reported per contractor.
 
+### 18. Waiting at the door (Mark, 2026-10-16) — built
+- **Labor starts at arrival** ("I'm here" or GPS), not at check-in — waiting for the store's code is paid time.
+- So the store must not miss it: the moment the tech arrives on a check-in call, everyone at that store is alerted; the store portal shows a **pulsing red banner with the code**, beeps every refresh and pops up a phone/computer notification (once alerts are turned on). At **5 minutes** the whole store team and the contractor office are alerted again ("STILL WAITING … about $X of labor so far"); at **10 minutes** it's flagged on the call. The tech sees how long they've waited and, after 10 minutes, is pointed to the backup code / name-only check-in.
+- When texting is built, the arrival alert also goes out as a text to the store manager's phone.
+
 ### Order of work (proposed)
 Database v2 + portals v2 (done 2026-10-16) → 1c Technician app → notifications → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
