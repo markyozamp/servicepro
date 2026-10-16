@@ -26,15 +26,21 @@ export default function StorePortal() {
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const [door, setDoor] = useState([]);       // technicians on site waiting for the check-in code
+  const [sound, setSound] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [c, p, pm, st] = await Promise.all([
+      const [c, p, pm, st, dv, codes] = await Promise.all([
         q(supabase.from('work_orders').select(LIST).order('created_at', { ascending: false }).limit(300)),
         q(supabase.from('po_lines').select('id, seq, kind, amount, description, requested_at, owner_status, owner:property_owners(name), work_orders(id, number, store_po_number, unit, sites(name))').eq('status', 'pending')),
         q(supabase.from('pm_status').select('*').order('due_on')),
         q(supabase.from('sites').select('id, name')),
+        q(supabase.from('visits').select('id, arrived_at, profiles(full_name), work_orders(id, number, unit, sites(name))')
+          .eq('status', 'on_site').eq('checkin_required', true).is('checkin_at', null)),
+        q(supabase.from('visit_codes').select('visit_id, code')),
       ]);
+      setDoor(dv.map((v) => ({ ...v, code: codes.find((x) => x.visit_id === v.id)?.code })));
       const siteName = Object.fromEntries(st.map((x) => [x.id, x.name]));
       setCalls(c); setPending(p); setPms(pm.map((x) => ({ ...x, site_name: siteName[x.site_id] })));
     } catch (e) {
@@ -45,7 +51,7 @@ export default function StorePortal() {
   useEffect(() => {
     if (!profile) return;
     load();
-    const t = setInterval(load, 20000);
+    const t = setInterval(load, 15000);
     return () => clearInterval(t);
   }, [profile, load]);
 
@@ -62,6 +68,27 @@ export default function StorePortal() {
     } finally {
       setBusy(false);
     }
+  }
+
+  // Alarm while a technician waits at the door: beep every refresh, and a phone/computer notification.
+  useEffect(() => {
+    if (!door.length) return;
+    if (sound) beep();
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      for (const v of door) {
+        const mins = Math.floor((Date.now() - new Date(v.arrived_at).getTime()) / 60000);
+        const key = `sp_door_${v.id}_${mins >= 5 ? 5 : 0}`;
+        if (sessionStorage.getItem(key)) continue;
+        sessionStorage.setItem(key, '1');
+        new Notification(mins >= 5 ? `STILL WAITING ${mins} min — check-in code ${v.code}` : `Technician at the door — code ${v.code}`,
+          { body: `${v.profiles?.full_name} is at ${v.work_orders?.sites?.name} for call #${v.work_orders?.number}. Labor time is running.`, requireInteraction: true });
+      }
+    }
+  }, [door, sound]);
+
+  function enableAlerts() {
+    setSound(true); beep();
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') Notification.requestPermission();
   }
 
   if (!profile) return <div className="page muted">Loading…</div>;
@@ -89,6 +116,21 @@ export default function StorePortal() {
 
         <ErrorBox error={err} />
         <Notice>{msg}</Notice>
+
+        {/* Technician waiting at the door for the check-in code */}
+        {door.map((v) => {
+          const mins = Math.floor((Date.now() - new Date(v.arrived_at).getTime()) / 60000);
+          return (
+            <div key={v.id} className="doorbell">
+              <div className="stack" style={{ gap: 4 }}>
+                <strong style={{ fontSize: 18 }}>Technician at the door — waiting {mins < 1 ? 'less than a minute' : `${mins} min`}</strong>
+                <span>{v.profiles?.full_name} is at {v.work_orders?.sites?.name}{v.work_orders?.unit ? `, unit ${v.work_orders.unit}` : ''} for call #{v.work_orders?.number}. <strong>Labor time is running</strong> — please meet them and give this code.</span>
+              </div>
+              <div className="doorcode">{v.code || '—'}</div>
+            </div>
+          );
+        })}
+        {door.length > 0 && !sound && <button className="danger" onClick={enableAlerts}>🔔 Turn on sound and pop-up alerts for this screen</button>}
 
         {creating && (
           <NewCallForm side="store" profile={profile} onCancel={() => setCreating(false)} onCreated={async (wo) => {
@@ -201,4 +243,13 @@ export default function StorePortal() {
       {open && <CallDetail id={open} side="store" profile={profile} onClose={() => setOpen(null)} onChanged={load} />}
     </>
   );
+}
+
+function beep() {
+  try {
+    const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+    const a = new C(); const o = a.createOscillator(); const g = a.createGain();
+    o.type = 'square'; o.frequency.value = 880; g.gain.value = 0.15; o.connect(g); g.connect(a.destination);
+    o.start(); setTimeout(() => { o.frequency.value = 660; }, 250); setTimeout(() => { o.stop(); a.close(); }, 600);
+  } catch { /* no sound available */ }
 }

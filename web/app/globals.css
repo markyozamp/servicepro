@@ -183,3 +183,9 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 .stepper span { min-width: 44px; text-align: center; font-weight: 700; }
 .jobcard { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); }
 .jobcard.urgent { border-left: 5px solid var(--red-fg); }
+
+/* Store: technician waiting at the door */
+.doorbell { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: #a42816; color: #fff; border-radius: var(--radius); padding: 16px 18px; animation: doorpulse 1.4s ease-in-out infinite; }
+.doorcode { font-size: 40px; font-weight: 800; letter-spacing: 10px; background: #fff; color: #a42816; border-radius: 10px; padding: 6px 16px; }
+@keyframes doorpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(164, 40, 22, .55); } 50% { box-shadow: 0 0 0 10px rgba(164, 40, 22, 0); } }

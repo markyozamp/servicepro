@@ -184,6 +184,13 @@ function CheckIn({ job }) {
   return (
     <div className="sec">
       <h3><span className="tick" />Check in with the store</h3>
+      {v.arrived_at && (() => {
+        const mins = Math.floor((Date.now() - new Date(v.arrived_at).getTime()) / 60000);
+        return <div className={mins >= 5 ? 'notice small' : 'small muted'}>
+          Your time started when you arrived ({time(v.arrived_at)}) — waiting {mins} min. The store {mins >= 5 ? 'and your office have' : 'has'} been alerted{mins >= 5 ? ' again' : ''}.
+          {mins >= 10 && ' Still no one? Use the store backup code, or "No code available".'}
+        </div>;
+      })()}
       {mode !== 'name' ? (
         <>
           <div className="small">{mode === 'code' ? 'Ask the store person for the 4-digit code for this call.' : 'Enter the store\'s standing backup code.'}</div>

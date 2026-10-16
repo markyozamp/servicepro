@@ -500,6 +500,31 @@ select test.login(:LUIS);
 select test.put('el2', (request_quote(test.v('ew'), 4, '[{"part_id":"40000000-0000-0000-0000-000000000001","qty":2}]', 'Second condenser also failing')).id);
 select test.ok((select status = 'pending' and not emergency_preapproved from po_lines where id = test.v('el2')), 'above the emergency limit it needs a person to approve');
 
+\echo '=== 22. Tech at the door: store alerted, then team + office at 5 minutes'
+set role authenticated;
+select test.login(:SAM);
+select test.put('dw', (create_work_order(:S114, (select id from issue_types where code='self_contained_down'), 'Door test')).id);
+select test.login(:PAT);
+select test.put('dv', (assign_work_order(test.v('dw'), :MIKE)).id);
+reset role; select test.backdate(test.v('dv'), 30); set role authenticated;
+select test.login(:MIKE);
+select from tech_start(test.v('dv'), now() - interval '25 minutes', 47.95, -97.10);
+select from tech_arrive(test.v('dv'), now() - interval '6 minutes', 47.9101, -97.0491);
+reset role;
+select test.ok(checkin_watch() >= 1, 'watcher finds the tech waiting at the door');
+set role authenticated;
+select test.login(:SAM);
+select test.ok((select count(*) >= 2 from notifications where work_order_id = test.v('dw') and type = 'checkin'), 'store manager alerted, then reminded at 5 minutes');
+select '      ' || message from notifications where work_order_id = test.v('dw') and type = 'checkin' order by created_at desc limit 1;
+select test.login(:MARIA);
+select test.ok((select count(*) >= 1 from notifications where work_order_id = test.v('dw') and message like 'STILL WAITING%'), 'maintenance manager alerted too');
+select test.login(:DANA);
+select test.ok((select count(*) >= 1 from notifications where work_order_id = test.v('dw') and message like '%has waited%'), 'contractor office told');
+reset role;
+select checkin_watch();
+select test.ok((select count(*) = 1 from notifications n join profiles p on p.id = n.user_id
+  where n.work_order_id = test.v('dw') and p.id = :SAM and n.dedupe_key like 'door:%:5'), 'each reminder is sent once, not every minute');
+
 reset role;
 \echo '=== 18. Audit'
 select test.ok((select count(*) > 50 from audit_log), 'every change is in the audit trail');
