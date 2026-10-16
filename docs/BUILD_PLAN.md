@@ -64,7 +64,13 @@ Each customer adds its own people, beyond the store manager — maintenance mana
 This is part of the generalization step done first, since the current two customer roles would otherwise have to be migrated later.
 
 ### 4. Meet-on-site and "5 minutes away" alert (Mark, 2026-10-15)
-- **Meet-on-site required** — an option per call, with a default per store: the technician must check in with a store person on arrival before starting work (and, optionally, check out with them before leaving). The person met is recorded on the call with the time. Verification method to decide (proposed: check-in code shown to the store person, entered by the tech).
+- **Meet-on-site required** — an option per call, with a default per store: the technician must check in with a store person on arrival before starting work (and, optionally, check out with them before leaving). The person met is recorded on the call with the time.
+- **Verification: check-in code — decided by Mark 2026-10-15.** The store person gets a 4-digit code for that call (portal + text) and reads it to the tech, who enters it.
+- **Backup plan when systems are down — layered, never strands the tech:**
+  1. *Tech's phone has no signal* (walk-in, basement, rural): the tech enters the code anyway; the app saves it with the phone's time and the server checks it when the phone reconnects. The phone never holds the correct code, so it can't be guessed from the app. A wrong code raises a review flag and notifies the store.
+  2. *Store person can't open the portal* (store internet down): the code also goes by text message, which often gets through when data doesn't.
+  3. *No per-call code reachable at all:* each store keeps a **standing backup code** the store sets and can change (kept on the manager's sheet). Using it is recorded as "backup code used".
+  4. *Nothing works:* the tech enters the name of the person met and a reason. Work continues (a failed walk-in can't wait), but the call is flagged for review and the store sees exactly what happened.
 - **"Tech is 5 minutes away" alert** to the store person, from the phone's ETA (fits the ETA-only rule — the store still never sees live location). The 5 minutes is adjustable per store, and who receives it is set in each person's notification choices.
 - The alert needs the tech app to report ETA every few minutes while driving; delivery by text/push comes with the notifications phase.
 
