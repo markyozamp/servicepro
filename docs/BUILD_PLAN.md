@@ -33,6 +33,8 @@ is much larger than what two people should maintain.
 
 ## Positioning (decided by Mark 2026-10-15)
 **ServicePro replaces ServiceTitan for contractors who find it too complex** — and adds what ServiceTitan lacks: customer-side protection (PO caps, the store's own approval chain with dollar limits, PM that stays on the store dashboard until done, meet-on-site check-in codes) and enforced proof of work.
+- **Primary market:** stores and contractors **not using ServiceTitan — most likely not using any service software** today (paper, phone, QuickBooks). They need to be productive on day one with no training project.
+- **Remaining scope additions are expected to be few**; the goal is one connected source system from call to invoice.
 - **Pilot:** a contractor on **QuickBooks**, not on ServiceTitan (Mark will find one). QuickBooks link built first for whichever QuickBooks version that contractor runs.
 - **Simplicity guardrails** (so the feature list doesn't recreate ServiceTitan's complexity): one main screen per role; sensible defaults so a contractor is running the first day; advanced features (escalation chains, job costing, install boards) stay hidden until turned on; nothing a tech does needs typing that a tap or photo can replace.
 - **Later, for switchers:** import from ServiceTitan (customers, sites, equipment, history) so leaving it is painless.
