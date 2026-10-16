@@ -26,6 +26,7 @@ export default function SignIn() {
   const [err, setErr] = useState('');
 
   useEffect(() => {
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
     if (typeof window !== 'undefined' && window.location.search.includes('e=noprofile')) {
       setErr('This login is not set up with a company yet. Contact your administrator.');
     }

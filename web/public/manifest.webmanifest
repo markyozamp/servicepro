@@ -1,8 +1,8 @@
 {
-  "name": "ServicePro Tech",
+  "name": "ServicePro",
   "short_name": "ServicePro",
   "description": "Technician app: jobs, check-in, photos, parts and completion — works without signal.",
-  "start_url": "/tech",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

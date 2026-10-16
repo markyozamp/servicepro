@@ -1,7 +1,7 @@
 // ServicePro offline worker: keeps the tech app's screens on the phone so it opens with no signal.
 // Data (jobs, actions, photos) is handled by the app itself; this only caches the app's own files.
 const CACHE = 'sp-shell-v1';
-const SHELL = ['/tech', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
+const SHELL = ['/', '/tech', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
