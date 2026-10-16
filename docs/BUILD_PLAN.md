@@ -48,9 +48,20 @@ Design:
 - **Equipment types move from a fixed list to a table** each contractor can extend (water heater, panel, sump pump, boiler, etc.).
 - Work order **kinds**: service call, PM visit, install, estimate/quote.
 
+### 3. Customer teams: store managers, maintenance managers, directors (Mark, 2026-10-15)
+Each customer adds its own people, beyond the store manager — maintenance manager, director of operations, or whoever they choose.
+- **Title is the customer's own wording** ("Maintenance Manager", "Director of Operations", "District Manager"); permissions are set separately.
+- **Which stores each person sees:** one store, a list of stores/region, or all stores. A store manager sees their store; a maintenance manager or director sees all of them.
+- **Permissions per person:** open service calls, approve added cost, manage PM plans, see invoices and spend, add/remove users.
+- **Approval limits by dollar amount** (proposed): e.g. store manager approves up to $500, maintenance manager up to $2,500, director above that. A request over a person's limit goes up to the next person automatically.
+- **Notifications per person:** who gets texted for arrivals, approvals, overdue PM, completions.
+- **The customer's admin invites people by email**; no involvement from us or the contractor.
+- The same team model applies on the contractor side (owner, office, dispatchers, techs).
+This is part of the generalization step done first, since the current two customer roles would otherwise have to be migrated later.
+
 ### Order of work (proposed)
 1c Technician app → **PM plans + auto-scheduling** → notifications → AI nameplate reading → QuickBooks → pilot.
-The generalization changes (trades, equipment type table, work order kinds) are done first, before real data exists, because they are cheapest now.
+The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
 
 ### Open questions
 - Residential platform fee: does the homeowner pay $5, or the contractor only?
