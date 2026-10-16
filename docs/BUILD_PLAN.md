@@ -53,7 +53,11 @@ Each customer adds its own people, beyond the store manager — maintenance mana
 - **Title is the customer's own wording** ("Maintenance Manager", "Director of Operations", "District Manager"); permissions are set separately.
 - **Which stores each person sees:** one store, a list of stores/region, or all stores. A store manager sees their store; a maintenance manager or director sees all of them.
 - **Permissions per person:** open service calls, approve added cost, manage PM plans, see invoices and spend, add/remove users.
-- **Approval limits by dollar amount** (proposed): e.g. store manager approves up to $500, maintenance manager up to $2,500, director above that. A request over a person's limit goes up to the next person automatically.
+- **Approval escalation by dollar amount — decided by Mark 2026-10-15.** E.g. store manager approves up to $500, maintenance manager up to $2,500, director above that; a request over a person's limit goes up the chain automatically. **The customer edits the chain and the rules themselves:** who is in it, the order, each person's limit, and which stores it covers (a different chain per region is allowed). Rule options to include:
+  - time-based escalation: if nobody answers within N minutes, it moves up (a tech is waiting on site),
+  - emergency rule: priority-1 calls can go straight to a named person,
+  - a backup approver for each step (vacations, days off).
+  - Every approval records who approved, at what limit, and when.
 - **Notifications per person:** who gets texted for arrivals, approvals, overdue PM, completions.
 - **The customer's admin invites people by email**; no involvement from us or the contractor.
 - The same team model applies on the contractor side (owner, office, dispatchers, techs).
