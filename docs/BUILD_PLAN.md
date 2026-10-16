@@ -26,7 +26,7 @@ is much larger than what two people should maintain.
 | Time corrections | Only a contractor admin, with a written reason (10+ chars). Logged, flagged, and **visible to the store**. If a correction pushes cost past the approved cap, a blocking flag is raised | Phones die and GPS lags, but corrections must never be silent |
 | Review flags | Underbilling, overbilling, parts missing/excess, labor out of range, GPS mismatch. They block QuickBooks export until resolved with a note. Stores never see them | Internal QA for the contractor |
 | GPS mismatch | Arrival > 2× the geofence radius from the store, or with no location → flagged for review, never blocks the tech | Honest record without stranding the tech |
-| Platform fee | **Both sides pay** $5 per completed call, capped at $50/month each. A fee plan row overrides per organization (e.g. enterprise: per-call, no cap) | Decided by Mark 2026-10-15 |
+| Platform fee | See **Fee schedule** below (replaces the earlier $5-each/$50-cap rule) | Decided by Mark 2026-10-16 |
 | Store visibility of tech | **ETA only** — phone reports expected arrival; store is notified first time and when it shifts 15+ min. Store sees arrival/departure times, never the live position | Decided by Mark 2026-10-15 |
 | PO warning | 80% of approved amount, configurable per contractor | Decided by Mark 2026-10-15 |
 | Invoiced jobs | Locked | Once in QuickBooks, the record is final |
@@ -140,6 +140,48 @@ Stores get surprised by bills sent months after the work and may have budgeted f
 - **Invoice must go out within 7 days of completion** (default; adjustable per agreement). Day 5: reminder to the contractor. Day 7: overdue alert to **both** store and contractor, shown on both dashboards until the invoice is sent — it cannot be dismissed.
 - The clock keeps running while review flags are open, so the contractor resolves them in time.
 - Stores see each contractor's on-time billing record.
+
+### 12. Fee schedule (decided by Mark 2026-10-16) — starting numbers, tested in the pilot
+**Store**
+| Plan | Monthly | Per use |
+|---|---|---|
+| Store | $0 | $5 per PO (diagnosis, every letter and every return visit included); completed PM visit $3; scheduled PM, quotes, warranty lookups free. All store protections included. |
+| Store Multi | ~$29 per location | Same per-use fees; adds multi-contractor view, cross-store escalation chains, spend and contractor-performance reports, agreement value reports. |
+
+**Contractor**
+| Plan | Monthly | Per use |
+|---|---|---|
+| Base | $0 | $5 per PO, PM $3 — **capped at $40 per active tech per month** |
+| Pro | +$25 per active tech | Full estimating, install handoff, job costing |
+| Enterprise | Quote | CRM, multi-branch, ServiceTitan import |
+- "Active tech" = completed at least one job that month.
+- Residential: the contractor pays the $5; the homeowner pays nothing.
+- Quotes are free; the fee applies when an approved quote becomes a PO.
+- Pilot: free for both sides for 90 days.
+- Billed monthly by card or bank draft (Stripe); no card required until the first bill.
+
+### 13. Wholesaler commission — automatic (decided by Mark 2026-10-16)
+- A store is tied to the wholesaler that brought it in, through the wholesaler's invite link or code at signup.
+- Commission: 15–20% of that store's platform fees, **calculated automatically each month on fees actually collected** (net of refunds), for as long as the store stays on.
+- **Paid automatically** through Stripe Connect transfers when the monthly billing run completes; the wholesaler gets a portal page with its stores, fees and payouts.
+- Confirm tax reporting (1099s) with an accountant before the first payout.
+
+### 14. Temperature monitoring (Mark, 2026-10-16)
+Proof of temperature for bad-product claims, and early warning before product is lost.
+- **Simple wireless sensors**, one per space to start: walk-in coolers/freezers, produce prep room coolers and cases (produce is the top concern); restaurants: cooler and freezer.
+- **Every reading is recorded**; alarms (out of range for N minutes) go to the people the store chooses, using the same notification settings.
+- **Alarms connect to service:** a sustained alarm can open a service call to the store's contractor automatically, with the temperature graph attached. The contractor also sees slow drift before failure.
+- **Product-claim reports:** a temperature log for any space and date range, exportable for the wholesaler, insurer or health inspector.
+- **Battery changes scheduled automatically** like a PM item, plus a low-battery alert.
+- **Hardware: buy and resell an existing vendor's sensors — do not build hardware.** Requirements: lithium batteries with multi-year life; a **cellular gateway** so it doesn't depend on store Wi-Fi or IT; an API or webhook so readings flow into the platform. Candidate to evaluate: Monnit (cellular and Ethernet gateways, 7–10 year sensor batteries, published APIs).
+- **Pricing models:** buy outright, or rent-to-own; the wholesaler can also buy for its stores. Monitoring service priced monthly per sensor.
+- **Timing:** after the pilot; hardware brings shipping, installation and replacement support.
+
+### 15. Timecards (Mark, 2026-10-16)
+- **Tech clocks in and out from the app** (works offline); breaks recorded.
+- **The day fills itself in** from the job records: drive time, on-site time per job (from GPS arrival/departure), and shop time.
+- **Office approves the week**; corrections are logged with a reason, like time overrides.
+- **Overtime calculated**, and approved hours export to QuickBooks for payroll, with hours tied to jobs for job costing.
 
 ### Order of work (proposed)
 1c Technician app → **PM plans + auto-scheduling** → notifications → AI nameplate reading → QuickBooks → pilot.
