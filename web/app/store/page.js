@@ -31,7 +31,7 @@ export default function StorePortal() {
     try {
       const [c, p, pm, st] = await Promise.all([
         q(supabase.from('work_orders').select(LIST).order('created_at', { ascending: false }).limit(300)),
-        q(supabase.from('po_lines').select('id, seq, kind, amount, description, requested_at, work_orders(id, number, store_po_number, sites(name))').eq('status', 'pending')),
+        q(supabase.from('po_lines').select('id, seq, kind, amount, description, requested_at, owner_status, owner:property_owners(name), work_orders(id, number, store_po_number, unit, sites(name))').eq('status', 'pending')),
         q(supabase.from('pm_status').select('*').order('due_on')),
         q(supabase.from('sites').select('id, name')),
       ]);
@@ -77,7 +77,7 @@ export default function StorePortal() {
 
   return (
     <>
-      <TopBar profile={profile} org={org} portal="Store" />
+      <TopBar profile={profile} org={org} portal={org?.kind === 'property_manager' ? 'Properties' : 'Store'} />
       <main className="page stack" style={{ gap: 16 }}>
         <div className="spread">
           <div>
@@ -101,15 +101,17 @@ export default function StorePortal() {
           <div key={a.id} className="panel panel-pad spread" style={{ borderColor: '#e6b3ab', background: '#fffaf9' }}>
             <div className="stack" style={{ gap: 4 }}>
               <div className="row" style={{ gap: 8 }}>
-                <span className="chip tone-red">Approval needed</span>
-                <strong>{a.work_orders ? poLabel(a.work_orders, a.seq) : ''} · Call #{a.work_orders?.number} · {a.work_orders?.sites?.name}</strong>
+                {a.owner_status === 'pending'
+                  ? <span className="chip tone-amber">Waiting on owner</span>
+                  : <span className="chip tone-red">Approval needed</span>}
+                <strong>{a.work_orders ? poLabel(a.work_orders, a.seq) : ''} · Call #{a.work_orders?.number} · {a.work_orders?.sites?.name}{a.work_orders?.unit ? `, unit ${a.work_orders.unit}` : ''}</strong>
               </div>
               <div><span className="chip tone-slate">{PO_KIND[a.kind]}</span> {a.description}</div>
-              <div className="small muted">{money(a.amount)} · requested {ago(a.requested_at)}</div>
+              <div className="small muted">{money(a.amount)} · requested {ago(a.requested_at)}{a.owner_status === 'pending' ? ` · you approved; ${a.owner?.name || 'the owner'} must OK it` : ''}</div>
             </div>
             <div className="row">
               <button onClick={() => setOpen(a.work_orders?.id)}>Details</button>
-              {profile.can_approve && <>
+              {profile.can_approve && a.owner_status !== 'pending' && <>
                 <button className="danger" disabled={busy} onClick={() => decide(a.id, false)}>Decline</button>
                 <button className="primary" disabled={busy} onClick={() => decide(a.id, true)}>Approve {money(a.amount)}</button>
               </>}

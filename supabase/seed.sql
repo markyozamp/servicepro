@@ -1,7 +1,8 @@
 -- Demo data (NOT for production customers). Assumes these logins already exist in auth.users:
 --  a1 office@arcticair.demo   a2 dispatch@arcticair.demo   a3 tech@arcticair.demo   a4 luis@arcticair.demo
 --  c1 store@northside.demo    c2 maint@northside.demo      c3 director@northside.demo
---  r1 homeowner@jensen.demo   b3 tech@othercontractor.demo
+--  b3 tech@othercontractor.demo   e1 pm@redriverpm.demo   e2 maint@redriverpm.demo
+-- (The Jensen residence is a one-off homeowner with no login: the office opens her calls.)
 
 insert into contractors (id, name, phone, labor_rate, after_hours_labor_rate, min_labor_minutes, labor_increment_min, trip_charge, parts_markup_pct, fees_waived_until) values
  ('10000000-0000-0000-0000-000000000001','Arctic Air Mechanical (demo)','701-555-0142', 125, 187.50, 60, 15, 45, 35, null),
@@ -10,6 +11,7 @@ insert into contractors (id, name, phone, labor_rate, after_hours_labor_rate, mi
 insert into customers (id, name, kind, letter_escalation_at) values
  ('20000000-0000-0000-0000-000000000001','Northside Grocers (demo)','commercial', 3),
  ('20000000-0000-0000-0000-000000000002','Jensen residence (demo)','residential', 3);
+update customers set phone = '701-555-0166' where id = '20000000-0000-0000-0000-000000000002';
 
 insert into customer_contractors (contractor_id, customer_id, qbo_customer_ref) values
  ('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','QBO-58'),
@@ -40,8 +42,6 @@ insert into profiles (id, org_kind, contractor_id, customer_id, full_name, title
    false,false,false,false,null, true,true,2500,true,true,true),
  ('00000000-0000-0000-0000-0000000000c3','customer',null,'20000000-0000-0000-0000-000000000001','Doug Reed','Director of Operations','director@northside.demo',null,
    true,false,false,false,null, true,true,null,true,true,true),
- ('00000000-0000-0000-0000-0000000000d1','customer',null,'20000000-0000-0000-0000-000000000002','Karen Jensen','Homeowner','homeowner@jensen.demo',null,
-   true,false,false,false,null, true,true,null,false,true,true),
  ('00000000-0000-0000-0000-0000000000b3','contractor','10000000-0000-0000-0000-000000000002',null,'Rival Tech','Technician','tech@othercontractor.demo',null,
    false,true,false,false,null, false,false,null,false,false,true);
 insert into profile_sites values ('00000000-0000-0000-0000-0000000000c1','30000000-0000-0000-0000-000000000001');
@@ -122,3 +122,32 @@ insert into pm_plan_parts values ('a0000000-0000-0000-0000-000000000002','400000
 insert into wholesalers (id, name, invite_code, commission_pct) values
  ('b0000000-0000-0000-0000-000000000001','Prairie Wholesale Grocers (demo)','PRAIRIE', 15);
 update customers set wholesaler_id = 'b0000000-0000-0000-0000-000000000001' where id = '20000000-0000-0000-0000-000000000001';
+
+-- Property management company: an apartment building and an office building, each with its owner,
+-- plus a duplex the company owns itself (no owner step).
+insert into customers (id, name, kind, phone, letter_escalation_at) values
+ ('20000000-0000-0000-0000-000000000003','Red River Property Management (demo)','property_manager','701-555-0300', 3);
+insert into customer_contractors (contractor_id, customer_id, qbo_customer_ref) values
+ ('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000003','QBO-91');
+insert into property_owners (id, customer_id, name, phone, email, approval_above, response_hours, notes) values
+ ('c0000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000003','Lakeview Holdings LLC (Tom Becker)','701-555-0311','tom@lakeview.demo', 750, 24, 'Management agreement: owner approves repairs over $750'),
+ ('c0000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000003','Gateway Partners (Linda Ruiz)','701-555-0322','linda@gateway.demo', 1500, 48, null);
+insert into sites (id, customer_id, name, address, zip, lat, lon, geofence_radius_ft, access_notes, require_checkin, timezone, property_type, owner_id) values
+ ('30000000-0000-0000-0000-000000000004','20000000-0000-0000-0000-000000000003','Riverside Apartments','2200 River Rd, Grand Forks, ND','58201', 47.9200, -97.0300, 300,
+  'Mechanical room off the north stairwell; super has keys', true, 'America/Chicago', 'residential', 'c0000000-0000-0000-0000-000000000001'),
+ ('30000000-0000-0000-0000-000000000005','20000000-0000-0000-0000-000000000003','Gateway Office Center','400 Demers Ave, Grand Forks, ND','58201', 47.9250, -97.0330, 300,
+  'Roof access by building engineer', false, 'America/Chicago', 'commercial', 'c0000000-0000-0000-0000-000000000002'),
+ ('30000000-0000-0000-0000-000000000006','20000000-0000-0000-0000-000000000003','Maple St duplex','1510 Maple St, Grand Forks, ND','58201', 47.9150, -97.0450, 200,
+  null, false, 'America/Chicago', 'residential', null);
+insert into profiles (id, org_kind, contractor_id, customer_id, full_name, title, email, phone,
+                      is_org_admin, is_technician, can_dispatch, can_bill, hourly_cost,
+                      can_open_calls, can_approve, approval_limit, can_manage_pm, can_see_billing, all_sites) values
+ ('00000000-0000-0000-0000-0000000000e1','customer',null,'20000000-0000-0000-0000-000000000003','Jordan Hale','Property Manager','pm@redriverpm.demo',null,
+   true,false,false,false,null, true,true,2500,true,true,true),
+ ('00000000-0000-0000-0000-0000000000e2','customer',null,'20000000-0000-0000-0000-000000000003','Chris Moe','Maintenance Coordinator','maint@redriverpm.demo',null,
+   false,false,false,false,null, true,true,500,true,false,true);
+insert into approval_chains (id, customer_id, name, all_sites, timeout_minutes, emergency_profile_id) values
+ ('60000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000003','All properties', true, 60, '00000000-0000-0000-0000-0000000000e1');
+insert into approval_chain_steps (chain_id, step_no, profile_id, backup_profile_id) values
+ ('60000000-0000-0000-0000-000000000002',1,'00000000-0000-0000-0000-0000000000e2',null),
+ ('60000000-0000-0000-0000-000000000002',2,'00000000-0000-0000-0000-0000000000e1',null);

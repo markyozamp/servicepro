@@ -5,7 +5,7 @@ import { supabase, act, q } from '@/lib/supabase';
 import { money, dateTime, time, date, FLAG_LABEL, PRIORITY, KIND, PO_KIND, poLabel, daysUntil } from '@/lib/format';
 import { StatusChip, PriorityChip, KindChip, ErrorBox, Notice } from './bits';
 
-const WO = `*, sites(name, address, access_notes, timezone), customers(name, kind),
+const WO = `*, sites(name, address, access_notes, timezone, property_type), customers(name, kind, phone),
   equipment(id, manufacturer, model, serial, refrigerant, location_description, equipment_types(name)),
   repair_types(name), agreements(name, coverage, response_emergency_min, response_normal_min), issue_types(name)`;
 
@@ -24,7 +24,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
       const wo = await q(supabase.from('work_orders').select(WO).eq('id', id).single());
       const [visits, lines, parts, orders, photos, overrides, flags, warranties, codes, terms] = await Promise.all([
         q(supabase.from('visits').select('*, profiles(full_name, phone)').eq('work_order_id', id).order('visit_no')),
-        q(supabase.from('po_lines').select('*, decider:profiles!po_lines_decided_by_fkey(full_name, title)').eq('work_order_id', id).order('seq')),
+        q(supabase.from('po_lines').select('*, decider:profiles!po_lines_decided_by_fkey(full_name, title), owner:property_owners(name, phone, email)').eq('work_order_id', id).order('seq')),
         q(supabase.from('parts_used').select('id, quantity, unit_price, total_price, covered, parts(name, sku)').eq('work_order_id', id)),
         q(supabase.from('parts_orders').select('*').eq('work_order_id', id).order('created_at')),
         q(supabase.from('photos').select('id, kind, taken_at').eq('work_order_id', id).order('taken_at')),
@@ -65,6 +65,28 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
   const code = activeVisit && d?.codes.find((c) => c.visit_id === activeVisit.id);
   const openOrders = d?.orders.filter((o) => ['needed', 'ordered'].includes(o.status)) || [];
   const canApprove = side === 'store' && profile?.can_approve;
+  const ownerWait = pending?.owner_status === 'pending';
+  const oneOff = wo?.customers?.kind === 'residential';
+
+  async function copyLink(line, who) {
+    setBusy(true); setErr(''); setMsg('');
+    try {
+      const tok = await act('approval_link', { p_line: line.id });
+      const url = `${window.location.origin}/approve/${tok}`;
+      try { await navigator.clipboard.writeText(url); setMsg(`Link copied. Text or email it to ${who}: ${url}`); }
+      catch { window.prompt(`Copy this link and send it to ${who}:`, url); }
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function recordPhone(line, who) {
+    const yes = window.confirm(`Did ${who} APPROVE ${money(line.amount)}?\n\nOK = approved · Cancel = declined`);
+    const note = window.prompt(`Note who you spoke to and when (e.g. "${who} OK'd by phone 2:10 pm"):`);
+    if (note && note.trim()) run('record_phone_approval', { p_line: line.id, p_approve: yes, p_note: note.trim() });
+  }
 
   return (
     <>
@@ -78,7 +100,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
               {wo && <PriorityChip priority={wo.priority} />}
               {wo && <KindChip kind={wo.kind} />}
             </div>
-            {wo && <div className="small muted">{wo.customers?.name} · {wo.sites?.name}{wo.agreements ? ` · ${wo.agreements.name}` : ''}</div>}
+            {wo && <div className="small muted">{wo.customers?.name} · {wo.sites?.name}{wo.unit ? `, unit ${wo.unit}` : ''}{wo.agreements ? ` · ${wo.agreements.name}` : ''}</div>}
           </div>
           <button onClick={onClose} aria-label="Close">✕</button>
         </div>
@@ -99,7 +121,18 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                     Approved so far {money(d.cap)}. Approving brings this call to {money(Number(d.cap) + Number(pending.amount))}.
                     {profile?.approval_limit != null && ` Your limit is ${money(profile.approval_limit)}.`}
                   </div>
-                  {canApprove ? (
+                  {ownerWait ? (
+                    <div className="stack" style={{ gap: 8 }}>
+                      <div><span className="chip tone-amber">Waiting on owner</span> You approved this. It is over the owner's limit, so <strong>{pending.owner?.name}</strong> must OK it.
+                        {pending.owner?.phone && <span className="muted"> · {pending.owner.phone}</span>}</div>
+                      {canApprove && (
+                        <div className="row">
+                          <button className="primary" disabled={busy} onClick={() => copyLink(pending, pending.owner?.name || 'the owner')}>Copy owner approval link</button>
+                          <button disabled={busy} onClick={() => recordPhone(pending, pending.owner?.name || 'the owner')}>Owner answered by phone</button>
+                        </div>
+                      )}
+                    </div>
+                  ) : canApprove ? (
                     <div className="row">
                       <button className="primary" disabled={busy} onClick={() => run('decide_po_line', { p_line: pending.id, p_approve: true })}>
                         Approve {money(pending.amount)}
@@ -113,7 +146,19 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                 </div>
               )}
               {pending && side === 'office' && (
-                <Notice>Waiting on the customer: {poLabel(wo, pending.seq)} {money(pending.amount)} — {pending.description}</Notice>
+                <div className="panel panel-pad stack" style={{ gap: 8 }}>
+                  <div>
+                    <span className="chip tone-amber">{ownerWait ? 'Waiting on building owner' : oneOff ? 'Waiting on homeowner' : 'Waiting on customer'}</span>{' '}
+                    {poLabel(wo, pending.seq)} {money(pending.amount)} — {pending.description}
+                  </div>
+                  {ownerWait && <div className="small muted">The property manager approved it; {pending.owner?.name || 'the owner'} must OK it too.</div>}
+                  {oneOff && !ownerWait && (
+                    <div className="row">
+                      <button className="primary" disabled={busy} onClick={() => copyLink(pending, wo.contact_name || wo.customers?.name)}>Copy approval link for homeowner</button>
+                      <button disabled={busy} onClick={() => recordPhone(pending, wo.contact_name || wo.customers?.name)}>Homeowner answered by phone</button>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* ---- Store: check-in code ---- */}
@@ -310,7 +355,11 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                         <tr key={l.id}>
                           <td><strong>{poLabel(wo, l.seq)}</strong><div className="small muted">{PO_KIND[l.kind]}</div></td>
                           <td className="small">{l.description}
-                            {l.decider && <div className="muted">{l.status} by {l.decider.full_name}{l.decider.title ? `, ${l.decider.title}` : ''} · {dateTime(l.decided_at)}</div>}
+                            {l.decider && <div className="muted">{l.owner_status === 'approved' || l.owner_status === 'declined' ? 'manager approved' : l.status} by {l.decider.full_name}{l.decider.title ? `, ${l.decider.title}` : ''} · {dateTime(l.manager_approved_at || l.decided_at)}</div>}
+                            {(l.owner_status === 'approved' || l.owner_status === 'declined') && <div className="muted">owner ({l.owner?.name}) {l.owner_status}{l.owner_decided_via === 'phone' ? ' by phone' : ' by link'} · {dateTime(l.owner_decided_at)}{l.owner_note ? ` — “${l.owner_note}”` : ''}</div>}
+                            {l.owner_status === 'pending' && <div className="muted">manager approved · waiting on owner ({l.owner?.name}) since {dateTime(l.owner_requested_at)}</div>}
+                            {l.owner_status === 'emergency' && <div className="muted">emergency — approved without waiting; owner ({l.owner?.name}) to be told</div>}
+                            {l.customer_decided_via && <div className="muted">{l.status} by {wo.contact_name || wo.customers?.name} {l.customer_decided_via === 'link' ? 'by link' : 'by phone'} · {dateTime(l.decided_at)}</div>}
                             {l.decline_reason && <div className="muted">Reason: {l.decline_reason}</div>}
                           </td>
                           <td className="num">
@@ -384,7 +433,9 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
               <div className="panel panel-pad">
                 <dl className="kv">
                   <dt>Type</dt><dd>{KIND[wo.kind]}</dd>
-                  <dt>Site</dt><dd>{wo.sites?.name}<div className="small muted">{wo.sites?.address}</div></dd>
+                  <dt>Site</dt><dd>{wo.sites?.name}{wo.unit ? ` — unit ${wo.unit}` : ''}<div className="small muted">{wo.sites?.address}</div></dd>
+                  {(wo.contact_name || wo.contact_phone) && (<><dt>{oneOff ? 'Homeowner' : 'Meet'}</dt><dd>{wo.contact_name}{wo.contact_phone ? <div className="small"><a href={`tel:${wo.contact_phone}`}>{wo.contact_phone}</a></div> : null}</dd></>)}
+                  {wo.entry_notes && (<><dt>Entry</dt><dd>{wo.entry_notes}</dd></>)}
                   {wo.sites?.access_notes && (<><dt>Access</dt><dd>{wo.sites.access_notes}</dd></>)}
                   <dt>Priority</dt><dd>{PRIORITY[wo.priority]}{wo.after_hours ? ' · after hours' : ''}</dd>
                   {wo.repair_types && (<><dt>Repair</dt><dd>{wo.repair_types.name}</dd></>)}

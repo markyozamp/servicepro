@@ -35,6 +35,8 @@ end $$;
 grant usage on schema test to authenticated;
 grant all on all tables in schema test to authenticated;
 grant execute on all functions in schema test to authenticated;
+grant usage on schema test to anon;
+grant execute on all functions in schema test to anon;
 
 \set SAM   '''00000000-0000-0000-0000-0000000000c1'''
 \set MARIA '''00000000-0000-0000-0000-0000000000c2'''
@@ -304,10 +306,12 @@ select test.put('l5a', (request_po_line(test.v('wo5'), 'repair', 60, 'Replace th
 select test.ok((select routed_step = 2 from po_lines where id = test.v('l5a')),
   'store #121: the #114 store manager is skipped → maintenance manager');
 
-\echo '=== 14. Residential homeowner'
-select test.login(:KAREN);
+\echo '=== 14. One-off homeowner: no login — the office opens the call'
+select test.login(:PAT);
 select test.put('wo4', (create_work_order('30000000-0000-0000-0000-000000000003', (select id from issue_types where code='no_heat'))).id);
-select test.ok((select count(*) = 1 from work_orders), 'homeowner sees only her own call');
+select from set_call_contact(test.v('wo4'), null, 'Karen Jensen', '701-555-0166', 'Side door; dog is friendly');
+select test.ok((select contact_name = 'Karen Jensen' and contact_phone = '701-555-0166' from work_orders where id = test.v('wo4')),
+  'homeowner''s name and phone are on the call (she never makes an account)');
 select test.ok((select amount in (175, 263) from po_lines where work_order_id = test.v('wo4')), 'no-heat diagnosis authorized ($175, or $263 after hours)');
 
 \echo '=== 15. Who can see what'
@@ -359,6 +363,93 @@ select test.ok((select total = 8 and (detail->>'active_techs')::int = 2 from mon
 select from monthly_statements s, mark_statement_paid(s.id) where s.org_kind = 'customer';
 select test.ok((select amount = 1.20 from commissions), 'wholesaler earns 15% of collected store fees ($1.20)');
 
+
+\echo '=== 19. Property manager: owner approval above the owner''s limit'
+\set PMGR  '''00000000-0000-0000-0000-0000000000e1'''
+\set COORD '''00000000-0000-0000-0000-0000000000e2'''
+\set RIVERSIDE '''30000000-0000-0000-0000-000000000004'''
+\set DUPLEX '''30000000-0000-0000-0000-000000000006'''
+set role authenticated;
+select test.login(:COORD);
+select test.put('pw1', (create_work_order(:RIVERSIDE, (select id from issue_types where code='no_hot_water'), 'No hot water in unit 3B — boiler 2 down')).id);
+select from set_call_contact(test.v('pw1'), '3B', 'Dee Tenant', '701-555-0399', 'Tenant works days; super will let you in');
+select test.ok((select unit = '3B' and contact_name = 'Dee Tenant' from work_orders where id = test.v('pw1')), 'call carries the unit and who to meet');
+select test.login(:DANA);
+select test.put('pl1', (request_po_line(test.v('pw1'), 'repair', 900, 'Replace failed inducer motor on boiler 2')).id);
+select test.ok((select routed_step = 2 from po_lines where id = test.v('pl1')), 'over the coordinator''s $500 → property manager');
+select test.login(:PMGR);
+select test.ok((select (decide_po_line(test.v('pl1'), true)->>'owner_pending')::boolean), 'manager approves → total $1,050 is over the owner''s $750, so it waits on the owner');
+select test.ok((select status = 'pending' and owner_status = 'pending' and manager_approved_by is not null from po_lines where id = test.v('pl1')),
+  'line is still pending, marked "waiting on owner"');
+select test.blocked($$select decide_po_line(test.v('pl1'), true)$$, 'waiting on the owner', 'manager cannot approve it twice');
+select test.login(:DANA);
+select test.ok((select count(*) = 0 from approval_links), 'the contractor cannot see the owner''s link');
+select test.blocked($$select approval_link(test.v('pl1'))$$, 'property manager', 'the contractor cannot make an owner link');
+select test.login(:PMGR);
+select approval_link(test.v('pl1')) as tok \gset
+reset role; set role anon;
+select test.ok((select link_quote(:'tok')->>'audience' = 'owner' and (link_quote(:'tok')->>'amount')::numeric = 900), 'owner opens the link without signing in and sees the quote');
+select test.blocked($$select count(*) from work_orders$$, 'permission denied', 'the link opens nothing else');
+select test.ok((select (link_decide(:'tok', true)->>'ok')::boolean), 'owner taps Approve');
+reset role; set role authenticated;
+select test.login(:PMGR);
+select test.ok((select status = 'approved' and owner_status = 'approved' and owner_decided_via = 'link' from po_lines where id = test.v('pl1')),
+  'PO A approved: manager first, then owner by link');
+select '      ' || message from notifications where type = 'approval_granted' and work_order_id = test.v('pw1') limit 1;
+
+select test.login(:DANA);
+select test.put('pl2', (request_po_line(test.v('pw1'), 'additional', 200, 'Replace cracked flue section')).id);
+select test.login(:PMGR);
+select from decide_po_line(test.v('pl2'), true);
+reset role;
+update po_lines set owner_requested_at = now() - interval '25 hours' where id = test.v('pl2');
+select test.ok(escalate_stale_approvals() >= 1, 'owner silent past 24 hours → reminder');
+set role authenticated;
+select test.login(:PMGR);
+select test.ok((select count(*) >= 1 from notifications where message like '%still waiting on Lakeview%'), 'manager reminded to chase the owner');
+select test.blocked($$select record_phone_approval(test.v('pl2'), false, 'ok')$$, 'Note who you spoke to', 'a phone answer needs a note');
+select from record_phone_approval(test.v('pl2'), false, 'Tom says wait until spring — call 3:15 pm');
+select test.ok((select status = 'declined' and owner_decided_via = 'phone' and decline_reason like 'Owner declined%' from po_lines where id = test.v('pl2')),
+  'owner''s phone decline recorded by the manager, with the note');
+
+select test.login(:COORD);
+select test.put('pw2', (create_work_order(:RIVERSIDE, (select id from issue_types where code='water_leak'), 'Water pouring from ceiling in 2A', null, 1::smallint)).id);
+select test.login(:DANA);
+select test.put('pl3', (request_po_line(test.v('pw2'), 'repair', 1200, 'Replace burst supply line and isolation valve')).id);
+select test.login(:PMGR);
+select test.ok((select (decide_po_line(test.v('pl3'), true)->>'ok')::boolean), 'emergency: manager approves without waiting');
+select test.ok((select status = 'approved' and owner_status = 'emergency' from po_lines where id = test.v('pl3')), 'marked "owner to be told"');
+select test.ok((select count(*) >= 1 from notifications where message like '%without waiting for the owner%'), 'manager reminded to tell the owner');
+
+select test.login(:COORD);
+select test.put('pw3', (create_work_order(:DUPLEX, (select id from issue_types where code='drain_backup'))).id);
+select test.login(:DANA);
+select test.put('pl4', (request_po_line(test.v('pw3'), 'repair', 1400, 'Replace 40-gal water heater')).id);
+select test.login(:PMGR);
+select test.ok((select (decide_po_line(test.v('pl4'), true)->>'ok')::boolean and owner_status is null from po_lines where id = test.v('pl4')),
+  'property the company owns itself: no owner step');
+
+\echo '=== 20. One-off homeowner approves a quote from a link'
+select test.login(:PAT);
+select test.put('hs', (quick_customer('Ann Larson', '22 Oak St, Grand Forks, ND', '58203', '701-555-0177')).id);
+select test.put('hw', (create_work_order(test.v('hs'), (select id from issue_types where code='no_cooling'))).id);
+select from set_call_contact(test.v('hw'), null, 'Ann Larson', '701-555-0177', null);
+select test.login(:DANA);
+select test.put('hl', (request_po_line(test.v('hw'), 'repair', 380, 'Replace failed condenser fan motor')).id);
+select approval_link(test.v('hl')) as htok \gset
+select test.blocked($$select approval_link((select id from po_lines where status = 'pending' and work_order_id in (select id from work_orders where customer_id = '20000000-0000-0000-0000-000000000001') limit 1))$$,
+  null, 'no homeowner links for customers who have their own logins');
+reset role; set role anon;
+select test.ok((select link_quote(:'htok')->>'audience' = 'homeowner'), 'homeowner opens the quote without an account');
+select test.blocked($$select link_decide('00000000-0000-0000-0000-000000000000', true)$$, 'not valid', 'a made-up link does nothing');
+select test.ok((select (link_decide(:'htok', true)->>'status') = 'approved'), 'homeowner taps Approve');
+select test.ok((select (link_decide(:'htok', false, 'changed my mind')->>'already')::boolean), 'a second tap changes nothing');
+reset role; set role authenticated;
+select test.login(:DANA);
+select test.ok((select status = 'approved' and customer_decided_via = 'link' from po_lines where id = test.v('hl')), 'office sees: approved by the homeowner, by link');
+select test.ok((select used_from is not null or used_at is not null from approval_links where po_line_id = test.v('hl')), 'the tap is logged');
+
+reset role;
 \echo '=== 18. Audit'
 select test.ok((select count(*) > 50 from audit_log), 'every change is in the audit trail');
 \echo 'ALL TESTS PASSED'

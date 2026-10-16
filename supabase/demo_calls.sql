@@ -6,7 +6,6 @@ declare
   PAT   uuid := '00000000-0000-0000-0000-0000000000a2';
   MIKE  uuid := '00000000-0000-0000-0000-0000000000a3';
   LUIS  uuid := '00000000-0000-0000-0000-0000000000a4';
-  KAREN uuid := '00000000-0000-0000-0000-0000000000d1';
   S114  uuid := '30000000-0000-0000-0000-000000000001';
   S121  uuid := '30000000-0000-0000-0000-000000000002';
   SJ    uuid := '30000000-0000-0000-0000-000000000003';
@@ -98,9 +97,24 @@ begin
   perform tech_start(v.id, now(), 47.95, -97.10);
   perform tech_update_eta(v.id, now() + interval '18 minutes');
 
-  ---------------------------------------------------------------- E. New residential call, not yet assigned
-  perform set_config('request.jwt.claim.sub', KAREN::text, true);
+  ---------------------------------------------------------------- E. One-off homeowner: the office opens it; quote waits on her link
+  perform set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', true);
   w := create_work_order(SJ, (select id from issue_types where code = 'no_heat'), 'Furnace runs but blows cold air');
+  perform set_call_contact(w.id, null, 'Karen Jensen', '701-555-0166', 'Side door; dog is friendly');
+  l := request_po_line(w.id, 'repair', 340, 'Flame sensor and igniter worn — replace both, clean burners');
+
+  ---------------------------------------------------------------- F. Property manager: waiting on the building owner
+  perform set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000e2', true);
+  w := create_work_order('30000000-0000-0000-0000-000000000004', (select id from issue_types where code = 'no_hot_water'), 'No hot water in unit 3B and 3C — boiler 2 not firing');
+  perform set_call_contact(w.id, '3B', 'Dee Tenant', '701-555-0399', 'Tenant home after 3 pm; super (Gus) has keys');
+  perform set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000a1', true);
+  l := request_po_line(w.id, 'repair', 900, 'Boiler 2 inducer motor failed — replace motor and pressure switch',
+    '{"parts":[{"name":"Inducer motor","qty":1,"price":520},{"name":"Pressure switch","qty":1,"price":85}],"labor_hours":2.5}');
+  perform set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000e1', true);
+  r := decide_po_line(l.id, true);
+  perform set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-0000000000e2', true);
+  w := create_work_order('30000000-0000-0000-0000-000000000005', (select id from issue_types where code = 'no_cooling'), 'Suite 210 too warm — 82°F');
+  perform set_call_contact(w.id, '210', 'Building engineer (Sara)', '701-555-0330', 'Check in at the 1st-floor security desk');
 
   ---------------------------------------------------------------- PM: open due / overdue PM work orders
   perform set_config('request.jwt.claim.sub', '', true);

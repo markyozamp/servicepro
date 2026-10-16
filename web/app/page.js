@@ -12,7 +12,8 @@ const DEMO = [
   { email: 'director@northside.demo', who: 'Director of operations', org: 'Northside Grocers · no limit' },
   { email: 'dispatch@arcticair.demo', who: 'Dispatcher', org: 'Arctic Air Mechanical' },
   { email: 'office@arcticair.demo', who: 'Owner / billing', org: 'Arctic Air Mechanical' },
-  { email: 'homeowner@jensen.demo', who: 'Homeowner', org: 'Residential customer' },
+  { email: 'pm@redriverpm.demo', who: 'Property manager', org: 'Red River Property Mgmt · up to $2,500 · owners approve above their limit' },
+  { email: 'maint@redriverpm.demo', who: 'Maintenance coordinator', org: 'Red River Property Mgmt · up to $500' },
 ];
 const DEMO_PASSWORD = 'DemoService2026!';
 
