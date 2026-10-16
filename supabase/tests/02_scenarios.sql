@@ -108,7 +108,7 @@ select from tech_update_eta(test.v('v1'), now() + interval '4 minutes');
 select test.login(:SAM);
 select test.ok((select count(*) = 1 from notifications where type = 'eta_close'), 'store got "about 5 minutes away"');
 select '      ' || message from notifications where type = 'eta_close';
-select test.ok((select count(*) = 0 from gps_logs where event = 'ping'), 'store never sees location pings');
+select test.ok((select count(*) = 0 from gps_logs where event in ('ping','en_route')), 'store never sees location pings or where the tech started from');
 
 \echo '=== 5. Arrive, response time, check-in with a wrong code then the right one'
 select test.login(:MIKE);

@@ -184,16 +184,19 @@ Proof of temperature for bad-product claims, and early warning before product is
 - **Overtime calculated**, and approved hours export to QuickBooks for payroll, with hours tied to jobs for job costing.
 
 ### Order of work (proposed)
-1c Technician app → **PM plans + auto-scheduling** → notifications → AI nameplate reading → QuickBooks → pilot.
+Database v2 + portals v2 (done 2026-10-16) → 1c Technician app → notifications → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
 
 ### Open questions
-- Residential platform fee: does the homeowner pay $5, or the contractor only?
-- PM pricing default: flat rate per visit under a contract, or time & materials?
+- Agreement coverage types beyond PM only / PM + labor / full coverage?
+- Does the 7-day billing clock start at final completion (current) or after each visit?
+- (Settled: residential — the contractor pays, the homeowner pays nothing. PM pricing — flat per-visit price on the plan, or covered by an agreement.)
 
 ## Phases
 
 - [x] **1a. Database foundation** — schema, rules, security, 42-check test. **Live on Supabase** (project `Servicepro`, us-east-1) since 2026-10-15; smoke-tested end to end on the live database
+- [x] **1a-v2. Database v2** — 45 tables: jobs with multiple visits, lettered POs (PO1100, A, B, C…), issue price list with region / after-hours / agreement layers, customer teams with dollar-limit approval chains, check-in codes with offline backups, parts waiting, warranties, maintenance agreements, PM auto-scheduling, timecards, billing clock, platform fees and wholesaler commission. 86-check test passing. **Live 2026-10-16** with demo calls in every state
+- [x] **1b-v2. Portals v2** — store portal (issue dropdown showing the authorized amount, approvals with limits and escalation, PM panel that stays until done, late bills, check-in code) and office portal (board, PM, billing, review, history). Live 2026-10-16
 - [x] **1b. Web portals v1** — live at https://servicepro-two.vercel.app (Vercel project `servicepro`, auto-deploys from GitHub `main`). Sign-in, store portal (new call, approvals, call detail), office dispatch board, review queue, mark invoiced. Demo logins share password `DemoService2026!` — remove the demo list on the sign-in page before real customers
 - [ ] **1c. Technician app** — job list, Start/Arrive/Complete, photo capture, checklist, offline queue
 - [ ] **2. AI** — nameplate photo → manufacturer/model/serial suggestion

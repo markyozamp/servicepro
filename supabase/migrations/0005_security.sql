@@ -173,10 +173,10 @@ create policy read_flags on guardrail_flags for select using (is_platform_admin(
   select 1 from work_orders w where w.id = work_order_id and (is_contractor_office(w.contractor_id)
      or (visible_to_customer and is_customer_member(w.customer_id) and can_see_site(w.site_id)))));
 
--- Location: office sees its techs; a tech sees their own; the store sees arrival/departure events only — never pings
+-- Location: office sees its techs; a tech sees their own; the store sees on-site events only (arrive, leave, complete) — never pings or where the tech started
 create policy read_gps on gps_logs for select using (technician_id = auth.uid() or is_platform_admin()
   or exists (select 1 from profiles t where t.id = technician_id and is_contractor_office(t.contractor_id))
-  or (event <> 'ping' and work_order_id is not null and exists (
+  or (event in ('arrived','geofence_enter','geofence_exit','completed') and work_order_id is not null and exists (
         select 1 from work_orders w where w.id = work_order_id and is_customer_member(w.customer_id) and can_see_site(w.site_id))));
 
 create policy own_notes on notifications for select using (user_id = auth.uid());
