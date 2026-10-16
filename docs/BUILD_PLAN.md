@@ -183,6 +183,12 @@ Proof of temperature for bad-product claims, and early warning before product is
 - **Office approves the week**; corrections are logged with a reason, like time overrides.
 - **Overtime calculated**, and approved hours export to QuickBooks for payroll, with hours tied to jobs for job costing.
 
+### 16. Property managers, building owners, one-off homeowners (Mark, 2026-10-16) — built
+- **Property management companies are a customer type**, like a grocery chain: properties (residential or commercial), team, dollar-limit chain, PM until done, check-in codes. Calls carry unit/suite and who to meet (tenant, super) with phone and entry notes.
+- **Building-owner approval.** Each property can have an owner (not a login) with a dollar limit from the management agreement. When the call's approved total would go over it, the manager's approval is not final: the PO letter waits on the owner. The owner answers from a **no-login link** (one tap, logged with time and device), or the manager records "owner OK'd by phone" with a note. Reminders after the owner's response time (default 24 h). **Emergencies** (priority 1): the manager approves and is reminded to tell the owner. A property the company owns itself has no owner step.
+- **One-off homeowners never log in.** The office adds them in one step (name, address, phone) and opens the call. Quotes above the diagnosis are approved from the same no-login link, or the office records a phone approval. The contractor pays the per-call fee; the homeowner pays nothing. Property managers pay store fees.
+- Until texting is built, the manager / office copies the link and sends it themselves.
+
 ### Order of work (proposed)
 Database v2 + portals v2 (done 2026-10-16) → 1c Technician app → notifications → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
@@ -196,6 +202,7 @@ The generalization changes (trades, equipment type table, work order kinds, cust
 
 - [x] **1a. Database foundation** — schema, rules, security, 42-check test. **Live on Supabase** (project `Servicepro`, us-east-1) since 2026-10-15; smoke-tested end to end on the live database
 - [x] **1a-v2. Database v2** — 45 tables: jobs with multiple visits, lettered POs (PO1100, A, B, C…), issue price list with region / after-hours / agreement layers, customer teams with dollar-limit approval chains, check-in codes with offline backups, parts waiting, warranties, maintenance agreements, PM auto-scheduling, timecards, billing clock, platform fees and wholesaler commission. 86-check test passing. **Live 2026-10-16** with demo calls in every state
+- [x] **1d. Property managers + owner approval + no-login homeowner links** — live 2026-10-16; 113-check test passing
 - [x] **1b-v2. Portals v2** — store portal (issue dropdown showing the authorized amount, approvals with limits and escalation, PM panel that stays until done, late bills, check-in code) and office portal (board, PM, billing, review, history). Live 2026-10-16
 - [x] **1b. Web portals v1** — live at https://servicepro-two.vercel.app (Vercel project `servicepro`, auto-deploys from GitHub `main`). Sign-in, store portal (new call, approvals, call detail), office dispatch board, review queue, mark invoiced. Demo logins share password `DemoService2026!` — remove the demo list on the sign-in page before real customers
 - [ ] **1c. Technician app** — job list, Start/Arrive/Complete, photo capture, checklist, offline queue

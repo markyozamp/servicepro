@@ -11,7 +11,7 @@ and the wholesalers who refer stores.
 | `supabase/migrations/` | Database v2: 45 tables, every business rule, security, schedules, catalog | **Live, tested** |
 | `supabase/seed.sql` | Demo contractor, stores, homeowner, team, chain, agreement, PM plans | Live |
 | `supabase/demo_calls.sql` | Demo calls in every state, created through the real rules | Live |
-| `supabase/tests/` | End-to-end scenarios (86 checks) | Passing |
+| `supabase/tests/` | End-to-end scenarios (113 checks) | Passing |
 | `web/` | Store portal (`/store`) + contractor office portal (`/office`), Next.js on Vercel | v2 live |
 | `mobile/` | Technician app (Expo, offline-first) | Next |
 | `docs/BUILD_PLAN.md` | Full spec, decisions, fee schedule | Ongoing |
