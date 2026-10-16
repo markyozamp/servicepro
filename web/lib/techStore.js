@@ -277,6 +277,9 @@ export async function sync({ refresh = true } = {}) {
       if (!hello.error && hello.data) set({ clock: hello.data });
       const { data, error } = await supabase.rpc('tech_jobs');
       if (!error && data) {
+        // Store guest Wi-Fi (only the stores where this tech has an open job), kept for no-signal use
+        const wifi = await supabase.from('site_wifi').select('site_id, ssid, password').not('ssid', 'is', null);
+        data.wifi = Object.fromEntries((wifi.data || []).map((x) => [x.site_id, { ssid: x.ssid, password: x.password }]));
         write(K_SNAP, data);
         const now = new Date().toISOString();
         write(K_SYNCED, now);

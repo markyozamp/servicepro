@@ -7,6 +7,7 @@ import { money, ago, dateTime, date, poLabel, PO_KIND } from '@/lib/format';
 import TopBar from '@/components/TopBar';
 import CallDetail from '@/components/CallDetail';
 import NewCallForm from '@/components/NewCallForm';
+import LocationSettings from '@/components/LocationSettings';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox, Notice } from '@/components/bits';
 
 const LIST = `id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, total_cost, store_po_number,
@@ -28,6 +29,7 @@ export default function StorePortal() {
   const [busy, setBusy] = useState(false);
   const [door, setDoor] = useState([]);       // technicians on site waiting for the check-in code
   const [sound, setSound] = useState(false);
+  const [settings, setSettings] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -111,7 +113,10 @@ export default function StorePortal() {
             <h1>{org?.name || 'Your locations'}</h1>
             <div className="muted small">{profile.title || ''}{profile.approval_limit != null ? ` · approves up to ${money(profile.approval_limit)}` : profile.can_approve ? ' · approves any amount' : ''}</div>
           </div>
-          {!creating && (profile.can_open_calls || profile.is_org_admin) && <button className="primary big" onClick={() => setCreating(true)}>+ New service call</button>}
+          <div className="row">
+            {profile.is_org_admin && !settings && <button onClick={() => setSettings(true)}>Location settings</button>}
+            {!creating && (profile.can_open_calls || profile.is_org_admin) && <button className="primary big" onClick={() => setCreating(true)}>+ New service call</button>}
+          </div>
         </div>
 
         <ErrorBox error={err} />
@@ -131,6 +136,8 @@ export default function StorePortal() {
           );
         })}
         {door.length > 0 && !sound && <button className="danger" onClick={enableAlerts}>🔔 Turn on sound and pop-up alerts for this screen</button>}
+
+        {settings && <LocationSettings onClose={() => setSettings(false)} />}
 
         {creating && (
           <NewCallForm side="store" profile={profile} onCancel={() => setCreating(false)} onCreated={async (wo) => {

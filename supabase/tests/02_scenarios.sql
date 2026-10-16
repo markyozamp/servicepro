@@ -550,6 +550,22 @@ select test.ok((select start_at >= now() - interval '1 minute' from clock('in', 
   'a time from before the phone''s last contact is moved up to that contact (a clock set back can''t move times earlier)');
 select test.ok((select start_at = now() from clock('break_start', now())), 'normal times are kept as they happened');
 select from clock('out');
+\echo '=== 24. Location settings: guest Wi-Fi only for the store and the tech on the job'
+set role authenticated;
+select test.login(:SAM);
+select test.blocked($$select set_site_settings('30000000-0000-0000-0000-000000000001', 1500, 'Northside-Guest', 'cooler2024')$$, 'Only your company', 'a store manager who is not an admin cannot change settings');
+select test.login(:DOUG);
+select from set_site_settings('30000000-0000-0000-0000-000000000001', 1500, 'Northside-Guest', 'cooler2024');
+select test.ok((select ssid = 'Northside-Guest' from site_wifi where site_id = :S114), 'director (admin) sets the guest Wi-Fi and emergency limit');
+select test.login(:SAM);
+select test.ok((select count(*) = 1 from site_wifi where site_id = :S114), 'store staff can see it');
+select test.login(:MIKE);
+select test.ok((select count(*) = 1 from site_wifi where site_id = :S114), 'the tech with an open job there can see it');
+select test.login(:RIVAL);
+select test.ok((select count(*) = 0 from site_wifi), 'another contractor cannot');
+select test.login(:DANA);
+select test.ok((select count(*) = 0 from site_wifi), 'not even the contractor office — only the tech on the job');
+
 reset role;
 \echo '=== 18. Audit'
 select test.ok((select count(*) > 50 from audit_log), 'every change is in the audit trail');

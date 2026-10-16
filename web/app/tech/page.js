@@ -88,7 +88,7 @@ export default function TechApp() {
       {!v ? (
         <main className="tech"><div className="sec muted">{st.online ? 'Loading your jobs…' : 'No signal, and no jobs saved on this phone yet. Connect once to download your jobs.'}</div></main>
       ) : job ? (
-        <Job job={job} cat={v.catalog} onBack={() => setOpen(null)} />
+        <Job job={job} cat={v.catalog} wifi={v.wifi?.[job.site.id]} onBack={() => setOpen(null)} />
       ) : (
         <JobList v={v} onOpen={setOpen} />
       )}

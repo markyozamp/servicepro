@@ -8,7 +8,7 @@ import { money, time, date, PRIORITY } from '@/lib/format';
 
 const ETAS = [10, 20, 30, 45, 60, 90];
 
-export default function Job({ job, cat }) {
+export default function Job({ job, cat, wifi }) {
   const v = job.visit; const w = job.wo;
   const [, tick] = useState(0);
   useEffect(() => { const t = setInterval(() => tick((n) => n + 1), 20000); return () => clearInterval(t); }, []);
@@ -16,7 +16,7 @@ export default function Job({ job, cat }) {
 
   return (
     <main className="tech">
-      <Header job={job} />
+      <Header job={job} wifi={wifi} />
       {v.status === 'assigned' && <StartDriving job={job} />}
       {v.status === 'en_route' && <Driving job={job} />}
       {v.status === 'on_site' && <OnSite job={job} cat={cat} m={m} />}
@@ -26,7 +26,8 @@ export default function Job({ job, cat }) {
   );
 }
 
-function Header({ job }) {
+function Header({ job, wifi }) {
+  const [copied, setCopied] = useState(false);
   const w = job.wo; const s = job.site;
   const maps = s.lat ? `https://maps.google.com/?q=${s.lat},${s.lon}` : `https://maps.google.com/?q=${encodeURIComponent(s.address)}`;
   return (
@@ -43,6 +44,12 @@ function Header({ job }) {
       {(s.access_notes || w.entry_notes) && <div className="notice small">{[w.entry_notes, s.access_notes].filter(Boolean).join(' · ')}</div>}
       {job.warranties.length > 0 && (
         <div className="notice small"><strong>Warranty on this site:</strong> {job.warranties.map((x) => `${x.kind} until ${date(x.ends_on)} (${x.description})`).join('; ')}</div>
+      )}
+      {wifi?.ssid && (
+        <div className="small spread" style={{ background: 'var(--blue-bg)', color: 'var(--blue-fg)', borderRadius: 8, padding: '6px 10px' }}>
+          <span>📶 Store Wi-Fi: <strong>{wifi.ssid}</strong>{wifi.password ? <> · password <strong>{wifi.password}</strong></> : ' (no password)'}</span>
+          {wifi.password && <button onClick={() => { navigator.clipboard?.writeText(wifi.password).then(() => setCopied(true)).catch(() => {}); }}>{copied ? 'Copied' : 'Copy'}</button>}
+        </div>
       )}
       <div className="small muted">{w.po_number}{w.agreement ? ` · ${w.agreement}` : ''}{w.after_hours ? ' · after hours' : ''}{job.visit.visit_no > 1 ? ` · visit ${job.visit.visit_no}` : ''}</div>
     </div>
