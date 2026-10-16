@@ -127,6 +127,20 @@ For stores that already have an agreement with their contractor — and those th
 - **Easy setup in the platform:** standard agreement templates the contractor offers in-app; the store accepts through its approval chain. Renewal reminders before expiry.
 - Basic agreements (coverage, response times, PM, billing) are in **Base**; the CRM side (agreement sales pipeline, renewal campaigns) is Enterprise.
 
+### 10. Repair warranties (Mark, 2026-10-16)
+- **Dropdown at closeout** (usually by the office/billing person): warranty term picked from a list — 90 days, 6 months, 1 year, 5 years, other. **Labor and parts are separate** (e.g. 90-day labor, 1-year parts, 5-year compressor). Each repair type pre-fills its usual terms so most closeouts are one click; the contractor edits its own list.
+- **Warranty attaches to the equipment and the parts installed**, with start and end dates.
+- **Automatic warning on any new call for that equipment while under warranty** — shown to the store when opening the call, on the dispatch board, and in the tech app: "Compressor replaced 3/12/2026 — parts under warranty until 3/12/2031; labor warranty expired."
+- The contractor marks the call warranty / not warranty; **declining requires a reason the store can see.**
+- Store dashboard: warranty list per store and unit, with end dates.
+
+### 11. Billing deadline: invoice within 7 days (Mark, 2026-10-16)
+Stores get surprised by bills sent months after the work and may have budgeted for something else.
+- **The store sees the expected amount the moment work is completed** ("Completed — bill pending, about $582"), so it can budget even before the invoice arrives.
+- **Invoice must go out within 7 days of completion** (default; adjustable per agreement). Day 5: reminder to the contractor. Day 7: overdue alert to **both** store and contractor, shown on both dashboards until the invoice is sent — it cannot be dismissed.
+- The clock keeps running while review flags are open, so the contractor resolves them in time.
+- Stores see each contractor's on-time billing record.
+
 ### Order of work (proposed)
 1c Technician app → **PM plans + auto-scheduling** → notifications → AI nameplate reading → QuickBooks → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
