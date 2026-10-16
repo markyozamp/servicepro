@@ -3,13 +3,16 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { homeFor } from '@/lib/useProfile';
+import { portalFor } from '@/lib/useProfile';
 
 // Demo logins — remove this list before real customers use the site.
 const DEMO = [
-  { email: 'store@northside.demo', who: 'Store manager', org: 'Northside Grocers' },
+  { email: 'store@northside.demo', who: 'Store manager (Store #114)', org: 'Northside Grocers · approves up to $500' },
+  { email: 'maint@northside.demo', who: 'Maintenance manager', org: 'Northside Grocers · all stores · up to $2,500' },
+  { email: 'director@northside.demo', who: 'Director of operations', org: 'Northside Grocers · no limit' },
   { email: 'dispatch@arcticair.demo', who: 'Dispatcher', org: 'Arctic Air Mechanical' },
-  { email: 'office@arcticair.demo', who: 'Owner / office admin', org: 'Arctic Air Mechanical' },
+  { email: 'office@arcticair.demo', who: 'Owner / billing', org: 'Arctic Air Mechanical' },
+  { email: 'homeowner@jensen.demo', who: 'Homeowner', org: 'Residential customer' },
 ];
 const DEMO_PASSWORD = 'DemoService2026!';
 
@@ -27,7 +30,7 @@ export default function SignIn() {
     supabase.auth.getSession().then(async ({ data }) => {
       if (data.session) {
         const { data: p } = await supabase.rpc('me');
-        if (p && p.id) router.replace(homeFor(p.role));
+        if (p && p.id) router.replace(portalFor(p));
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -51,7 +54,7 @@ export default function SignIn() {
       setBusy(false);
       return;
     }
-    router.replace(homeFor(p.role));
+    router.replace(portalFor(p));
   }
 
   return (

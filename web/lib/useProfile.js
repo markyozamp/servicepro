@@ -4,19 +4,21 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from './supabase';
 
-export const homeFor = (role) =>
-  ({
-    contractor_admin: '/office',
-    dispatcher: '/office',
-    technician: '/tech',
-    customer_admin: '/store',
-    customer_user: '/store',
-    platform_admin: '/office',
-  })[role] || '/';
+// Which portal a person belongs in
+export const portalFor = (p) => {
+  if (!p) return '/';
+  if (p.customer_id) return '/store';
+  if (p.contractor_id) {
+    const office = p.is_org_admin || p.can_dispatch || p.can_bill;
+    return office ? '/office' : '/tech';
+  }
+  if (p.is_platform_admin) return '/office';
+  return '/';
+};
 
-// Loads the signed-in person's profile. Sends them to sign-in if not signed in,
+// Loads the signed-in person. Sends them to sign-in if not signed in,
 // or to their own portal if they opened the wrong one.
-export function useProfile(allowedRoles) {
+export function useProfile(portal) {
   const router = useRouter();
   const [profile, setProfile] = useState(null);
   const [org, setOrg] = useState(null);
@@ -32,12 +34,12 @@ export function useProfile(allowedRoles) {
         await supabase.auth.signOut();
         return router.replace('/?e=noprofile');
       }
-      if (allowedRoles && !allowedRoles.includes(p.role)) return router.replace(homeFor(p.role));
+      if (portal && portalFor(p) !== portal) return router.replace(portalFor(p));
       setProfile(p);
       const table = p.contractor_id ? 'contractors' : 'customers';
       const id = p.contractor_id || p.customer_id;
       if (id) {
-        const { data: o } = await supabase.from(table).select('id, name').eq('id', id).single();
+        const { data: o } = await supabase.from(table).select('*').eq('id', id).single();
         if (alive) setOrg(o);
       }
     })();

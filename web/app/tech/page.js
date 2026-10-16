@@ -4,7 +4,7 @@ import { useProfile } from '@/lib/useProfile';
 import TopBar from '@/components/TopBar';
 
 export default function TechPlaceholder() {
-  const { profile, org } = useProfile(['technician']);
+  const { profile, org } = useProfile('/tech');
   if (!profile) return <div className="page muted">Loading…</div>;
   return (
     <>

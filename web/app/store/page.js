@@ -3,33 +3,40 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { useProfile } from '@/lib/useProfile';
-import { money, ago, dateTime } from '@/lib/format';
+import { money, ago, dateTime, date, poLabel, PO_KIND } from '@/lib/format';
 import TopBar from '@/components/TopBar';
 import CallDetail from '@/components/CallDetail';
 import NewCallForm from '@/components/NewCallForm';
-import { StatusChip, PriorityChip, EtaText, ErrorBox } from '@/components/bits';
+import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox, Notice } from '@/components/bits';
 
-const LIST = `id, number, status, priority, issue_description, eta_at, arrived_at, completed_at, created_at,
-  total_cost, po_cap, sites(name), technician:profiles!work_orders_technician_id_fkey(full_name)`;
+const LIST = `id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, total_cost, store_po_number,
+  sites(name), visits(id, visit_no, status, eta_at, arrived_at, received_at, checkin_required, checkin_at, profiles(full_name)),
+  parts_orders(status, expected_on)`;
+
+const latest = (w) => (w.visits || []).filter((v) => v.status !== 'cancelled').sort((a, b) => b.visit_no - a.visit_no)[0];
 
 export default function StorePortal() {
-  const { profile, org } = useProfile(['customer_admin', 'customer_user']);
+  const { profile, org } = useProfile('/store');
   const [calls, setCalls] = useState([]);
-  const [approvals, setApprovals] = useState([]);
+  const [pending, setPending] = useState([]);
+  const [pms, setPms] = useState([]);
   const [tab, setTab] = useState('open');
   const [open, setOpen] = useState(null);
   const [creating, setCreating] = useState(false);
   const [err, setErr] = useState('');
+  const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [c, a] = await Promise.all([
-        q(supabase.from('work_orders').select(LIST).order('created_at', { ascending: false }).limit(200)),
-        q(supabase.from('approvals').select('id, requested_amount, reason, created_at, work_orders(id, number, po_cap, total_cost, sites(name))').eq('status', 'pending')),
+      const [c, p, pm, st] = await Promise.all([
+        q(supabase.from('work_orders').select(LIST).order('created_at', { ascending: false }).limit(300)),
+        q(supabase.from('po_lines').select('id, seq, kind, amount, description, requested_at, work_orders(id, number, store_po_number, sites(name))').eq('status', 'pending')),
+        q(supabase.from('pm_status').select('*').order('due_on')),
+        q(supabase.from('sites').select('id, name')),
       ]);
-      setCalls(c);
-      setApprovals(a);
+      const siteName = Object.fromEntries(st.map((x) => [x.id, x.name]));
+      setCalls(c); setPending(p); setPms(pm.map((x) => ({ ...x, site_name: siteName[x.site_id] })));
     } catch (e) {
       setErr(e.message);
     }
@@ -43,10 +50,12 @@ export default function StorePortal() {
   }, [profile, load]);
 
   async function decide(id, yes) {
-    setBusy(true);
-    setErr('');
+    let reason = null;
+    if (!yes) { reason = window.prompt('Reason for declining (the contractor will see this):'); if (reason === null) return; }
+    setBusy(true); setErr(''); setMsg('');
     try {
-      await act('decide_approval', { p_approval: id, p_approve: yes });
+      const r = await act('decide_po_line', { p_line: id, p_approve: yes, p_reason: reason });
+      if (r?.escalated) setMsg(r.message);
       await load();
     } catch (e) {
       setErr(e.message);
@@ -58,8 +67,13 @@ export default function StorePortal() {
   if (!profile) return <div className="page muted">Loading…</div>;
 
   const isOpen = (s) => !['completed', 'invoiced', 'cancelled'].includes(s);
-  const shown = calls.filter((c) => (tab === 'open' ? isOpen(c.status) : !isOpen(c.status)));
-  const openCount = calls.filter((c) => isOpen(c.status)).length;
+  const late = calls.filter((c) => c.status === 'completed' && c.invoice_due_at && new Date(c.invoice_due_at) < new Date());
+  const shown = calls.filter((c) => c.kind !== 'pm' || !isOpen(c.status)).filter((c) =>
+    tab === 'open' ? isOpen(c.status) : tab === 'billing' ? c.status === 'completed' : ['invoiced', 'cancelled'].includes(c.status));
+  const counts = {
+    open: calls.filter((c) => c.kind !== 'pm' && isOpen(c.status)).length,
+    billing: calls.filter((c) => c.status === 'completed').length,
+  };
 
   return (
     <>
@@ -67,91 +81,122 @@ export default function StorePortal() {
       <main className="page stack" style={{ gap: 16 }}>
         <div className="spread">
           <div>
-            <h1>{org?.name || 'Your stores'}</h1>
-            <div className="muted small">Service calls, approvals and equipment history</div>
+            <h1>{org?.name || 'Your locations'}</h1>
+            <div className="muted small">{profile.title || ''}{profile.approval_limit != null ? ` · approves up to ${money(profile.approval_limit)}` : profile.can_approve ? ' · approves any amount' : ''}</div>
           </div>
-          {!creating && <button className="primary big" onClick={() => setCreating(true)}>+ New service call</button>}
+          {!creating && (profile.can_open_calls || profile.is_org_admin) && <button className="primary big" onClick={() => setCreating(true)}>+ New service call</button>}
         </div>
 
         <ErrorBox error={err} />
+        <Notice>{msg}</Notice>
 
         {creating && (
-          <NewCallForm side="store" onCancel={() => setCreating(false)} onCreated={async (wo) => {
-            setCreating(false);
-            await load();
-            setOpen(wo.id);
+          <NewCallForm side="store" profile={profile} onCancel={() => setCreating(false)} onCreated={async (wo) => {
+            setCreating(false); await load(); setOpen(wo.id);
           }} />
         )}
 
-        {approvals.map((a) => (
+        {/* Approvals */}
+        {pending.map((a) => (
           <div key={a.id} className="panel panel-pad spread" style={{ borderColor: '#e6b3ab', background: '#fffaf9' }}>
             <div className="stack" style={{ gap: 4 }}>
               <div className="row" style={{ gap: 8 }}>
                 <span className="chip tone-red">Approval needed</span>
-                <strong>Call #{a.work_orders?.number} · {a.work_orders?.sites?.name}</strong>
+                <strong>{a.work_orders ? poLabel(a.work_orders, a.seq) : ''} · Call #{a.work_orders?.number} · {a.work_orders?.sites?.name}</strong>
               </div>
-              <div>{a.reason}</div>
-              <div className="small muted">
-                Extra {money(a.requested_amount)} on a {money(a.work_orders?.po_cap)} cap · requested {ago(a.created_at)}
-              </div>
+              <div><span className="chip tone-slate">{PO_KIND[a.kind]}</span> {a.description}</div>
+              <div className="small muted">{money(a.amount)} · requested {ago(a.requested_at)}</div>
             </div>
             <div className="row">
-              <button className="link" onClick={() => setOpen(a.work_orders?.id)}>Details</button>
-              <button className="danger" disabled={busy} onClick={() => decide(a.id, false)}>Decline</button>
-              <button className="primary" disabled={busy} onClick={() => decide(a.id, true)}>Approve {money(a.requested_amount)}</button>
+              <button onClick={() => setOpen(a.work_orders?.id)}>Details</button>
+              {profile.can_approve && <>
+                <button className="danger" disabled={busy} onClick={() => decide(a.id, false)}>Decline</button>
+                <button className="primary" disabled={busy} onClick={() => decide(a.id, true)}>Approve {money(a.amount)}</button>
+              </>}
             </div>
           </div>
         ))}
 
+        {/* Late bills */}
+        {late.length > 0 && (
+          <div className="panel panel-pad" style={{ borderColor: '#e6b3ab' }}>
+            <h3 style={{ color: 'var(--red-fg)' }}>Late bills</h3>
+            {late.map((c) => (
+              <div key={c.id} className="spread small click" style={{ padding: '6px 0', cursor: 'pointer' }} onClick={() => setOpen(c.id)}>
+                <span>Call #{c.number} · {c.sites?.name} — completed {date(c.completed_at)}, invoice was due {date(c.invoice_due_at)}</span>
+                <strong>about {money(c.total_cost)}</strong>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Preventive maintenance: stays here until done */}
+        {pms.length > 0 && (
+          <div className="panel">
+            <div className="spread" style={{ padding: '12px 16px 0' }}>
+              <h3>Preventive maintenance</h3>
+              <span className="small muted">Shown until completed</span>
+            </div>
+            <table>
+              <tbody>
+                {pms.map((p) => (
+                  <tr key={p.work_order_id} className="click" onClick={() => setOpen(p.work_order_id)}>
+                    <td><strong>#{p.number}</strong><div className="small muted">{p.site_name}</div></td>
+                    <td>{p.issue_description}</td>
+                    <td className="num">
+                      {p.pm_state === 'overdue' ? <span className="chip tone-red">OVERDUE {p.days_overdue} days</span>
+                        : p.pm_state === 'due' ? <span className="chip tone-amber">Due {date(p.due_on)}</span>
+                        : <span className="chip tone-slate">Due {date(p.due_on)}</span>}
+                      <div className="small muted">{p.status.replace('_', ' ')}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Calls */}
         <div className="panel">
           <div className="tabs" style={{ padding: '0 8px', marginBottom: 0 }}>
-            <button className={tab === 'open' ? 'on' : ''} onClick={() => setTab('open')}>Open ({openCount})</button>
-            <button className={tab === 'done' ? 'on' : ''} onClick={() => setTab('done')}>Completed</button>
+            <button className={tab === 'open' ? 'on' : ''} onClick={() => setTab('open')}>Open calls ({counts.open})</button>
+            <button className={tab === 'billing' ? 'on' : ''} onClick={() => setTab('billing')}>Completed — bill pending ({counts.billing})</button>
+            <button className={tab === 'closed' ? 'on' : ''} onClick={() => setTab('closed')}>Invoiced</button>
           </div>
           <table>
             <thead>
-              <tr>
-                <th>Call</th>
-                <th>Problem</th>
-                <th className="hide-sm">Technician</th>
-                <th>Status</th>
-                <th className="num">Cost</th>
-              </tr>
+              <tr><th>Call</th><th>Problem</th><th className="hide-sm">Technician</th><th>Status</th><th className="num">Cost</th></tr>
             </thead>
             <tbody>
-              {shown.length === 0 && (
-                <tr><td colSpan={5} className="muted">{tab === 'open' ? 'No open calls.' : 'No completed calls yet.'}</td></tr>
-              )}
-              {shown.map((c) => (
-                <tr key={c.id} className="click" onClick={() => setOpen(c.id)}>
-                  <td>
-                    <strong>#{c.number}</strong>
-                    <div className="small muted">{c.sites?.name}</div>
-                    <div className="small muted">{dateTime(c.created_at)}</div>
-                  </td>
-                  <td>
-                    <div className="row" style={{ gap: 6 }}><PriorityChip priority={c.priority} /></div>
-                    {c.issue_description}
-                  </td>
-                  <td className="hide-sm">{c.technician?.full_name || <span className="muted">—</span>}</td>
-                  <td>
-                    <div className="stack" style={{ gap: 4 }}>
-                      <StatusChip status={c.status} />
-                      <EtaText wo={c} />
-                    </div>
-                  </td>
-                  <td className="num">
-                    {Number(c.total_cost) > 0 ? money(c.total_cost) : <span className="muted">—</span>}
-                    {c.po_cap != null && <div className="small muted">cap {money(c.po_cap)}</div>}
-                  </td>
-                </tr>
-              ))}
+              {shown.length === 0 && <tr><td colSpan={5} className="muted">Nothing here.</td></tr>}
+              {shown.map((c) => {
+                const v = latest(c);
+                const parts = (c.parts_orders || []).filter((o) => ['needed', 'ordered'].includes(o.status));
+                return (
+                  <tr key={c.id} className="click" onClick={() => setOpen(c.id)}>
+                    <td><strong>#{c.number}</strong><div className="small muted">{c.sites?.name}</div><div className="small muted">{dateTime(c.created_at)}</div></td>
+                    <td><div className="row" style={{ gap: 6 }}><PriorityChip priority={c.priority} /><KindChip kind={c.kind} /></div>{c.issue_description}</td>
+                    <td className="hide-sm">{v?.profiles?.full_name || <span className="muted">—</span>}</td>
+                    <td>
+                      <div className="stack" style={{ gap: 4 }}>
+                        <StatusChip status={c.status} />
+                        <LiveLine wo={c} visit={v} />
+                        {c.status === 'waiting_parts' && parts.length > 0 && (
+                          <span className="small muted">expected {parts.map((o) => (o.expected_on ? date(o.expected_on) : '—')).join(', ')}</span>
+                        )}
+                        <BillLine wo={c} />
+                      </div>
+                    </td>
+                    <td className="num">{Number(c.total_cost) > 0 ? money(c.total_cost) : <span className="muted">—</span>}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </main>
 
-      {open && <CallDetail id={open} side="store" onClose={() => setOpen(null)} onChanged={load} />}
+      {open && <CallDetail id={open} side="store" profile={profile} onClose={() => setOpen(null)} onChanged={load} />}
     </>
   );
 }
