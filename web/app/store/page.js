@@ -107,13 +107,13 @@ export default function StorePortal() {
                 <strong>{a.work_orders ? poLabel(a.work_orders, a.seq) : ''} · Call #{a.work_orders?.number} · {a.work_orders?.sites?.name}{a.work_orders?.unit ? `, unit ${a.work_orders.unit}` : ''}</strong>
               </div>
               <div><span className="chip tone-slate">{PO_KIND[a.kind]}</span> {a.description}</div>
-              <div className="small muted">{money(a.amount)} · requested {ago(a.requested_at)}{a.owner_status === 'pending' ? ` · you approved; ${a.owner?.name || 'the owner'} must OK it` : ''}</div>
+              <div className="small muted">Not to exceed {money(a.amount)} · requested {ago(a.requested_at)}{a.owner_status === 'pending' ? ` · you approved; ${a.owner?.name || 'the owner'} must OK it` : ''}</div>
             </div>
             <div className="row">
               <button onClick={() => setOpen(a.work_orders?.id)}>Details</button>
               {profile.can_approve && a.owner_status !== 'pending' && <>
                 <button className="danger" disabled={busy} onClick={() => decide(a.id, false)}>Decline</button>
-                <button className="primary" disabled={busy} onClick={() => decide(a.id, true)}>Approve {money(a.amount)}</button>
+                <button className="primary" disabled={busy} onClick={() => decide(a.id, true)}>Approve up to {money(a.amount)}</button>
               </>}
             </div>
           </div>

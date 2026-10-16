@@ -146,3 +146,40 @@ td.num, th.num { text-align: right; white-space: nowrap; }
   .page { padding: 14px; }
   .hide-sm { display: none; }
 }
+
+/* ---------- Technician app (phone first) ---------- */
+.tech { max-width: 640px; margin: 0 auto; padding: 12px 12px 120px; display: flex; flex-direction: column; gap: 12px; }
+.tech .card { cursor: default; }
+.tech button.big, .tech .bigbtn { padding: 14px 18px; font-size: 17px; width: 100%; }
+.tech .sec { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.tech .sec h3 { display: flex; align-items: center; gap: 8px; }
+.tech .tick { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #c3ccd5; display: inline-grid; place-items: center; font-size: 13px; flex-shrink: 0; }
+.tech .tick.on { background: var(--green-fg); border-color: var(--green-fg); color: #fff; }
+.syncbar { font-size: 12px; padding: 6px 12px; text-align: center; }
+.syncbar.ok { background: var(--green-bg); color: var(--green-fg); }
+.syncbar.wait { background: var(--amber-bg); color: var(--amber-fg); }
+.syncbar.off { background: #2a3642; color: #e6ecf2; }
+.meter { position: sticky; top: 56px; z-index: 5; border-radius: var(--radius); padding: 10px 12px; color: #fff; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow); }
+.meter.ok { background: #1d6b3c; }
+.meter.stop { background: #b46a00; }
+.meter.over { background: #a42816; }
+.meter.no_limit { background: #4a5866; }
+.meter .bar { height: 8px; background: rgba(255,255,255,.25); border-radius: 99px; overflow: hidden; position: relative; }
+.meter .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: #fff; border-radius: 99px; }
+.meter .bar b { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #ffd27a; }
+.stopwall { background: var(--red-bg); color: var(--red-fg); border: 2px solid #e6b3ab; border-radius: var(--radius); padding: 14px; font-weight: 700; display: flex; flex-direction: column; gap: 8px; }
+.codebox { font-size: 28px; letter-spacing: 10px; text-align: center; font-weight: 800; }
+.thumbs { display: flex; gap: 8px; flex-wrap: wrap; }
+.thumbs .t { width: 72px; height: 72px; border-radius: 8px; background: #e6ebf0; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--ink-2); text-transform: uppercase; overflow: hidden; position: relative; }
+.thumbs .t img { width: 100%; height: 100%; object-fit: cover; }
+.thumbs .t span { position: absolute; bottom: 2px; left: 4px; color: #fff; text-shadow: 0 1px 2px #000; }
+.camera { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; border-radius: 8px; padding: 12px 14px;
+  border: 1px dashed var(--brand); color: var(--brand); background: var(--brand-soft); cursor: pointer; }
+.camera input { display: none; }
+.pick { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
+.pick button { text-align: left; display: flex; justify-content: space-between; gap: 8px; }
+.stepper { display: inline-flex; align-items: center; gap: 0; border: 1px solid #c9d2db; border-radius: 8px; overflow: hidden; }
+.stepper button { border: 0; border-radius: 0; padding: 8px 14px; font-size: 18px; }
+.stepper span { min-width: 44px; text-align: center; font-weight: 700; }
+.jobcard { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.jobcard.urgent { border-left: 5px solid var(--red-fg); }

@@ -27,7 +27,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
         q(supabase.from('po_lines').select('*, decider:profiles!po_lines_decided_by_fkey(full_name, title), owner:property_owners(name, phone, email)').eq('work_order_id', id).order('seq')),
         q(supabase.from('parts_used').select('id, quantity, unit_price, total_price, covered, parts(name, sku)').eq('work_order_id', id)),
         q(supabase.from('parts_orders').select('*').eq('work_order_id', id).order('created_at')),
-        q(supabase.from('photos').select('id, kind, taken_at').eq('work_order_id', id).order('taken_at')),
+        q(supabase.from('photos').select('id, kind, taken_at, storage_path').eq('work_order_id', id).order('taken_at')),
         q(supabase.from('time_overrides').select('*').eq('work_order_id', id).order('overridden_at')),
         q(supabase.from('guardrail_flags').select('*').eq('work_order_id', id).order('triggered_at')),
         wo.equipment ? q(supabase.from('warranties').select('*').eq('equipment_id', wo.equipment.id).gte('ends_on', new Date().toISOString().slice(0, 10)).order('ends_on')) : Promise.resolve([]),
@@ -35,7 +35,13 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
         side === 'office' ? q(supabase.from('warranty_terms').select('id, name').order('sort')) : Promise.resolve([]),
       ]);
       const cap = lines.length ? lines.filter((l) => l.status === 'approved').reduce((s, l) => s + Number(l.amount), 0) : null;
-      setD({ wo, visits, lines, parts, orders, photos, overrides, flags, warranties, codes, terms, cap });
+      const urls = {};
+      const real = photos.filter((p) => p.storage_path && !p.storage_path.startsWith('demo/'));
+      if (real.length) {
+        const { data: signed } = await supabase.storage.from('job-photos').createSignedUrls(real.map((p) => p.storage_path), 3600);
+        (signed || []).forEach((x, i) => { if (x.signedUrl) urls[real[i].id] = x.signedUrl; });
+      }
+      setD({ wo, visits, lines, parts, orders, photos, overrides, flags, warranties, codes, terms, cap, urls });
     } catch (e) {
       setErr(e.message);
     }
@@ -114,11 +120,11 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
               {/* ---- Store: approval ---- */}
               {pending && side === 'store' && (
                 <div className="panel panel-pad stack" style={{ borderColor: '#e6b3ab' }}>
-                  <h3>Approval needed: {poLabel(wo, pending.seq)} — {money(pending.amount)}</h3>
+                  <h3>Approval needed: {poLabel(wo, pending.seq)} — not to exceed {money(pending.amount)}</h3>
                   <div><span className="chip tone-slate">{PO_KIND[pending.kind]}</span> {pending.description}</div>
                   {pending.breakdown && <QuoteBreakdown b={pending.breakdown} />}
                   <div className="small muted">
-                    Approved so far {money(d.cap)}. Approving brings this call to {money(Number(d.cap) + Number(pending.amount))}.
+                    Approved limit so far {money(d.cap)}. Approving raises the limit to {money(Number(d.cap) + Number(pending.amount))}. You're billed actual labor and parts, never more than the limit without asking you.
                     {profile?.approval_limit != null && ` Your limit is ${money(profile.approval_limit)}.`}
                   </div>
                   {ownerWait ? (
@@ -135,7 +141,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                   ) : canApprove ? (
                     <div className="row">
                       <button className="primary" disabled={busy} onClick={() => run('decide_po_line', { p_line: pending.id, p_approve: true })}>
-                        Approve {money(pending.amount)}
+                        Approve up to {money(pending.amount)}
                       </button>
                       <button className="danger" disabled={busy} onClick={() => {
                         const r = window.prompt('Reason for declining (the contractor will see this):');
@@ -359,6 +365,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                             {(l.owner_status === 'approved' || l.owner_status === 'declined') && <div className="muted">owner ({l.owner?.name}) {l.owner_status}{l.owner_decided_via === 'phone' ? ' by phone' : ' by link'} · {dateTime(l.owner_decided_at)}{l.owner_note ? ` — “${l.owner_note}”` : ''}</div>}
                             {l.owner_status === 'pending' && <div className="muted">manager approved · waiting on owner ({l.owner?.name}) since {dateTime(l.owner_requested_at)}</div>}
                             {l.owner_status === 'emergency' && <div className="muted">emergency — approved without waiting; owner ({l.owner?.name}) to be told</div>}
+                            {l.emergency_preapproved && <div className="muted">went ahead under the pre-approved emergency limit</div>}
                             {l.customer_decided_via && <div className="muted">{l.status} by {wo.contact_name || wo.customers?.name} {l.customer_decided_via === 'link' ? 'by link' : 'by phone'} · {dateTime(l.decided_at)}</div>}
                             {l.decline_reason && <div className="muted">Reason: {l.decline_reason}</div>}
                           </td>
@@ -368,7 +375,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                           </td>
                         </tr>
                       ))}
-                      <tr><td colSpan={2}><strong>Approved total</strong></td><td className="num"><strong>{money(d.cap)}</strong></td></tr>
+                      <tr><td colSpan={2}><strong>Approved limit</strong> <span className="small muted">(not to exceed)</span></td><td className="num"><strong>{money(d.cap)}</strong></td></tr>
                     </tbody>
                   </table>
                 )}
@@ -399,7 +406,10 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                         <td className="num">{money(wo.total_labor)}</td></tr>
                     )}
                     {Number(wo.total_trip) > 0 && <tr><td>Trip charge</td><td className="num">{money(wo.total_trip)}</td></tr>}
-                    <tr><td><strong>Total</strong></td><td className="num"><strong>{money(wo.total_cost)}</strong></td></tr>
+                    <tr><td><strong>Actual cost{wo.status === 'completed' || wo.status === 'invoiced' ? '' : ' so far'}</strong>
+                      {d.cap != null && <div className={`small ${Number(wo.total_cost) > Number(d.cap) ? '' : 'muted'}`} style={Number(wo.total_cost) > Number(d.cap) ? { color: 'var(--red-fg)', fontWeight: 700 } : {}}>
+                        {Number(wo.total_cost) > Number(d.cap) ? `Over the ${money(d.cap)} limit — needs approval` : `${money(Number(d.cap) - Number(wo.total_cost))} under the ${money(d.cap)} limit`}</div>}</td>
+                      <td className="num"><strong>{money(wo.total_cost)}</strong></td></tr>
                     {side === 'office' && (Number(wo.cost_labor) + Number(wo.cost_parts) > 0) && (
                       <tr><td className="small muted">Your cost (labor + parts) · margin</td>
                         <td className="num small muted">{money(Number(wo.cost_labor) + Number(wo.cost_parts))} · {money(Number(wo.total_cost) - Number(wo.cost_labor) - Number(wo.cost_parts))}</td></tr>
@@ -421,12 +431,11 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                   </dl>
                 ) : <div className="small muted">The technician will photograph the nameplate on site.</div>}
                 {d.photos.length > 0 && (
-                  <>
-                    <div className="photos" style={{ marginTop: 10 }}>
-                      {d.photos.map((p) => <div key={p.id} className="photo-ph">{p.kind}</div>)}
-                    </div>
-                    <div className="small muted" style={{ marginTop: 6 }}>Photo viewing turns on with the technician app.</div>
-                  </>
+                  <div className="photos" style={{ marginTop: 10 }}>
+                    {d.photos.map((p) => d.urls[p.id]
+                      ? <a key={p.id} href={d.urls[p.id]} target="_blank" rel="noreferrer" className="photo-ph" style={{ background: `center/cover url(${d.urls[p.id]})`, color: '#fff', textShadow: '0 1px 2px #000' }}>{p.kind}</a>
+                      : <div key={p.id} className="photo-ph">{p.kind}</div>)}
+                  </div>
                 )}
               </div>
 
@@ -461,7 +470,7 @@ function QuoteBreakdown({ b }) {
   return (
     <div className="small" style={{ background: 'var(--bg)', borderRadius: 8, padding: 8 }}>
       {Array.isArray(b.parts) && b.parts.map((p, i) => <div key={i}>{p.name} × {p.qty ?? 1}{p.price != null ? ` — ${money(p.price)}` : ''}</div>)}
-      {b.labor_hours != null && <div>Labor: {b.labor_hours} hr</div>}
+      {b.labor_hours != null && <div>Labor: up to {b.labor_hours} hr{b.labor != null ? ` — ${money(b.labor)}` : ''}</div>}
       {b.notes && <div className="muted">{b.notes}</div>}
     </div>
   );

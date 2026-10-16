@@ -11,6 +11,7 @@ const DEMO = [
   { email: 'maint@northside.demo', who: 'Maintenance manager', org: 'Northside Grocers · all stores · up to $2,500' },
   { email: 'director@northside.demo', who: 'Director of operations', org: 'Northside Grocers · no limit' },
   { email: 'dispatch@arcticair.demo', who: 'Dispatcher', org: 'Arctic Air Mechanical' },
+  { email: 'tech@arcticair.demo', who: 'Technician (phone app)', org: 'Arctic Air Mechanical · Mike' },
   { email: 'office@arcticair.demo', who: 'Owner / billing', org: 'Arctic Air Mechanical' },
   { email: 'pm@redriverpm.demo', who: 'Property manager', org: 'Red River Property Mgmt · up to $2,500 · owners approve above their limit' },
   { email: 'maint@redriverpm.demo', who: 'Maintenance coordinator', org: 'Red River Property Mgmt · up to $500' },

@@ -58,11 +58,12 @@ export default function Approve() {
             </div>
             <div><strong>Problem:</strong> {d.problem}</div>
             <div className="stack" style={{ gap: 4, background: 'var(--bg)', borderRadius: 8, padding: 12 }}>
-              <div className="spread"><strong>{d.description}</strong><strong style={{ fontSize: 22 }}>{money(d.amount)}</strong></div>
+              <div className="spread"><strong>{d.description}</strong><span style={{ textAlign: 'right' }}><span className="small muted">not to exceed</span><br /><strong style={{ fontSize: 22 }}>{money(d.amount)}</strong></span></div>
               {b && Array.isArray(b.parts) && b.parts.map((p, i) => (
                 <div key={i} className="small">{p.name} × {p.qty ?? 1}{p.price != null ? ` — ${money(p.price)}` : ''}</div>
               ))}
-              {b?.labor_hours != null && <div className="small">Labor: {b.labor_hours} hr</div>}
+              {b?.labor_hours != null && <div className="small">Labor: up to {b.labor_hours} hr{b.labor != null ? ` — ${money(b.labor)}` : ''}</div>}
+              <div className="small muted">You'll be billed the actual time and parts used, never more than this without asking you.</div>
             </div>
             <div className="small muted">
               Already approved on this call: {money(d.approved_so_far)}. With this, the call totals {money(d.total_if_approved)}.
@@ -84,7 +85,7 @@ export default function Approve() {
                 </div>
               ) : (
                 <div className="row">
-                  <button className="primary big grow" disabled={busy} onClick={() => decide(true)}>{busy ? 'Saving…' : `Approve ${money(d.amount)}`}</button>
+                  <button className="primary big grow" disabled={busy} onClick={() => decide(true)}>{busy ? 'Saving…' : `Approve up to ${money(d.amount)}`}</button>
                   <button className="big" disabled={busy} onClick={() => setDeclining(true)}>Decline</button>
                 </div>
               )
