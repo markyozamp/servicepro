@@ -83,6 +83,13 @@ Compressor rooms, basements, walk-ins, rooftops behind steel: the tech must stil
 - **Honest limit:** a job assigned while the tech is already in a dead zone reaches the phone only when it gets signal — so the office sees "not yet received by tech" on the dispatch board.
 - Cached job data on the phone is encrypted and cleared after the job closes (or on sign-out).
 
+### 6. Multi-visit jobs, waiting for parts, quotes, install handoff, job costing (Mark, 2026-10-15)
+- **A job can take several visits.** The model changes from "one call = one trip" to **job → visits**. Each visit has its own tech, check-in, arrival/departure, labor and photos; the job carries the totals. (Model change done before real data exists.)
+- **Waiting for parts is an open status, never a closed one.** The tech marks "parts needed" with the part, supplier and expected date. The job stays open and visible on the store and office dashboards — with how long it has been waiting — until the return visit completes it. The store sees the expected date; overdue parts are flagged.
+- **Repair quotes / job estimates.** Tech or office builds a quote: parts, labor hours, optional good/better/best options, photos of the problem. The customer approves through the same approval chain (dollar limits, escalation). An approved quote becomes the return visit or a new job, with the quoted amount as its cap.
+- **Service call → install handoff.** When a repair becomes a replacement, the service job hands off to the install team as a **linked install job** carrying everything: equipment record, photos, readings, notes, the approved quote. The install team gets its own board; the store sees one connected history.
+- **Job costing.** Every job tracks **quoted vs actual**: labor hours at the tech's cost rate, parts at cost, and the billed amount — so the contractor sees margin per job, per tech and per customer, and installs show budget vs actual as they progress.
+
 ### Order of work (proposed)
 1c Technician app → **PM plans + auto-scheduling** → notifications → AI nameplate reading → QuickBooks → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
