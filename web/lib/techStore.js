@@ -272,6 +272,9 @@ export async function sync({ refresh = true } = {}) {
     }
     if (refresh && !stopped && state.queue.length === 0) {
       const included = new Set(state.sent.map((x) => x.id));
+      // Report this phone's clock (after the saved actions went in, so their times are judged fairly).
+      const hello = await supabase.rpc('device_hello', { p_device_now: new Date().toISOString() });
+      if (!hello.error && hello.data) set({ clock: hello.data });
       const { data, error } = await supabase.rpc('tech_jobs');
       if (!error && data) {
         write(K_SNAP, data);

@@ -70,6 +70,11 @@ export default function TechApp() {
         <div className="who"><span>{me.full_name}</span>{!job && <button onClick={signOut}>Sign out</button>}</div>
       </header>
       <SyncBar st={st} />
+      {st.clock && !st.clock.ok && (
+        <div className="syncbar off" style={{ background: 'var(--red-fg)' }}>
+          This phone's clock is {Math.round(Math.abs(st.clock.offset_s) / 60)} min {st.clock.offset_s > 0 ? 'fast' : 'slow'}. Set Date &amp; Time to “Set automatically” — job times depend on it. Your office has been told.
+        </div>
+      )}
       {st.problems.some((p) => p.fn !== 'tech_checkin') && (
         <div className="tech" style={{ paddingBottom: 0 }}>
           {st.problems.filter((p) => p.fn !== 'tech_checkin').map((p) => (

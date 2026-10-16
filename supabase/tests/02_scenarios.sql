@@ -537,6 +537,19 @@ select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = t
 select checkin_watch();
 select test.ok((select count(*) = 1 from door where who = 'Sam Store Manager'), 'each person is alerted once per step, not every minute');
 
+\echo '=== 23. Phone clock: checked at every sync; offline times can''t go before the last contact'
+set role authenticated;
+select test.login(:LUIS);
+select test.ok((select (device_hello(now() + interval '1 second')->>'ok')::boolean), 'clock within 2 minutes: fine');
+select test.ok((select not (device_hello(now() - interval '25 minutes')->>'ok')::boolean), 'clock 25 min slow: tech is told');
+select test.login(:DANA);
+select test.ok((select count(*) = 1 from notifications where message like 'Luis Ortega''s phone clock is 25 min slow%'), 'office is told (once a day)');
+select test.login(:LUIS);
+select from device_hello(now());
+select test.ok((select start_at >= now() - interval '1 minute' from clock('in', now() - interval '3 hours')),
+  'a time from before the phone''s last contact is moved up to that contact (a clock set back can''t move times earlier)');
+select test.ok((select start_at = now() from clock('break_start', now())), 'normal times are kept as they happened');
+select from clock('out');
 reset role;
 \echo '=== 18. Audit'
 select test.ok((select count(*) > 50 from audit_log), 'every change is in the audit trail');
