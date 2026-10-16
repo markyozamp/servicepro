@@ -195,8 +195,13 @@ Proof of temperature for bad-product claims, and early warning before product is
 - **Live meter on the tech's phone** (works offline): limit, used so far, labor + parts. At 80% the phone stops the tech: request the next letter before continuing. Before installing a part the tech adds it; if it would cross the limit, the app asks for the letter first. A server check every 5 minutes alerts office and store even if the phone is off.
 - **Over without approval:** the store is never billed above the approved limit unless they approve it; the job can't close or invoice while over.
 - **Emergency limit** set by each store/property (e.g. emergencies auto-approved up to $1,500).
-- **"Emergency: continue" button** on priority-1 calls only: tech gives a reason + photo, keeps working; the extra request goes to the emergency approver immediately and the store is told. The extra shows "pending approval" and cannot be invoiced until the store approves it or the contractor drops it. Override use is reported per contractor.
-- Proposed defaults, not yet confirmed by Mark: labor counts for the first 15 minutes while waiting for approval, then pauses; extra over the limit without approval is absorbed by the contractor unless the store approves it afterward.
+- **Waiting for approval (Mark, confirmed):** labor counts for the first 15 minutes, then pauses. The 15 minutes is adjustable per contractor–customer relationship (both must agree).
+- **It cannot run over — both sides covered (Mark, confirmed):**
+  - **Stop point with a built-in reserve.** The tech is stopped *before* the limit, at 80% or at limit − (approval wait + 15 min wrap-up) × labor rate, whichever comes first. The reserve pays for the wait and for making the equipment safe, so the contractor is paid for every minute and the store never goes over.
+  - **Parts that would cross the limit cannot be added** until the next letter is approved.
+  - **No answer within the wait time:** the tech makes the equipment safe and leaves; the call goes to "awaiting approval — return visit". Total stays inside the limit.
+  - **Billable labor stops at the approved limit.** Minutes past it are recorded but not billable unless approved, so nothing over the limit ever reaches an invoice.
+  - **Emergencies:** each store/property sets an emergency limit that is pre-approved (e.g. $1,500). "Emergency: continue" works only up to that pre-approved limit (reason + photo, store told immediately). Above it the request runs up the chain to someone with authority (the chain should end with a no-limit approver); if nobody answers, the tech secures the equipment and stops. No unapproved work, so neither side carries the risk. Override use is reported per contractor.
 
 ### Order of work (proposed)
 Database v2 + portals v2 (done 2026-10-16) → 1c Technician app → notifications → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
