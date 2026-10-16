@@ -34,7 +34,7 @@ is much larger than what two people should maintain.
 ## Phases
 
 - [x] **1a. Database foundation** — schema, rules, security, 42-check test. **Live on Supabase** (project `Servicepro`, us-east-1) since 2026-10-15; smoke-tested end to end on the live database
-- [ ] **1b. Web portals** — sign-in, contractor dispatch board, customer call form + approvals, office review queue
+- [x] **1b. Web portals v1** — live at https://servicepro-two.vercel.app (Vercel project `servicepro`, auto-deploys from GitHub `main`). Sign-in, store portal (new call, approvals, call detail), office dispatch board, review queue, mark invoiced. Demo logins share password `DemoService2026!` — remove the demo list on the sign-in page before real customers
 - [ ] **1c. Technician app** — job list, Start/Arrive/Complete, photo capture, checklist, offline queue
 - [ ] **2. AI** — nameplate photo → manufacturer/model/serial suggestion
 - [ ] **3. Notifications** — push (tech), text/email (store)
