@@ -219,9 +219,9 @@ The generalization changes (trades, equipment type table, work order kinds, cust
 - [x] **1d. Property managers + owner approval + no-login homeowner links** — live 2026-10-16; 113-check test passing
 - [x] **1b-v2. Portals v2** — store portal (issue dropdown showing the authorized amount, approvals with limits and escalation, PM panel that stays until done, late bills, check-in code) and office portal (board, PM, billing, review, history). Live 2026-10-16
 - [x] **1b. Web portals v1** — live at https://servicepro-two.vercel.app (Vercel project `servicepro`, auto-deploys from GitHub `main`). Sign-in, store portal (new call, approvals, call detail), office dispatch board, review queue, mark invoiced. Demo logins share password `DemoService2026!` — remove the demo list on the sign-in page before real customers
-- [ ] **1c. Technician app** — job list, Start/Arrive/Complete, photo capture, checklist, offline queue
+- [x] **1c. Technician app (installable web app, works offline)** — live 2026-10-16 at /tech ("Add to Home Screen"). Job list, Start + ETA, GPS arrival (automatic while the app is open, or "I'm here"), check-in code / backup code / name-only, nameplate + equipment, before/after photos (kept on the phone until sent), repair from list with parts kit, parts with the limit check, PM checklist, live cost meter with the stop point, quotes from hours + parts, emergency pre-approved limit, finish (complete / parts needed / return needed / quote sent), timecard. Tested end to end at phone size including finishing a job with no signal. Limit: no background arrival detection with the screen off (needs a store app later if the pilot shows it matters)
 - [ ] **2. AI** — nameplate photo → manufacturer/model/serial suggestion
-- [ ] **3. Notifications** — push (tech), text/email (store)
+- [ ] **3. Notifications** — push (tech), text/email (store); text the owner / homeowner approval links directly
 - [ ] **4. QuickBooks Online** — Intuit developer app, OAuth connect, invoice export
 - [ ] **5. Pilot** — one contractor, two stores
 - [ ] **6. Parts photo recognition, truck inventory, polish**

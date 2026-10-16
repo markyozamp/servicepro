@@ -13,7 +13,8 @@ and the wholesalers who refer stores.
 | `supabase/demo_calls.sql` | Demo calls in every state, created through the real rules | Live |
 | `supabase/tests/` | End-to-end scenarios (113 checks) | Passing |
 | `web/` | Store portal (`/store`) + contractor office portal (`/office`), Next.js on Vercel | v2 live |
-| `mobile/` | Technician app (Expo, offline-first) | Next |
+| `web/app/tech` | Technician app — installable web app, works offline | Live |
+| `e2e/` | Phone-size browser test of the tech app against the live site | Passing |
 | `docs/BUILD_PLAN.md` | Full spec, decisions, fee schedule | Ongoing |
 
 ## How the system is built
