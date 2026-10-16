@@ -237,6 +237,9 @@ async function send(a) {
   }
   const { data, error } = await supabase.rpc(a.fn, a.args);
   if (error) throw error;
+  if (a.fn === 'tech_checkin' && data && data.verified === false && ['code', 'backup_code'].includes(a.args.p_method)) {
+    const e = new Error(data.message || 'Wrong code — try again.'); e.business = true; throw e;
+  }
   if (a.fn === 'tech_finish_visit' && data && data.ok === false && data.missing) {
     const e = new Error('Not finished — still needed: ' + data.missing.map((m) => m.message).join(' '));
     e.business = true; throw e;
@@ -261,7 +264,7 @@ export async function sync({ refresh = true } = {}) {
         if (/JWT expired|jwt/i.test(msg) && retries++ < 2) { await supabase.auth.refreshSession(); continue; }
         if (isNetwork(msg) && !e.business) { set({ online: false }); stopped = true; break; }
         // The database refused it: keep a note for the tech and move on.
-        saveProblems([...state.problems, { id: a.id, fn: a.fn, label: a.meta?.label || a.fn, message: msg, at: a.at }]);
+        saveProblems([...state.problems, { id: a.id, fn: a.fn, visit: a.args?.p_visit, label: a.meta?.label || a.fn, message: msg, at: a.at }]);
       }
       retries = 0;
       set({ sent: [...state.sent, a] });

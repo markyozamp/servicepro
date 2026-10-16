@@ -177,7 +177,9 @@ function CheckIn({ job }) {
   const [person, setPerson] = useState('');
   const [reason, setReason] = useState('');
   const v = job.visit;
+  const wrong = T.getState().problems.filter((p) => p.fn === 'tech_checkin' && p.visit === v.id).slice(-1)[0];
   const send = () => {
+    T.getState().problems.filter((p) => p.fn === 'tech_checkin' && p.visit === v.id).forEach((p) => T.dismissProblem(p.id));
     if (mode === 'name') T.act('tech_checkin', { p_visit: v.id, p_method: 'name_only', p_person: person, p_reason: reason }, { label: 'Check-in (name only)' });
     else T.act('tech_checkin', { p_visit: v.id, p_method: mode === 'backup' ? 'backup_code' : 'code', p_code: code }, { label: 'Check-in code' });
   };
@@ -194,6 +196,7 @@ function CheckIn({ job }) {
       {mode !== 'name' ? (
         <>
           <div className="small">{mode === 'code' ? 'Ask the store person for the 4-digit code for this call.' : 'Enter the store\'s standing backup code.'}</div>
+          {wrong && <div className="error"><strong>{wrong.message}</strong></div>}
           <input className="codebox" inputMode="numeric" maxLength={8} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••" />
           <button className="primary big" disabled={code.length < 4} onClick={send}>Check in</button>
           <div className="small muted">No signal? Enter it anyway — it's checked when the phone reconnects.</div>

@@ -120,10 +120,14 @@ select '      ' || message from notifications where type = 'arrival';
 select test.ok((select response_met from work_orders where id = test.v('wo')), 'arrived within the 4-hour agreement');
 select test.login(:MIKE);
 select test.ok((select (tech_checkin(test.v('v1'), 'code', '0000x', p_at => now() - interval '159 minutes')->>'verified')::boolean = false),
-  'wrong code is recorded as NOT verified (works offline; checked on sync)');
+  'wrong code: not verified, just try again');
+select test.ok((select checkin_at is null from visits where id = test.v('v1')), 'a wrong code is NOT a check-in (door alarm keeps going)');
+select test.ok((select count(*) = 0 from guardrail_flags where flag = 'checkin_unverified' and work_order_id = test.v('wo')), 'one slip of the finger is not flagged');
+select from tech_checkin(test.v('v1'), 'code', '1111x');
+select test.ok((select (tech_checkin(test.v('v1'), 'code', '2222x')->>'attempts')::int = 3), 'third wrong try');
 select test.login(:SAM);
 select test.ok((select count(*) = 1 from guardrail_flags where flag = 'checkin_unverified' and resolved_at is null),
-  'store sees the unverified check-in flag');
+  'after 3 wrong codes the store is told and it is noted on the call');
 reset role;
 select test.put('code', null);
 create temp table code_tmp as select code from visit_codes where visit_id = test.v('v1');

@@ -70,9 +70,9 @@ export default function TechApp() {
         <div className="who"><span>{me.full_name}</span>{!job && <button onClick={signOut}>Sign out</button>}</div>
       </header>
       <SyncBar st={st} />
-      {st.problems.length > 0 && (
+      {st.problems.some((p) => p.fn !== 'tech_checkin') && (
         <div className="tech" style={{ paddingBottom: 0 }}>
-          {st.problems.map((p) => (
+          {st.problems.filter((p) => p.fn !== 'tech_checkin').map((p) => (
             <div key={p.id} className="error">
               <strong>Not saved: {p.label}</strong> — {p.message}
               <div><button style={{ marginTop: 6 }} onClick={() => T.dismissProblem(p.id)}>OK</button></div>
