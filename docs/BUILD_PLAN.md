@@ -74,6 +74,15 @@ This is part of the generalization step done first, since the current two custom
 - **"Tech is 5 minutes away" alert** to the store person, from the phone's ETA (fits the ETA-only rule — the store still never sees live location). The 5 minutes is adjustable per store, and who receives it is set in each person's notification choices.
 - The alert needs the tech app to report ETA every few minutes while driving; delivery by text/push comes with the notifications phase.
 
+### 5. Technician app works fully with no service (Mark, 2026-10-15)
+Compressor rooms, basements, walk-ins, rooftops behind steel: the tech must still see and do everything.
+- **Everything for the tech's jobs is downloaded to the phone ahead of time** — the moment a job is assigned, and refreshed whenever there's signal: call details and problem description, site address and access notes, store contacts, PO/cap, the equipment record and its **full service history** (past calls, repairs, parts), PM checklists, and the contractor's repair types and parts catalog.
+- **All actions work offline:** start, arrive, check-in code, photos, equipment confirmation, repair type, parts, notes, approval request, complete. They queue on the phone in order and sync automatically when signal returns. Nothing is lost if the app is closed or the phone restarts.
+- **The screen always shows sync status:** "All synced", or "3 changes waiting to send — last synced 10:42". The tech never has to guess.
+- **Changes made by the office while the tech is offline** (reassignment, cap raised, notes) show up on reconnect with a clear notice.
+- **Honest limit:** a job assigned while the tech is already in a dead zone reaches the phone only when it gets signal — so the office sees "not yet received by tech" on the dispatch board.
+- Cached job data on the phone is encrypted and cleared after the job closes (or on sign-out).
+
 ### Order of work (proposed)
 1c Technician app → **PM plans + auto-scheduling** → notifications → AI nameplate reading → QuickBooks → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
