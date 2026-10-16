@@ -249,22 +249,23 @@ export async function sync({ refresh = true } = {}) {
   if (typeof navigator !== 'undefined' && !navigator.onLine) { set({ online: false }); return; }
   running = true; set({ syncing: true, online: true });
   try {
-    let q = [...state.queue];
-    while (q.length) {
-      const a = q[0];
+    let stopped = false; let retries = 0;
+    // Always work from the live queue: taps made while sending are added to the end and sent too.
+    while (state.queue.length) {
+      const a = state.queue[0];
       try {
         await send(a);
       } catch (e) {
         const msg = e?.message || String(e);
-        if (/JWT expired|jwt/i.test(msg)) { await supabase.auth.refreshSession(); continue; }
-        if (isNetwork(msg) && !e.business) { set({ online: false }); break; }
+        if (/JWT expired|jwt/i.test(msg) && retries++ < 2) { await supabase.auth.refreshSession(); continue; }
+        if (isNetwork(msg) && !e.business) { set({ online: false }); stopped = true; break; }
         // The database refused it: keep a note for the tech and move on.
         saveProblems([...state.problems, { id: a.id, fn: a.fn, label: a.meta?.label || a.fn, message: msg, at: a.at }]);
       }
-      q = q.slice(1);
-      saveQueue(q);
+      retries = 0;
+      saveQueue(state.queue.filter((x) => x.id !== a.id));
     }
-    if (refresh && q.length === 0) {
+    if (refresh && !stopped && state.queue.length === 0) {
       const { data, error } = await supabase.rpc('tech_jobs');
       if (!error && data) {
         write(K_SNAP, data);
@@ -278,6 +279,8 @@ export async function sync({ refresh = true } = {}) {
   } finally {
     running = false;
     set({ syncing: false });
+    // Taps made while the job list was refreshing: send them now rather than waiting a minute.
+    if (state.queue.length && state.online && !state.problemsBlocking) setTimeout(() => sync(), 50);
   }
 }
 
