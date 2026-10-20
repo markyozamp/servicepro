@@ -8,7 +8,7 @@ import { money, dateTime, time, date } from '@/lib/format';
 const h = (n) => (n == null ? '—' : `${Number(n).toFixed(2)} h`);
 const hm = (m) => `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} m`;
 
-export function VerifyPanel({ wo, side, profile, busy, run }) {
+export function VerifyPanel({ wo, side, profile, busy, run: runOuter }) {
   const [chk, setChk] = useState(null);
   const [runs, setRuns] = useState([]);
   const [contractors, setContractors] = useState([]);
@@ -29,6 +29,8 @@ export function VerifyPanel({ wo, side, profile, busy, run }) {
     } catch { /* shown elsewhere */ }
   }, [wo.id, wo.customer_id, side]);
   useEffect(() => { load(); }, [load, wo.status, wo.updated_at]);
+  // After any action here, refresh this panel too (an invoice change doesn't touch the call itself)
+  const run = (fn, args, after) => runOuter(fn, args, (r) => { if (after) after(r); setTimeout(load, 300); });
 
   const office = side === 'office';
   const isStoreAdmin = side === 'store' && (profile?.can_open_calls || profile?.is_org_admin);
