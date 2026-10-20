@@ -241,6 +241,12 @@ Proof of temperature for bad-product claims, and early warning before product is
 - Works from the check-in step too (store closed → can't check in). **Money rules are never overridden:** a pending approval or a cost over the approved limit still has to be handled first.
 - The store sees it on the call: "Closed without full documentation — reason: explanation. Approved by Pat Dispatch (office, by phone)." The codes themselves are visible only to the contractor's office.
 
+### 21. Connections: QuickBooks only (Mark, 2026-10-20) — decided
+- **No connections to ServiceTitan, Corrigo, ServiceChannel** or similar. They already do this for big companies; we serve smaller stores and the contractors who serve them. Later, win ServiceTitan users over on price and simplicity (they pay thousands a year and use a small part of it).
+- **QuickBooks is the one connection:** invoice straight from ServicePro into QuickBooks (PO number on the invoice, customer matched, labor and parts lines), send the invoice from there, and read payments back. It also feeds job costing and estimating (Pro).
+- Time Verify contractors on QuickBooks: invoices created in ServicePro (or read from QuickBooks by PO number) fill the invoice check with no retyping.
+- Open: QuickBooks Online (modern connection) vs Desktop (older, harder) — set by the pilot contractor.
+
 ### Order of work (proposed)
 Database v2 + portals v2 + technician app (done 2026-10-16) → Time Verify (done 2026-10-20) → **email + texting** (accounts needed) → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
