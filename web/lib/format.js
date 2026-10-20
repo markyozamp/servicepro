@@ -55,6 +55,7 @@ export const FLAG_LABEL = {
   gps_mismatch: 'Arrival location mismatch',
   checkin_unverified: 'Check-in not verified',
   billing_late: 'Bill is late',
+  closeout_override: 'Closed without full documentation',
 };
 
 export const poLabel = (wo, seq) => (wo.store_po_number || `PO${wo.number}`) + (seq > 0 ? String.fromCharCode(64 + seq) : '');

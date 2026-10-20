@@ -566,6 +566,50 @@ select test.ok((select count(*) = 0 from site_wifi), 'another contractor cannot'
 select test.login(:DANA);
 select test.ok((select count(*) = 0 from site_wifi), 'not even the contractor office — only the tech on the job');
 
+\echo '=== 25. Close out without photos/details: office override code, or owner; reason required; store sees it'
+set role authenticated;
+select test.login(:MARIA);
+select test.put('ow', (create_work_order(:S121, (select id from issue_types where code='wi_cooler_down'), 'Override test')).id);
+select test.login(:PAT);
+select test.put('ov', (assign_work_order(test.v('ow'), :LUIS)).id);
+select test.login(:LUIS);
+select from tech_start(test.v('ov')); select from tech_arrive(test.v('ov'), null, 47.8936, -97.0632);
+select test.ok((select (tech_finish_visit(test.v('ov'), 'completed')->>'ok')::boolean = false), 'normally: no photos / equipment → cannot complete');
+select test.blocked($$select tech_closeout_override(test.v('ov'), 'Problem fixed before arrival', 'Store reset the breaker, unit running fine at 36F')$$,
+  'Call your office', 'a tech (not the owner) needs an office code');
+select test.login(:PAT);
+select test.blocked($$select issue_closeout_code(test.v('ov'), 'x')$$, 'Note what', 'office must note what the tech said');
+select test.put('oc', null);
+create temp table oc_tmp as select issue_closeout_code(test.v('ov'), 'Luis says the store reset the breaker; unit running') as code;
+select test.login(:LUIS);
+select test.blocked($$select tech_closeout_override(test.v('ov'), 'Problem fixed before arrival', 'Store reset the breaker, unit running fine at 36F', '000000')$$,
+  'not right', 'a wrong override code does nothing');
+select test.ok((select (tech_closeout_override(test.v('ov'), 'Problem fixed before arrival', 'Store reset the breaker, unit running fine at 36F',
+  (select code from oc_tmp))->>'ok')::boolean), 'with the office code and a reason, the visit closes');
+select test.ok((select (tech_closeout_override(test.v('ov'), 'x', 'sent again when the phone reconnects', (select code from oc_tmp))->>'already')::boolean), 'sending it twice (phone resync) changes nothing');
+select test.login(:PAT);
+select test.ok((select used_at is not null and method = 'office_code' from closeout_overrides where visit_id = test.v('ov')), 'office sees the code was used');
+select test.login(:MARIA);
+select test.ok((select status = 'completed' and work_summary like '%Closed out without full documentation%Approved by Pat Dispatch (office, by phone)%'
+  from work_orders where id = test.v('ow')), 'store sees the reason and who approved it');
+select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('ow') and flag = 'closeout_override' and visible_to_customer), 'flagged for the store');
+select test.ok((select count(*) = 0 from closeout_overrides), 'the store never sees the codes');
+select '      ' || work_summary from work_orders where id = test.v('ow');
+reset role;
+update profiles set is_org_admin = true where id = :LUIS;   -- pretend Luis owns a one-man shop
+set role authenticated;
+select test.login(:MARIA);
+select test.put('ow2', (create_work_order(:S121, (select id from issue_types where code='wi_cooler_down'), 'Owner override test')).id);
+select test.login(:PAT);
+select test.put('ov2', (assign_work_order(test.v('ow2'), :LUIS)).id);
+select test.login(:LUIS);
+select from tech_start(test.v('ov2')); select from tech_arrive(test.v('ov2'), null, 47.8936, -97.0632);
+select test.ok((select tech_closeout_override(test.v('ov2'), 'Store closed / no access', 'Store locked, no one answered the door or phone for 20 min')->>'method' = 'owner'),
+  'a sole owner approves their own override (the app asks for their password first)');
+reset role;
+update profiles set is_org_admin = false where id = :LUIS;
+set role authenticated;
+
 reset role;
 \echo '=== 18. Audit'
 select test.ok((select count(*) > 50 from audit_log), 'every change is in the audit trail');

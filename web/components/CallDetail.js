@@ -219,6 +219,18 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                 </div>
               )}
 
+              {/* ---- Office: close-out override code for a tech who can't finish the normal way ---- */}
+              {side === 'office' && d.visits.some((v) => v.status === 'on_site') && (
+                <div className="panel panel-pad spread">
+                  <div className="small">Tech on site can't take photos / check in / finish normally?<div className="muted">Give a one-time override code by phone. The store sees the reason.</div></div>
+                  <button disabled={busy} onClick={() => {
+                    const r = window.prompt('What did the technician tell you? (kept on the call)');
+                    if (r && r.trim()) run('issue_closeout_code', { p_visit: d.visits.find((v) => v.status === 'on_site').id, p_reason: r.trim() },
+                      (code) => setMsg(`Override code for the technician: ${code} — read it to them. It works once.`));
+                  }}>Give override code</button>
+                </div>
+              )}
+
               {/* ---- Parts on order ---- */}
               {d.orders.length > 0 && (
                 <div className="panel panel-pad stack">

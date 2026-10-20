@@ -4,11 +4,12 @@
 // phone with their real time and sent when there is a connection.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as T from '@/lib/techStore';
+import { supabase } from '@/lib/supabase';
 import { money, time, date, PRIORITY } from '@/lib/format';
 
 const ETAS = [10, 20, 30, 45, 60, 90];
 
-export default function Job({ job, cat, wifi }) {
+export default function Job({ job, cat, wifi, me }) {
   const v = job.visit; const w = job.wo;
   const [, tick] = useState(0);
   useEffect(() => { const t = setInterval(() => tick((n) => n + 1), 20000); return () => clearInterval(t); }, []);
@@ -19,7 +20,7 @@ export default function Job({ job, cat, wifi }) {
       <Header job={job} wifi={wifi} />
       {v.status === 'assigned' && <StartDriving job={job} />}
       {v.status === 'en_route' && <Driving job={job} />}
-      {v.status === 'on_site' && <OnSite job={job} cat={cat} m={m} />}
+      {v.status === 'on_site' && <OnSite job={job} cat={cat} m={m} me={me} />}
       {v.status === 'done' && <Done job={job} />}
       <Background job={job} />
     </main>
@@ -119,7 +120,8 @@ function Driving({ job }) {
 }
 
 // ---------------- On site ----------------
-function OnSite({ job, cat, m }) {
+function OnSite({ job, cat, m, me }) {
+  const [override, setOverride] = useState(false);
   const w = job.wo; const v = job.visit;
   const [quote, setQuote] = useState(null);     // null | { parts: [...] }
   const needsCheckin = v.checkin_required && !(v.checkin_verified || v.checkin_local);
@@ -132,6 +134,9 @@ function OnSite({ job, cat, m }) {
     <>
       <Meter job={job} m={m} onMore={() => setQuote({ parts: [] })} />
       {needsCheckin && <CheckIn job={job} />}
+      {needsCheckin && (override
+        ? <Override job={job} me={me} m={m} onClose={() => setOverride(false)} />
+        : <button onClick={() => setOverride(true)}>Can't check in or do the work? Close out with override</button>)}
       {!needsCheckin && (
         <>
           {(service || w.equipment_id) && <Equipment job={job} cat={cat} done={eqDone} />}
@@ -141,7 +146,7 @@ function OnSite({ job, cat, m }) {
           {w.kind !== 'pm' && <Parts job={job} cat={cat} m={m} onNeedMore={(p) => setQuote({ parts: [p] })} />}
           {quote ? <Quote job={job} cat={cat} m={m} init={quote} onClose={() => setQuote(null)} />
             : !m.pending && m.state !== 'no_limit' && <button onClick={() => setQuote({ parts: [] })}>Need more? Request approval (PO {String.fromCharCode(65 + Math.max(0, ...job.po_lines.map((l) => l.seq)))})</button>}
-          <Finish job={job} cat={cat} m={m} eqDone={eqDone} />
+          <Finish job={job} cat={cat} m={m} eqDone={eqDone} me={me} />
         </>
       )}
     </>
@@ -490,7 +495,7 @@ function Quote({ job, cat, m, init, onClose }) {
   );
 }
 
-function Finish({ job, cat, m, eqDone }) {
+function Finish({ job, cat, m, eqDone, me }) {
   const [mode, setMode] = useState(null);
   const [note, setNote] = useState('');
   const [need, setNeed] = useState({ part_id: '', description: '', quantity: 1, supplier: '', expected_on: '' });
@@ -531,6 +536,9 @@ function Finish({ job, cat, m, eqDone }) {
         <>
           {missing.length > 0 && <div className="small"><strong>Before you can complete:</strong><ul style={{ margin: '4px 0 0 18px', padding: 0 }}>{missing.map((x) => <li key={x}>{x}</li>)}</ul></div>}
           <button className="primary big" disabled={missing.length > 0} onClick={() => window.confirm('Complete the job? The store will be told the work is done.') && finish('completed')}>✓ Job complete</button>
+          {missing.length > 0 && !m.pending && !(m.limit != null && m.used > m.limit) && (
+            <button onClick={() => setMode('override')}>Can't do these? Close out with override</button>
+          )}
           {leaveMissing.length > 0 && <div className="small muted">To leave without completing, first: {leaveMissing.join(' · ')}</div>}
           <div className="row" style={{ gap: 8 }}>
             <button style={{ flex: 1 }} disabled={leaveMissing.length > 0} onClick={() => setMode('parts')}>Parts needed</button>
@@ -539,6 +547,7 @@ function Finish({ job, cat, m, eqDone }) {
           </div>
         </>
       )}
+      {mode === 'override' && <Override job={job} me={me} m={m} onClose={() => setMode(null)} />}
       {mode === 'parts' && (
         <>
           <label>Part
@@ -604,6 +613,60 @@ function Background({ job }) {
           {job.po_lines.length > 0 && <div className="small muted">Approvals: {job.po_lines.map((l) => `${l.po} ${money(l.amount)} ${l.status}${l.emergency ? ' (emergency)' : ''}`).join(' · ')}</div>}
         </>
       )}
+    </div>
+  );
+}
+
+const OVERRIDE_REASONS = ['Problem fixed before arrival / no problem found', 'Store closed / no access', 'Customer cancelled on arrival',
+  'Unsafe to work / equipment not reachable', 'Camera or phone not working', 'Other'];
+
+// Close out without the usual paperwork: reason + explanation, approved by an office code (by phone)
+// or, for a company owner, their own password. Money rules still apply. The store sees the reason.
+function Override({ job, me, m, onClose }) {
+  const [reason, setReason] = useState('');
+  const [note, setNote] = useState('');
+  const [code, setCode] = useState('');
+  const [pw, setPw] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const owner = !!me?.is_org_admin;
+  const moneyBlock = m.pending || (m.limit != null && m.used > m.limit);
+  async function go() {
+    setErr('');
+    if (owner) {
+      if (!navigator.onLine) { setErr('An owner override needs signal to check your password. Or ask your office for a code.'); return; }
+      setBusy(true);
+      const { error } = await supabase.auth.signInWithPassword({ email: me.email, password: pw });
+      setBusy(false);
+      if (error) { setErr('Password is not right.'); return; }
+    }
+    T.act('tech_closeout_override', { p_visit: job.visit.id, p_reason: reason, p_note: note, p_code: owner ? null : code }, { label: 'Close-out override' });
+    const p = await T.position(4000);
+    T.act('tech_depart', { p_visit: job.visit.id, p_lat: p?.lat ?? null, p_lon: p?.lon ?? null }, { label: 'Left site' });
+    onClose();
+  }
+  if (moneyBlock) return <div className="notice">An override can't get around the approved limit — request approval first.</div>;
+  return (
+    <div className="sec" style={{ borderColor: 'var(--amber-fg)' }}>
+      <h3>Close out with override</h3>
+      <div className="small muted">Use this only when the normal steps can't be done. The store will see your reason and who approved it.</div>
+      <label>Reason
+        <select value={reason} onChange={(e) => setReason(e.target.value)}>
+          <option value="">Choose…</option>
+          {OVERRIDE_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
+        </select>
+      </label>
+      <label>What happened? <span className="muted" style={{ fontWeight: 400 }}>(the store reads this)</span>
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Store had reset the breaker; unit running at 36°F when I arrived" /></label>
+      {owner ? (
+        <label>Your password (owner approval)<input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" /></label>
+      ) : (
+        <label>Override code from your office <span className="muted" style={{ fontWeight: 400 }}>— call them; they read you a 6-digit code</span>
+          <input className="codebox" inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••••" /></label>
+      )}
+      {err && <div className="error">{err}</div>}
+      <button className="primary big" disabled={busy || !reason || note.trim().length < 10 || (owner ? !pw : code.length !== 6)} onClick={go}>Close out and leave</button>
+      <button onClick={onClose}>Back</button>
     </div>
   );
 }

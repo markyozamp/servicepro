@@ -219,6 +219,13 @@ Proof of temperature for bad-product claims, and early warning before product is
 - **What it does:** no double dispatch (any of the contractor's techs taps "I'm going" on the store's open call); tech: "I'm here" (GPS) → check-in code → "Leaving" (done / coming back / waiting for parts), photos optional, ~20 seconds per visit; a failed check-in never blocks payment (name-only fallback). Calls the contractor took by phone → the store confirms. **Invoice check:** invoice total + hours billed vs verified time on site. **Repeat-call flag:** same unit called again within 30 days. Door alarm, phone clock check, ETA all apply.
 - **Residential:** supported, not led with. Homeowners never download or sign in — texts with links (on the way + ETA, arrived, finished with photos, quote approval, bill, maintenance reminders), which comes with the texting build. Property managers are the strong residential angle. Start the US carrier texting registration (can take weeks) about a week before building texting.
 
+### 20. Close-out override (Mark, 2026-10-20) — built
+- When a visit can't be finished the normal way (no problem found / fixed before arrival, store closed, customer cancelled, unsafe or unreachable equipment, camera broken, other), the tech closes out **with an override**: pick a reason + explain what happened, then approval:
+  - **Office code:** the tech calls the office; the office taps "Give override code" on the call, notes what the tech said, and reads the 6-digit one-time code to the tech.
+  - **Owner (sole operator):** a tech who is the company owner approves it themselves by re-entering their password.
+- Works from the check-in step too (store closed → can't check in). **Money rules are never overridden:** a pending approval or a cost over the approved limit still has to be handled first.
+- The store sees it on the call: "Closed without full documentation — reason: explanation. Approved by Pat Dispatch (office, by phone)." The codes themselves are visible only to the contractor's office.
+
 ### Order of work (proposed)
 Database v2 + portals v2 + technician app (done 2026-10-16) → **Time Verify** → notifications / texting → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
