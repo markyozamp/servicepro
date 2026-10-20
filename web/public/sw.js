@@ -1,6 +1,6 @@
 // ServicePro offline worker: keeps the tech app's screens on the phone so it opens with no signal.
 // Data (jobs, actions, photos) is handled by the app itself; this only caches the app's own files.
-const CACHE = 'sp-shell-v1';
+const CACHE = 'sp-shell-v2';
 const SHELL = ['/', '/tech', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -43,4 +43,22 @@ self.addEventListener('fetch', (e) => {
       return res;
     }).catch(() => caches.match(req).then((hit) => hit || caches.match('/tech'))),
   );
+});
+
+// Alerts sent by ServicePro (new call, tech at the door, not accepted, invoice…)
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data && e.data.text() }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'ServicePro', {
+    body: d.body || '', tag: d.tag, renotify: true, icon: '/icon-192.png', badge: '/icon-192.png', data: { url: d.url || '/' },
+  }));
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    for (const c of list) { if ('focus' in c) { c.navigate(url).catch(() => {}); return c.focus(); } }
+    return self.clients.openWindow(url);
+  }));
 });

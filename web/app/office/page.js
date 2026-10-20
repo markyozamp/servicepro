@@ -7,10 +7,12 @@ import { money, ago, dateTime, date, daysUntil, FLAG_LABEL } from '@/lib/format'
 import TopBar from '@/components/TopBar';
 import CallDetail from '@/components/CallDetail';
 import NewCallForm from '@/components/NewCallForm';
+import TeamPanel from '@/components/TeamPanel';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox } from '@/components/bits';
 
 const LIST = `id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, invoiced_at, due_on,
   total_cost, invoice_ready, qbo_invoice_id, store_po_number, sites(name), customers(name),
+  mode, source, accepted_at, accept_due_at, declined_at, scheduled_start, store_confirmed_at, nte,
   visits(id, visit_no, status, eta_at, arrived_at, received_at, checkin_required, checkin_at, profiles(full_name)),
   parts_orders(status, expected_on, description), po_lines(status)`;
 
@@ -49,6 +51,13 @@ export default function OfficePortal() {
       setErr(e.message);
     }
   }, []);
+
+  // Opened from an alert: show that call
+  useEffect(() => {
+    if (!profile) return;
+    const c = new URLSearchParams(window.location.search).get('call');
+    if (c) setOpen(c);
+  }, [profile]);
 
   useEffect(() => {
     if (!profile) return;
@@ -125,6 +134,7 @@ export default function OfficePortal() {
             Review queue{reviewFlags.length > 0 && <span className="count">{reviewFlags.length}</span>}
           </button>
           <button className={tab === 'history' ? 'on' : ''} onClick={() => setTab('history')}>Invoiced & cancelled</button>
+          <button className={tab === 'team' ? 'on' : ''} onClick={() => setTab('team')}>Team</button>
         </div>
 
         {tab === 'board' && (
@@ -150,13 +160,24 @@ export default function OfficePortal() {
                         </div>
                         <div className="small muted">{w.customers?.name} · {w.sites?.name}</div>
                         <div className="issue">{w.issue_description}</div>
+                        {w.mode === 'verify' && (
+                          <div className="row" style={{ gap: 4 }}>
+                            <span className="chip tone-blue">PO {w.store_po_number || `PO${w.number}`}</span>
+                            {w.status === 'created' && !w.accepted_at && !w.declined_at && w.accept_due_at && (
+                              <span className={`chip ${new Date(w.accept_due_at) < new Date() ? 'tone-red' : 'tone-amber'}`}>Accept by {dateTime(w.accept_due_at)}</span>)}
+                            {w.status === 'created' && w.accepted_at && <span className="chip tone-green">{w.scheduled_start ? `Scheduled ${dateTime(w.scheduled_start)}` : 'Accepted'}</span>}
+                            {w.declined_at && <span className="chip tone-slate">Declined</span>}
+                            {w.source === 'contractor' && !w.store_confirmed_at && <span className="chip tone-amber">Store hasn't confirmed</span>}
+                          </div>
+                        )}
                         {v && <div className="small">🔧 {v.profiles?.full_name}{v.visit_no > 1 ? ` · visit ${v.visit_no}` : ''}</div>}
                         <LiveLine wo={w} visit={v} />
                         {waitingApproval && <span className="chip tone-red" style={{ alignSelf: 'flex-start' }}>Waiting on customer approval</span>}
                         {col.key === 'parts' && parts.length > 0 && (
                           <div className="small muted">{parts.map((o) => `${o.description}${o.expected_on ? ` (exp. ${date(o.expected_on)})` : ''}`).join(', ')}</div>
                         )}
-                        {['site', 'done'].includes(col.key) && <div className="small">{money(w.total_cost)}</div>}
+                        {['site', 'done'].includes(col.key) && w.mode !== 'verify' && <div className="small">{money(w.total_cost)}</div>}
+                        {col.key === 'done' && w.mode === 'verify' && <span className="chip tone-amber" style={{ alignSelf: 'flex-start' }}>Enter your invoice</span>}
                         {col.key === 'done' && <BillLine wo={w} />}
                         {blockingByWo[w.id] > 0 && <span className="chip tone-red" style={{ alignSelf: 'flex-start' }}>{blockingByWo[w.id]} to review</span>}
                         {(col.key === 'new' || (col.key === 'parts' && w.status === 'return_needed')) && assignBox(w)}
@@ -169,6 +190,8 @@ export default function OfficePortal() {
             })}
           </div>
         )}
+
+        {tab === 'team' && <TeamPanel profile={profile} />}
 
         {tab === 'pm' && (
           <div className="panel">
@@ -207,8 +230,9 @@ export default function OfficePortal() {
                       <td>{w.customers?.name}<div className="small muted">{w.sites?.name}</div></td>
                       <td>{d < 0 ? <span className="chip tone-red">LATE {-d} days — store notified</span>
                         : <span className={`chip ${d <= 2 ? 'tone-amber' : 'tone-slate'}`}>{date(w.invoice_due_at)} ({d} days)</span>}</td>
-                      <td>{w.invoice_ready ? <span className="chip tone-green">Ready</span> : <span className="chip tone-red">{blockingByWo[w.id] || 0} to review</span>}</td>
-                      <td className="num">{money(w.total_cost)}</td>
+                      <td>{w.mode === 'verify' ? <span className="chip tone-amber">Enter invoice (Time Verify)</span>
+                        : w.invoice_ready ? <span className="chip tone-green">Ready</span> : <span className="chip tone-red">{blockingByWo[w.id] || 0} to review</span>}</td>
+                      <td className="num">{w.mode === 'verify' ? '—' : money(w.total_cost)}</td>
                     </tr>
                   );
                 })}

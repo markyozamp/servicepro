@@ -610,6 +610,263 @@ reset role;
 update profiles set is_org_admin = false where id = :LUIS;
 set role authenticated;
 
+\echo '=== 26. Time Verify: the store invites its plumber; sign-in by link (no password)'
+set role authenticated;
+select test.login(:SAM);
+select test.blocked($$select invite_contractor('Prairie Plumbing', 'Pete Prairie', 'pete@prairie.test', null, '{3}')$$,
+  'admin', 'a store manager (not admin) cannot invite contractors');
+select test.login(:DOUG);
+create temp table tv as select (invite_contractor('Prairie Plumbing', 'Pete Prairie', 'pete@prairie.test', '701-555-0100', '{3}')->>'token')::uuid as tok;
+reset role;
+grant select on tv to anon, authenticated;
+set role anon;
+select test.ok((select join_info((select tok from tv))->>'invited_by' = 'Northside Grocers (demo)'), 'the link page shows who invited them (no login needed)');
+select test.ok((select join_redeem((select tok from tv))->>'email' = 'pete@prairie.test'), 'opening the link makes the login and signs the phone in');
+select test.blocked($$select join_redeem((select tok from tv))$$, 'already used', 'the link works once');
+select test.ok((select join_info(gen_random_uuid())->>'ok' = 'false'), 'a made-up link is rejected');
+reset role;
+select test.put('PETE', (select profile_id from join_links where token = (select tok from tv)));
+select test.put('PRAIRIE', (select contractor_id from join_links where token = (select tok from tv)));
+select test.ok((select is_org_admin and is_technician and can_bill from profiles where id = test.v('PETE')), 'the owner can run the office and go on calls');
+select test.ok((select mode = 'verify' from customer_contractors where contractor_id = test.v('PRAIRIE')), 'the relationship is Time Verify');
+set role authenticated;
+select test.login(test.v('PETE'));
+create temp table tv2 as select add_team_member('Tony Tech', '701-555-0101') as tok;
+reset role; grant select on tv2 to anon, authenticated; set role anon;
+select test.ok((select join_redeem((select tok from tv2))->>'email' like '%@users.servicepro.app'), 'a tech added by phone number gets a login without an email');
+reset role;
+select test.put('TONY', (select profile_id from join_links where token = (select tok from tv2)));
+select test.ok((select is_technician and not is_org_admin from profiles where id = test.v('TONY')), 'Tony is a technician');
+set role authenticated;
+select test.login(:LUIS);
+select test.blocked($$select add_team_member('X Y', '1')$$, 'owner', 'a tech cannot add people');
+select test.login(:DOUG);
+create temp table tv3 as select (invite_contractor('Imposter Co', 'Someone', 'luis@arcticair.demo')->>'token')::uuid as tok;
+reset role; grant select on tv3 to anon; set role anon;
+select test.blocked($$select join_redeem((select tok from tv3))$$, 'already has a login', 'an invite cannot take over an existing login');
+set role authenticated;
+
+\echo '=== 27. Store opens a PO call; routed by trade; contractor alerted'
+select test.login(:MARIA);
+select test.put('tw', (open_po_call(:S121, (select id from issue_types where code='drain_backup'), 'Floor drain by the deli backing up',
+  'NS-4471', 600)).id);
+select test.ok((select contractor_id = test.v('PRAIRIE') and mode = 'verify' and store_po_number = 'NS-4471' and nte = 600
+  and accept_due_at between created_at + interval '239 minutes' and created_at + interval '241 minutes' from work_orders where id = test.v('tw')),
+  'plumbing goes to the plumber, as Time Verify, with the store''s PO, $600 limit, accept within 4 hours');
+select test.ok((select count(*) = 0 from po_lines where work_order_id = test.v('tw')), 'no approval letters on Time Verify calls');
+select test.blocked($$select open_po_call('30000000-0000-0000-0000-000000000002', (select id from issue_types where code='drain_backup'), 'again', 'NS-4471')$$,
+  'already on an open call', 'the same PO number cannot be used twice');
+select test.put('tfull', (open_po_call(:S121, (select id from issue_types where code='wi_cooler_down'), 'Walk-in warm')).id);
+select test.ok((select contractor_id = :ARCTIC and mode = 'full' and store_po_number is null from work_orders where id = test.v('tfull')),
+  'refrigeration still goes to Arctic Air, full mode');
+select test.blocked($$select open_po_call('30000000-0000-0000-0000-000000000002', (select id from issue_types where code='wi_cooler_down'), 'x', null, 500)$$,
+  'approved amounts', 'a not-to-exceed only applies to Time Verify contractors');
+select test.login(test.v('PETE'));
+select test.ok((select count(*) = 1 from notifications where work_order_id = test.v('tw') and type = 'new_call' and message like '%PO call #%NS-4471%Please accept by%'),
+  'the plumber''s office is alerted');
+select test.ok((select jsonb_array_length(tech_jobs()->'open_calls') = 1), 'the call shows on the techs'' phones as one anyone can take');
+select test.ok((select (tech_jobs()->'open_calls'->0->>'po_number') = 'NS-4471'), 'with the store''s PO number');
+
+\echo '=== 28. Not accepted in time → store told; office accepts with a time window'
+reset role;
+do $$ begin perform _allow_internal(); update work_orders set accept_due_at = now() - interval '1 minute' where id = test.v('tw'); perform _end_internal(); end $$;
+select test.ok(accept_watch() >= 1, 'the watcher finds the late call');
+set role authenticated;
+select test.login(:MARIA);
+select test.ok((select count(*) = 1 from notifications where work_order_id = test.v('tw') and message like '%has NOT accepted call%Phone: 701-555-0100%'),
+  'the store is told, with the contractor''s phone number');
+select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('tw') and flag = 'not_accepted' and resolved_at is null), 'flagged on the call');
+select test.login(test.v('PETE'));
+select from accept_call(test.v('tw'), 'scheduled', now() + interval '1 hour', now() + interval '3 hours');
+select test.login(:MARIA);
+select test.ok((select count(*) = 1 from notifications where work_order_id = test.v('tw') and type = 'assigned' and message like 'Prairie Plumbing accepted call%scheduled%'),
+  'store sees "accepted — scheduled …"');
+select test.ok((select count(*) = 0 from guardrail_flags where work_order_id = test.v('tw') and flag = 'not_accepted' and resolved_at is null), 'flag cleared');
+select test.login(:SAM);
+select test.blocked($$select accept_call((select test.v('tw')))$$, 'contractor office', 'a store cannot accept for the contractor');
+
+\echo '=== 29. Tech: I''m going (one tech only) → I''m here → code → parts run → Leaving'
+select test.login(test.v('TONY'));
+select test.put('tv', (tech_claim_call(test.v('tw'), null, 47.92, -97.03)).id);
+select test.ok((select status = 'en_route' and started_at is not null from visits where id = test.v('tv')), 'Tony is on the way (one tap)');
+select test.ok((select (tech_claim_call(test.v('tw'))).id = test.v('tv')), 'tapping again changes nothing');
+select test.login(test.v('PETE'));
+select test.blocked($$select tech_claim_call((select test.v('tw')))$$, 'Already taken — Tony Tech', 'no double dispatch: Pete sees Tony has it');
+select test.ok((select jsonb_array_length(tech_jobs()->'open_calls') = 0), 'it leaves everyone else''s list');
+select test.login(:LUIS);
+select test.blocked($$select tech_claim_call((select test.v('tw')))$$, 'not for your company', 'another company''s tech cannot take it');
+select test.blocked($$select tech_claim_call((select test.v('tfull')))$$, 'dispatcher', 'full-mode jobs are still assigned by dispatch');
+select test.login(test.v('TONY'));
+select from tech_arrive(test.v('tv'), null, 47.8936, -97.0632);
+select test.ok((select (tech_leave(test.v('tv'), 'completed')->'missing'->0->>'item') = 'checkin'), 'cannot leave before checking in with the store');
+reset role; create temp table vc as select code from visit_codes where visit_id = test.v('tv'); grant select on vc to authenticated; set role authenticated;
+select test.ok((select (tech_checkin(test.v('tv'), 'code', (select code from vc))->>'verified')::boolean),
+  'check-in with the store''s code');
+select from tech_parts_run(test.v('tv'), 'leave', 'a0000000-0000-0000-0000-0000000000f1', null, null, 47.8936, -97.0632);
+select test.ok((select (tech_leave(test.v('tv'), 'completed')->'missing'->0->>'item') = 'parts_run'), 'cannot leave while on a parts run');
+select from tech_parts_run(test.v('tv'), 'at_supplier', 'a0000000-0000-0000-0000-0000000000f1', 'Ferguson', null, 47.90, -97.05);
+select from tech_parts_run(test.v('tv'), 'back', 'a0000000-0000-0000-0000-0000000000f1', null, null, 47.8936, -97.0632);
+select test.ok((select (tech_parts_run(test.v('tv'), 'back', 'a0000000-0000-0000-0000-0000000000f1')->>'returned_at') is not null), 'parts run steps can be resent safely');
+select test.ok((select tech_leave(test.v('tv'), 'completed', 'Snaked drain, replaced trap')->>'ok')::boolean, 'Leaving — done (no photos needed)');
+select test.ok((select status = 'completed' and invoice_due_at is not null from work_orders where id = test.v('tw')), 'call is complete; invoice due date set');
+select test.ok((select count(*) = 0 from platform_fees where work_order_id = test.v('tw')), 'no per-call fee on Time Verify');
+-- realistic times: left the shop 9:00, arrived 9:30, parts run 10:30–11:10, left 11:30
+reset role;
+do $$ begin
+perform _allow_internal(true);
+update visits set started_at = now() - interval '150 minutes', arrived_at = now() - interval '120 minutes',
+       completed_at = now(), departed_at = now(), checkin_at = now() - interval '119 minutes' where id = test.v('tv');
+update parts_runs set left_at = now() - interval '60 minutes', at_supplier_at = now() - interval '45 minutes', returned_at = now() - interval '20 minutes'
+ where id = 'a0000000-0000-0000-0000-0000000000f1';
+perform _end_internal();
+end $$;
+set role authenticated;
+select test.login(:MARIA);
+select test.ok((select (verified_hours(test.v('tw'))->>'onsite_h')::numeric = 1.33 and (verified_hours(test.v('tw'))->>'travel_h')::numeric = 0.5
+  and (verified_hours(test.v('tw'))->>'parts_run_h')::numeric = 0.67 and (verified_hours(test.v('tw'))->>'verified_h')::numeric = 2.5),
+  'verified: 1.33 h on site + 0.5 h travel + 0.67 h parts run = 2.5 h');
+select '      ' || (verified_hours(test.v('tw')) - 'visits')::text;
+
+\echo '=== 30. Invoice check: billed vs verified hours'
+select test.login(test.v('PETE'));
+select test.ok((select (submit_invoice(test.v('tw'), 'INV-881', 540, 3.5)->>'unexplained_h')::numeric = 1.0), 'bills 3.5 h; 2.5 verified → 1 h not explained');
+select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('tw') and flag = 'invoice_unexplained' and resolved_at is null and visible_to_customer),
+  'the store sees the unexplained hour');
+select test.blocked($$select submit_invoice((select test.v('tw')), 'INV-881', 540, 3.5, 1)$$, 'what the other hours', 'extra hours need a reason');
+select test.ok((select (submit_invoice(test.v('tw'), 'INV-881', 640, 3.5, 1, 'Shop: rebuilt the trap assembly')->>'all_verified')::boolean),
+  'contractor explains the hour (shop work) → all hours accounted for');
+select test.ok((select count(*) = 0 from guardrail_flags where work_order_id = test.v('tw') and flag = 'invoice_unexplained' and resolved_at is null), 'flag cleared');
+select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('tw') and flag = 'invoice_over_nte' and resolved_at is null),
+  '$640 is over the store''s $600 limit → flagged');
+select test.ok((select status = 'invoiced' from work_orders where id = test.v('tw')), 'call shows invoiced');
+select test.login(:SAM);
+select test.blocked($$select submit_invoice((select test.v('tw')), 'X', 1, 1)$$, 'Not allowed', 'a store manager without billing rights cannot touch invoices');
+select test.login(:MARIA);
+select test.blocked($$select submit_invoice((select test.v('tw')), 'X', 1, 1)$$, 'contractor already entered', 'the store cannot overwrite the contractor''s invoice');
+select test.ok((select message like 'Invoice INV-881%' from notifications where work_order_id = test.v('tw') and type = 'billing_due' order by created_at desc limit 1),
+  'the store is told what was billed vs verified');
+select test.ok((select status = 'approved' from store_review_invoice(test.v('tw'), true)), 'store approves');
+select test.login(test.v('PETE'));
+select test.blocked($$select submit_invoice((select test.v('tw')), 'INV-881', 1, 1)$$, 'already approved', 'an approved invoice is final');
+select test.login(:DOUG);
+select from set_contractor_terms(test.v('PRAIRIE'), null, 'no');
+select test.ok((select (verified_hours(test.v('tw'))->>'travel_counted_h')::numeric = 0 and (verified_hours(test.v('tw'))->>'verified_h')::numeric = 2.0),
+  'store setting "We don''t pay travel" → travel is shown but not counted');
+select from set_contractor_terms(test.v('PRAIRIE'), null, 'yes');
+
+\echo '=== 31. A call the contractor took by phone: the store confirms it'
+select test.login(test.v('PETE'));
+select test.put('tp', (enter_phone_call(:S114, (select id from issue_types where code='water_leak'), 'Leak under the 3-comp sink', 'Sam', '701-555-0199')).id);
+select test.ok((select source = 'contractor' and accepted_at is not null and store_confirmed_at is null from work_orders where id = test.v('tp')),
+  'entered by the contractor: accepted, not yet confirmed by the store');
+select test.login(:SAM);
+select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('tp') and flag = 'call_unconfirmed' and resolved_at is null), 'the store sees it as unconfirmed');
+select test.ok((select count(*) = 1 from notifications where work_order_id = test.v('tp') and message like '%requested by Sam%confirm%'), 'the store is asked to confirm');
+select test.ok((select store_po_number = 'NS-4502' from store_confirm_call(test.v('tp'), true, 'NS-4502')), 'Sam confirms and adds the store''s PO number');
+select test.ok((select count(*) = 0 from guardrail_flags where work_order_id = test.v('tp') and flag = 'call_unconfirmed' and resolved_at is null), 'flag cleared');
+select test.login(test.v('PETE'));
+select test.put('tp2', (enter_phone_call(:S114, (select id from issue_types where code='no_hot_water'), 'No hot water in restrooms', 'Kyle (night stocker)')).id);
+select test.login(:SAM);
+select from store_confirm_call(test.v('tp2'), false, null, 'Kyle is not authorized to order service');
+select test.ok((select store_disputed from work_orders where id = test.v('tp2')), 'or the store disputes it — on record for both sides');
+
+\echo '=== 32. Store: "The tech is here but didn''t check in"'
+select test.login(test.v('TONY'));
+select test.put('tv2', (tech_claim_call(test.v('tp'))).id);
+select test.login(:SAM);
+select test.ok((select store_tech_here(test.v('tp'))->>'technician' = 'Tony Tech'), 'Sam presses "Tech is here"');
+select test.ok((select status = 'on_site' and arrival_source = 'store' and arrived_at is not null from visits where id = test.v('tv2')),
+  'arrival recorded from the store side (the tech is paid from now)');
+select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('tp') and flag = 'arrival_by_store'), 'flagged for the contractor');
+select test.login(test.v('TONY'));
+select test.ok((select count(*) = 1 from notifications where user_id = test.v('TONY') and message like 'The store says you are at%'), 'Tony is told to check in');
+select test.ok((select status = 'on_site' from tech_arrive(test.v('tv2'), null, 47.91, -97.049)), 'his late "I''m here" tap is harmless');
+reset role;
+do $$ begin perform _allow_internal(true); update visits set arrived_at = now() - interval '6 minutes' where id = test.v('tv2'); perform _end_internal(); end $$;
+select test.ok(checkin_watch() >= 1, 'the door alarm runs while no code has been entered');
+set role authenticated;
+select test.login(:MARIA);
+select test.put('tn', (open_po_call(:S121, (select id from issue_types where code='water_leak'), 'Leak at mop sink')).id);
+select test.ok((select accept_due_at < created_at + interval '16 minutes' from work_orders where id = test.v('tn')), 'emergency problem → must be accepted within 15 minutes');
+select test.ok((select (store_tech_here(test.v('tn'))->>'no_visit')::boolean), 'tech here but nobody took the call in the app → office told');
+
+\echo '=== 33. QR sticker on the unit + store PIN'
+select test.login(:DOUG);
+select from set_report_pin(:S114, '2468');
+select test.blocked($$select set_report_pin('30000000-0000-0000-0000-000000000001', '12')$$, '4 to 6 digits', 'PIN must be 4–6 digits');
+select test.login(:SAM);
+select test.blocked($$select * from site_report_pins$$, 'permission denied', 'nobody can read the PIN (not even a hash)');
+reset role;
+create temp table qrt as select (select qr_token from equipment where id = '80000000-0000-0000-0000-000000000001') t1,
+  (select qr_token from equipment where id = '80000000-0000-0000-0000-000000000002') t2,
+  (select id from issue_types where code = 'wi_freezer_down') fz;
+grant select on qrt to anon;
+set role anon;
+select test.ok((select qr_info((select t1 from qrt))->>'unit' like 'Walk-in freezer%'),
+  'scanning the sticker shows the unit, no login');
+select test.ok((select qr_report((select t1 from qrt), '1111', null, 'Freezer warm', 'Jen')->>'error' like 'Wrong store PIN%'), 'wrong PIN does nothing');
+select test.ok((select qr_report((select t1 from qrt), '2468',
+  (select fz from qrt), 'Freezer at 20F', 'Jen (night crew)')->>'contractor' = 'Arctic Air Mechanical (demo)'),
+  'right PIN → call opened to the refrigeration contractor');
+select test.blocked($$select qr_report((select t1 from qrt), '2468', null, 'Freezer still warm', 'Bob')$$,
+  'already reported', 'a second scan within 2 hours does not make a duplicate call');
+reset role;
+select test.ok((select reported_by_name = 'Jen (night crew)' and source = 'qr' and equipment_id = :FREEZER from work_orders where reported_by_name is not null order by created_at desc limit 1),
+  'the call knows which unit and who reported it');
+select test.ok((select count(*) = 1 from guardrail_flags g join work_orders w on w.id = g.work_order_id where w.source = 'qr' and g.flag = 'repeat_call'),
+  'repeat-call flag: this freezer had a call in the last 30 days');
+select '      ' || g.description from guardrail_flags g join work_orders w on w.id = g.work_order_id where w.source = 'qr' and g.flag = 'repeat_call';
+set role anon;
+select test.ok((select qr_report((select t2 from qrt), '0000', null, 'x', 'y')->>'ok' = 'false'), 'wrong PIN 1');
+select test.ok((select qr_report((select t2 from qrt), '0000', null, 'x', 'y')->>'ok' = 'false'), 'wrong PIN 2');
+select test.ok((select qr_report((select t2 from qrt), '0000', null, 'x', 'y')->>'ok' = 'false'), 'wrong PIN 3');
+select test.ok((select qr_report((select t2 from qrt), '0000', null, 'x', 'y')->>'ok' = 'false'), 'wrong PIN 4');
+select test.ok((select qr_report((select t2 from qrt), '0000', null, 'x', 'y')->>'ok' = 'false'), 'wrong PIN 5');
+select test.blocked($$select qr_report((select t2 from qrt), '2468', null, 'Condenser loud', 'Bob')$$,
+  'Too many', 'after 5 wrong PINs the sticker locks for 15 minutes');
+
+\echo '=== 34. Decline → store sends it to another contractor'
+set role authenticated;
+select test.login(:MARIA);
+select test.put('td', (open_po_call(:S121, (select id from issue_types where code='no_hot_water'), 'No hot water, kitchen')).id);
+select test.login(test.v('PETE'));
+select from decline_call(test.v('td'), 'Booked solid until Monday');
+select test.login(:MARIA);
+select test.ok((select count(*) = 1 from notifications where work_order_id = test.v('td') and message like '%can''t take call%Booked solid%'), 'store is told right away');
+select test.ok((select contractor_id = :ARCTIC and mode = 'full' from reroute_call(test.v('td'), :ARCTIC)), 'store sends it to Arctic Air instead');
+select test.login(test.v('PETE'));
+select test.ok((select count(*) = 0 from work_orders where id = test.v('td')), 'Prairie no longer sees it');
+
+\echo '=== 35. Store PO log'
+select test.login(:MARIA);
+select test.ok((select count(*) >= 4 from po_log where contractor_name = 'Prairie Plumbing'), 'every call is in the PO log');
+select test.ok((select invoice_total = 640 and hours_unexplained = 0 and 'invoice_over_nte' = any(flags) from po_log where id = test.v('tw')),
+  'with invoice total, hours check and flags');
+select '      ' || concat_ws(' | ', po_number, site_name, problem_type, status, invoice_total, hours_billed, hours_verified, array_to_string(flags, ',')) from po_log where id = test.v('tw');
+select test.login(:RIVAL);
+select test.ok((select count(*) = 0 from po_log where customer_id = '20000000-0000-0000-0000-000000000001'), 'another contractor sees none of it');
+
+\echo '=== 36. Billing: flat per location for Time Verify stores; contractor free'
+reset role;
+select monthly_billing_run((current_date + interval '1 month')::date);   -- this month's statement was already paid above
+select test.ok((select subscription_fees = 25 * (select count(*) from sites where customer_id = '20000000-0000-0000-0000-000000000001')
+  from monthly_statements where org_kind = 'customer' and org_id = '20000000-0000-0000-0000-000000000001' and billing_month = date_trunc('month', current_date + interval '1 month')::date),
+  'Northside: $25 × each location');
+select test.ok((select count(*) = 0 from monthly_statements where org_kind = 'contractor' and org_id = test.v('PRAIRIE')), 'Prairie Plumbing pays nothing');
+
+\echo '=== 37. Alerts go out to phones and email (sender with its key)'
+set role anon;
+select test.blocked($$select outbox_take('wrong')$$, 'Not allowed', 'the sender needs the key');
+reset role;
+create temp table ob as select outbox_take((select value from app_secrets where name = 'outbox'), 200) as j;
+select test.ok((select jsonb_array_length(j) > 0 from ob), 'waiting alerts are handed over once');
+select test.ok((select count(*) = 0 from notifications where sent_at is null and id in (select (x->>'id')::uuid from ob, jsonb_array_elements(j) x)), 'and marked sent');
+set role authenticated;
+select test.login(test.v('TONY'));
+select from save_push_subscription('https://push.example/abc', 'key', 'auth');
+select test.ok((select count(*) = 1 from push_subscriptions), 'a phone can sign up for alerts');
+reset role;
+
 reset role;
 \echo '=== 18. Audit'
 select test.ok((select count(*) > 50 from audit_log), 'every change is in the audit trail');

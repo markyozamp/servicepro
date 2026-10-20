@@ -4,8 +4,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { money, dateTime, time, date, FLAG_LABEL, PRIORITY, KIND, PO_KIND, poLabel, daysUntil } from '@/lib/format';
 import { StatusChip, PriorityChip, KindChip, ErrorBox, Notice } from './bits';
+import { VerifyPanel, TechHereButton } from './TimeVerify';
 
-const WO = `*, sites(name, address, access_notes, timezone, property_type), customers(name, kind, phone),
+const WO = `*, sites(name, address, access_notes, timezone, property_type), customers(name, kind, phone), contractors(name, phone),
   equipment(id, manufacturer, model, serial, refrigerant, location_description, equipment_types(name)),
   repair_types(name), agreements(name, coverage, response_emergency_min, response_normal_min), issue_types(name)`;
 
@@ -117,6 +118,9 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
           {!d && !err && <div className="muted">Loading…</div>}
           {wo && (
             <>
+              {wo.mode === 'verify' && <VerifyPanel wo={wo} side={side} profile={profile} busy={busy} run={run} />}
+              {side === 'store' && <TechHereButton wo={wo} visits={d.visits} busy={busy} run={run} />}
+
               {/* ---- Store: approval ---- */}
               {pending && side === 'store' && (
                 <div className="panel panel-pad stack" style={{ borderColor: '#e6b3ab' }}>
@@ -269,7 +273,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                   </div>
                 </div>
               )}
-              {side === 'office' && wo.status === 'completed' && (
+              {side === 'office' && wo.status === 'completed' && wo.mode !== 'verify' && (
                 <div className="panel panel-pad spread">
                   <div className="small">
                     {wo.invoice_ready ? 'Ready to invoice.' : 'Resolve the review items above to invoice.'}
@@ -285,7 +289,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
               )}
 
               {/* ---- Store: bill pending ---- */}
-              {side === 'store' && wo.status === 'completed' && (
+              {side === 'store' && wo.status === 'completed' && wo.mode !== 'verify' && (
                 <Notice>Work complete. Bill pending — about <strong>{money(wo.total_cost)}</strong>. The contractor must send the invoice by {date(wo.invoice_due_at)}.</Notice>
               )}
 
@@ -364,7 +368,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
               </div>
 
               {/* ---- PO ---- */}
-              <div className="panel panel-pad">
+              {wo.mode !== 'verify' && <div className="panel panel-pad">
                 <h3 style={{ marginBottom: 8 }}>Purchase order</h3>
                 {d.lines.length === 0 ? <div className="small muted">No spending limit on this call.</div> : (
                   <table>
@@ -399,10 +403,10 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                     if (why) run('request_po_line', { p_wo: wo.id, p_kind: d.lines.some((l) => l.kind === 'repair') ? 'additional' : 'repair', p_amount: Number(amt), p_description: why });
                   }}>Request approval for more</button>
                 )}
-              </div>
+              </div>}
 
               {/* ---- Cost ---- */}
-              <div className="panel panel-pad">
+              {wo.mode !== 'verify' && <div className="panel panel-pad">
                 <h3 style={{ marginBottom: 8 }}>Cost {wo.status === 'completed' || wo.status === 'invoiced' ? '' : 'so far'}</h3>
                 <table>
                   <tbody>
@@ -428,7 +432,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                     )}
                   </tbody>
                 </table>
-              </div>
+              </div>}
 
               {/* ---- Equipment & photos ---- */}
               <div className="panel panel-pad">
@@ -441,7 +445,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                     {wo.equipment.refrigerant && (<><dt>Refrigerant</dt><dd>{wo.equipment.refrigerant}</dd></>)}
                     <dt>Location</dt><dd>{wo.equipment.location_description || '—'}</dd>
                   </dl>
-                ) : <div className="small muted">The technician will photograph the nameplate on site.</div>}
+                ) : <div className="small muted">{wo.mode === 'verify' ? 'No unit picked.' : 'The technician will photograph the nameplate on site.'}</div>}
                 {d.photos.length > 0 && (
                   <div className="photos" style={{ marginTop: 10 }}>
                     {d.photos.map((p) => d.urls[p.id]

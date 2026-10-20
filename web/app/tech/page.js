@@ -7,6 +7,7 @@ import { portalFor } from '@/lib/useProfile';
 import * as T from '@/lib/techStore';
 import { time, ago, PRIORITY, KIND, STATUS } from '@/lib/format';
 import Job from '@/components/tech/Job';
+import AlertsButton from '@/components/AlertsButton';
 
 const useTech = () => useSyncExternalStore(T.subscribe, T.getState, T.getState);
 
@@ -67,7 +68,10 @@ export default function TechApp() {
     <>
       <header className="topbar" style={{ padding: '0 12px' }}>
         {job ? <button onClick={() => setOpen(null)}>‹ Jobs</button> : <div className="brand">Service<span>Pro</span></div>}
-        <div className="who"><span>{me.full_name}</span>{!job && <button onClick={signOut}>Sign out</button>}</div>
+        <div className="who"><span>{me.full_name}</span>
+          {!job && <AlertsButton />}
+          {!job && (me.is_org_admin || me.can_dispatch || me.can_bill) && <button onClick={() => router.push('/office')}>Office</button>}
+          {!job && <button onClick={signOut}>Sign out</button>}</div>
       </header>
       <SyncBar st={st} />
       {st.clock && !st.clock.ok && (
@@ -113,8 +117,9 @@ function JobList({ v, onOpen }) {
         <h1>Your jobs</h1>
         <button onClick={() => T.sync()}>Refresh</button>
       </div>
-      {active.length === 0 && <div className="sec muted">No open jobs right now.</div>}
+      {active.length === 0 && !(v.open_calls || []).length && <div className="sec muted">No open jobs right now.</div>}
       {active.map((j) => <JobCard key={j.visit.id} j={j} onOpen={onOpen} />)}
+      <OpenCalls calls={v.open_calls || []} />
       {done.length > 0 && <h3 className="muted" style={{ marginTop: 8 }}>Finished today</h3>}
       {done.map((j) => <JobCard key={j.visit.id} j={j} onOpen={onOpen} />)}
     </main>
@@ -142,6 +147,37 @@ function JobCard({ j, onOpen }) {
       {s === 'assigned' && <div className="small muted">Assigned {ago(j.visit.assigned_at)}</div>}
       {s === 'done' && <div className="small muted">{STATUS[j.wo.status]?.label || j.visit.outcome}</div>}
     </div>
+  );
+}
+
+// Time Verify calls anyone on the team can take. First to tap "I'm going" gets it.
+function OpenCalls({ calls }) {
+  const [busy, setBusy] = useState(null);
+  const [err, setErr] = useState('');
+  if (!calls.length) return null;
+  return (
+    <>
+      <h3 style={{ marginTop: 8 }}>Calls waiting for a tech ({calls.length})</h3>
+      {err && <div className="error">{err}</div>}
+      {calls.map((c) => (
+        <div key={c.id} className={`jobcard ${c.priority === 1 ? 'urgent' : ''}`}>
+          <div className="spread">
+            <strong>#{c.number} · {c.customer}</strong>
+            <span className="chip tone-blue">{c.return_visit ? 'Return trip' : c.accepted_at ? 'Accepted' : 'New'}</span>
+          </div>
+          <div><strong>{c.site.name}{c.unit ? `, unit ${c.unit}` : ''}</strong> <span className="muted small">{c.site.address}</span></div>
+          <div className="row" style={{ gap: 6 }}>
+            {c.priority === 1 && <span className="chip tone-red">{PRIORITY[1]}</span>}
+            <span className="small">{c.issue && c.issue !== c.problem ? `${c.issue}: ` : ''}{c.problem}</span>
+          </div>
+          <div className="small muted">PO {c.po_number}{c.scheduled_start ? ` · scheduled ${time(c.scheduled_start)}${c.scheduled_end ? `–${time(c.scheduled_end)}` : ''}` : ` · opened ${ago(c.created_at)}`}</div>
+          <button className="primary big" disabled={!!busy} onClick={async () => {
+            setBusy(c.id); setErr('');
+            try { await T.claim(c.id); } catch (e) { setErr(e.message); T.sync(); } finally { setBusy(null); }
+          }}>{busy === c.id ? 'Taking it…' : "I'm going"}</button>
+        </div>
+      ))}
+    </>
   );
 }
 

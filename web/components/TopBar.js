@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { signOut } from '@/lib/useProfile';
+import AlertsButton from './AlertsButton';
 
 export default function TopBar({ profile, org, portal }) {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function TopBar({ profile, org, portal }) {
           {profile?.full_name}
           {org ? ` — ${org.name}` : ''}
         </span>
+        <AlertsButton />
+        {profile?.is_technician && portal === 'Office' && <button onClick={() => router.push('/tech')}>My jobs (tech app)</button>}
         <button onClick={() => signOut(router)}>Sign out</button>
       </div>
     </header>

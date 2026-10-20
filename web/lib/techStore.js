@@ -148,6 +148,16 @@ function applyLocal(s, a) {
       break;
     }
     case 'tech_finish_visit': if (j) { j.visit.status = 'done'; j.visit.outcome = x.p_outcome; j.visit.completed_at = at; } break;
+    case 'tech_leave': if (j) { j.visit.status = 'done'; j.visit.outcome = x.p_outcome; j.visit.completed_at = at; j.visit.note = x.p_note; } break;
+    case 'tech_parts_run': {
+      if (!j) break;
+      const runs = j.visit.parts_runs || (j.visit.parts_runs = []);
+      let r = runs.find((q) => q.id === x.p_id);
+      if (x.p_step === 'leave' && !r) runs.push({ id: x.p_id, supplier: x.p_supplier || null, left_at: at, local: true });
+      if (r && x.p_step === 'at_supplier' && !r.at_supplier_at) { r.at_supplier_at = at; r.supplier = x.p_supplier || r.supplier; }
+      if (r && x.p_step === 'back' && !r.returned_at) r.returned_at = at;
+      break;
+    }
     case 'photo': if (j) j.photos.push({ id: a.photo.id, kind: a.photo.kind, visit_id: j.visit.id, local: true }); break;
     case 'clock': {
       const c = s.clock || (s.clock = {});
@@ -197,7 +207,7 @@ export function meter(j, now = Date.now()) {
 export function act(fn, args, meta) {
   const a = { id: uuid(), fn, args: { ...args }, at: new Date().toISOString(), meta };
   // Times come from the moment the tech tapped, so a job done in a basement with no signal keeps true times.
-  if (['tech_received', 'tech_start', 'tech_arrive', 'tech_checkin', 'tech_depart', 'tech_finish_visit', 'clock'].includes(fn)) {
+  if (['tech_received', 'tech_start', 'tech_arrive', 'tech_checkin', 'tech_depart', 'tech_finish_visit', 'tech_leave', 'tech_parts_run', 'clock'].includes(fn)) {
     a.args.p_at = a.at;
   }
   saveQueue([...state.queue, a]);
@@ -240,7 +250,7 @@ async function send(a) {
   if (a.fn === 'tech_checkin' && data && data.verified === false && ['code', 'backup_code'].includes(a.args.p_method)) {
     const e = new Error(data.message || 'Wrong code — try again.'); e.business = true; throw e;
   }
-  if (a.fn === 'tech_finish_visit' && data && data.ok === false && data.missing) {
+  if (['tech_finish_visit', 'tech_leave'].includes(a.fn) && data && data.ok === false && data.missing) {
     const e = new Error('Not finished — still needed: ' + data.missing.map((m) => m.message).join(' '));
     e.business = true; throw e;
   }
@@ -303,6 +313,15 @@ export function startAutoSync() {
   window.addEventListener('offline', off);
   const t = setInterval(() => { if (navigator.onLine) sync(); }, 60000);
   return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); clearInterval(t); };
+}
+
+// Time Verify: "I'm going" — takes a call the whole team can see. Needs signal, so two techs can't both take it.
+export async function claim(woId) {
+  if (!navigator.onLine) throw new Error('Needs signal — so no one else takes the same call. Try again when connected.');
+  const p = await position(5000);
+  const { error } = await supabase.rpc('tech_claim_call', { p_wo: woId, p_lat: p?.lat ?? null, p_lon: p?.lon ?? null });
+  if (error) throw new Error(error.message);
+  await sync();
 }
 
 // Distance in feet between two GPS points.

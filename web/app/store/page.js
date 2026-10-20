@@ -8,9 +8,12 @@ import TopBar from '@/components/TopBar';
 import CallDetail from '@/components/CallDetail';
 import NewCallForm from '@/components/NewCallForm';
 import LocationSettings from '@/components/LocationSettings';
+import ContractorSettings from '@/components/ContractorSettings';
+import PoLog from '@/components/PoLog';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox, Notice } from '@/components/bits';
 
 const LIST = `id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, total_cost, store_po_number,
+  mode, source, store_confirmed_at, store_disputed, accepted_at, accept_due_at, declined_at, nte, contact_name, contractors(name),
   sites(name), visits(id, visit_no, status, eta_at, arrived_at, received_at, checkin_required, checkin_at, profiles(full_name)),
   parts_orders(status, expected_on)`;
 
@@ -30,6 +33,7 @@ export default function StorePortal() {
   const [door, setDoor] = useState([]);       // technicians on site waiting for the check-in code
   const [sound, setSound] = useState(false);
   const [settings, setSettings] = useState(false);
+  const [cset, setCset] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -49,6 +53,13 @@ export default function StorePortal() {
       setErr(e.message);
     }
   }, []);
+
+  // Opened from an alert: show that call
+  useEffect(() => {
+    if (!profile) return;
+    const c = new URLSearchParams(window.location.search).get('call');
+    if (c) setOpen(c);
+  }, [profile]);
 
   useEffect(() => {
     if (!profile) return;
@@ -115,6 +126,7 @@ export default function StorePortal() {
           </div>
           <div className="row">
             {profile.is_org_admin && !settings && <button onClick={() => setSettings(true)}>Location settings</button>}
+            {profile.is_org_admin && !cset && <button onClick={() => setCset(true)}>Contractors &amp; QR</button>}
             {!creating && (profile.can_open_calls || profile.is_org_admin) && <button className="primary big" onClick={() => setCreating(true)}>+ New service call</button>}
           </div>
         </div>
@@ -138,6 +150,27 @@ export default function StorePortal() {
         {door.length > 0 && !sound && <button className="danger" onClick={enableAlerts}>🔔 Turn on sound and pop-up alerts for this screen</button>}
 
         {settings && <LocationSettings onClose={() => setSettings(false)} />}
+        {cset && <ContractorSettings onClose={() => setCset(false)} />}
+
+        {/* Calls a contractor entered from a phone call — confirm your store asked for them */}
+        {calls.filter((c) => c.source === 'contractor' && c.mode === 'verify' && !c.store_confirmed_at && !['cancelled'].includes(c.status)).map((c) => (
+          <div key={c.id} className="panel panel-pad spread" style={{ borderColor: '#e6c98a', background: '#fffcf3' }}>
+            <div className="stack" style={{ gap: 4 }}>
+              <div className="row" style={{ gap: 8 }}><span className="chip tone-amber">{c.store_disputed ? 'You questioned this' : 'Please confirm'}</span>
+                <strong>Call #{c.number} · {c.sites?.name}</strong></div>
+              <div>{c.contractors?.name} entered this from a phone call{c.contact_name ? ` — requested by ${c.contact_name}` : ''}: {c.issue_description}</div>
+            </div>
+            <button onClick={() => setOpen(c.id)}>Review</button>
+          </div>
+        ))}
+
+        {/* Time Verify calls not accepted in time */}
+        {calls.filter((c) => c.mode === 'verify' && c.status === 'created' && ((!c.accepted_at && c.accept_due_at && new Date(c.accept_due_at) < new Date()) || c.declined_at)).map((c) => (
+          <div key={c.id} className="panel panel-pad spread" style={{ borderColor: '#e6b3ab', background: '#fffaf9' }}>
+            <div><span className="chip tone-red">{c.declined_at ? 'Declined' : 'Not accepted'}</span> <strong>Call #{c.number} · {c.sites?.name}</strong> — {c.contractors?.name} {c.declined_at ? "can't take it" : 'has not accepted it yet'}.</div>
+            <button onClick={() => setOpen(c.id)}>What to do</button>
+          </div>
+        ))}
 
         {creating && (
           <NewCallForm side="store" profile={profile} onCancel={() => setCreating(false)} onCreated={async (wo) => {
@@ -175,7 +208,7 @@ export default function StorePortal() {
             {late.map((c) => (
               <div key={c.id} className="spread small click" style={{ padding: '6px 0', cursor: 'pointer' }} onClick={() => setOpen(c.id)}>
                 <span>Call #{c.number} · {c.sites?.name} — completed {date(c.completed_at)}, invoice was due {date(c.invoice_due_at)}</span>
-                <strong>about {money(c.total_cost)}</strong>
+                <strong>{c.mode === 'verify' ? 'invoice not entered' : `about ${money(c.total_cost)}`}</strong>
               </div>
             ))}
           </div>
@@ -213,7 +246,9 @@ export default function StorePortal() {
             <button className={tab === 'open' ? 'on' : ''} onClick={() => setTab('open')}>Open calls ({counts.open})</button>
             <button className={tab === 'billing' ? 'on' : ''} onClick={() => setTab('billing')}>Completed — bill pending ({counts.billing})</button>
             <button className={tab === 'closed' ? 'on' : ''} onClick={() => setTab('closed')}>Invoiced</button>
+            <button className={tab === 'po' ? 'on' : ''} onClick={() => setTab('po')}>PO log</button>
           </div>
+          {tab === 'po' ? <PoLog /> : (
           <table>
             <thead>
               <tr><th>Call</th><th>Problem</th><th className="hide-sm">Technician</th><th>Status</th><th className="num">Cost</th></tr>
@@ -225,7 +260,7 @@ export default function StorePortal() {
                 const parts = (c.parts_orders || []).filter((o) => ['needed', 'ordered'].includes(o.status));
                 return (
                   <tr key={c.id} className="click" onClick={() => setOpen(c.id)}>
-                    <td><strong>#{c.number}</strong><div className="small muted">{c.sites?.name}</div><div className="small muted">{dateTime(c.created_at)}</div></td>
+                    <td><strong>#{c.number}</strong><div className="small">{c.store_po_number || `PO${c.number}`}</div><div className="small muted">{c.sites?.name}</div><div className="small muted">{dateTime(c.created_at)}</div></td>
                     <td><div className="row" style={{ gap: 6 }}><PriorityChip priority={c.priority} /><KindChip kind={c.kind} /></div>{c.issue_description}</td>
                     <td className="hide-sm">{v?.profiles?.full_name || <span className="muted">—</span>}</td>
                     <td>
@@ -238,12 +273,14 @@ export default function StorePortal() {
                         <BillLine wo={c} />
                       </div>
                     </td>
-                    <td className="num">{Number(c.total_cost) > 0 ? money(c.total_cost) : <span className="muted">—</span>}</td>
+                    <td className="num">{c.mode === 'verify' ? (c.nte != null ? <span className="small muted">limit {money(c.nte)}</span> : <span className="muted">—</span>)
+                      : Number(c.total_cost) > 0 ? money(c.total_cost) : <span className="muted">—</span>}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          )}
         </div>
       </main>
 

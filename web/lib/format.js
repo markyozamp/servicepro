@@ -56,6 +56,12 @@ export const FLAG_LABEL = {
   checkin_unverified: 'Check-in not verified',
   billing_late: 'Bill is late',
   closeout_override: 'Closed without full documentation',
+  call_unconfirmed: 'Not confirmed by the store',
+  repeat_call: 'Repeat call (30 days)',
+  not_accepted: 'Not accepted',
+  arrival_by_store: 'Arrival recorded by the store',
+  invoice_unexplained: 'Hours not explained',
+  invoice_over_nte: 'Over the not-to-exceed',
 };
 
 export const poLabel = (wo, seq) => (wo.store_po_number || `PO${wo.number}`) + (seq > 0 ? String.fromCharCode(64 + seq) : '');

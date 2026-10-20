@@ -20,7 +20,7 @@ export default function Job({ job, cat, wifi, me }) {
       <Header job={job} wifi={wifi} />
       {v.status === 'assigned' && <StartDriving job={job} />}
       {v.status === 'en_route' && <Driving job={job} />}
-      {v.status === 'on_site' && <OnSite job={job} cat={cat} m={m} me={me} />}
+      {v.status === 'on_site' && (w.mode === 'verify' ? <VerifyOnSite job={job} /> : <OnSite job={job} cat={cat} m={m} me={me} />)}
       {v.status === 'done' && <Done job={job} />}
       <Background job={job} />
     </main>
@@ -52,7 +52,11 @@ function Header({ job, wifi }) {
           {wifi.password && <button onClick={() => { navigator.clipboard?.writeText(wifi.password).then(() => setCopied(true)).catch(() => {}); }}>{copied ? 'Copied' : 'Copy'}</button>}
         </div>
       )}
-      <div className="small muted">{w.po_number}{w.agreement ? ` · ${w.agreement}` : ''}{w.after_hours ? ' · after hours' : ''}{job.visit.visit_no > 1 ? ` · visit ${job.visit.visit_no}` : ''}</div>
+      {w.mode === 'verify' && (w.nte != null || w.scheduled_start) && (
+        <div className="small">{w.nte != null && <>Store's limit: <strong>not to exceed {money(w.nte)}</strong></>}{w.nte != null && w.scheduled_start ? ' · ' : ''}
+          {w.scheduled_start && <>Scheduled {time(w.scheduled_start)}{w.scheduled_end ? `–${time(w.scheduled_end)}` : ''} {date(w.scheduled_start)}</>}</div>
+      )}
+      <div className="small muted">{w.mode === 'verify' ? 'PO ' : ''}{w.po_number}{w.agreement ? ` · ${w.agreement}` : ''}{w.after_hours ? ' · after hours' : ''}{job.visit.visit_no > 1 ? ` · visit ${job.visit.visit_no}` : ''}</div>
     </div>
   );
 }
@@ -114,6 +118,110 @@ function Driving({ job }) {
         <div className="row" style={{ gap: 8 }}>
           {ETAS.map((n) => <button key={n} onClick={() => { T.act('tech_update_eta', { p_visit: job.visit.id, p_eta_at: new Date(Date.now() + n * 60000).toISOString() }, { label: 'ETA' }); setEta(false); }} style={{ flex: '1 1 30%' }}>{n} min</button>)}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------- Time Verify: check in → (parts run) → leaving. No paperwork. ----------------
+function VerifyOnSite({ job }) {
+  const v = job.visit;
+  const needsCheckin = v.checkin_required && !(v.checkin_verified || v.checkin_local);
+  const run = (v.parts_runs || []).find((r) => !r.returned_at);
+  const mins = v.arrived_at ? Math.max(0, Math.floor((Date.now() - new Date(v.arrived_at).getTime()) / 60000)) : 0;
+  return (
+    <>
+      <div className="meter no_limit"><strong>On site since {time(v.arrived_at)}{v.arrival_source === 'store' ? ' (recorded by the store)' : ''}</strong>
+        <span className="small">{Math.floor(mins / 60)} h {mins % 60} m · time is recorded for you — nothing to type</span></div>
+      {needsCheckin && <CheckIn job={job} />}
+      {!needsCheckin && (run ? <PartsRunActive job={job} run={run} /> : (
+        <>
+          <PartsRunStart job={job} />
+          <div className="sec">
+            <h3>Photos <span className="muted small" style={{ fontWeight: 400 }}>(optional)</span></h3>
+            <div className="row" style={{ gap: 8 }}>
+              <Camera job={job} kind="before" label="Before" />
+              <Camera job={job} kind="after" label="After" />
+              <Camera job={job} kind="other" label="Other" />
+            </div>
+            <Thumbs job={job} />
+          </div>
+          <Leaving job={job} />
+        </>
+      ))}
+    </>
+  );
+}
+
+function PartsRunStart({ job }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="sec">
+      <button disabled={busy} onClick={async () => {
+        setBusy(true);
+        const p = await T.position(5000);
+        T.act('tech_parts_run', { p_visit: job.visit.id, p_step: 'leave', p_id: T.uuid(), p_lat: p?.lat ?? null, p_lon: p?.lon ?? null }, { label: 'Parts run' });
+        setBusy(false);
+      }}>🚚 Parts run — leaving to get parts</button>
+      <div className="small muted">Records when you leave, that you were at the supplier, and when you're back (GPS). The store sees it as parts-run time.</div>
+    </div>
+  );
+}
+
+function PartsRunActive({ job, run }) {
+  const [supplier, setSupplier] = useState(run.supplier || '');
+  const [busy, setBusy] = useState(false);
+  const step = async (name) => {
+    setBusy(true);
+    const p = await T.position(6000);
+    T.act('tech_parts_run', { p_visit: job.visit.id, p_step: name, p_id: run.id, p_supplier: supplier || null, p_lat: p?.lat ?? null, p_lon: p?.lon ?? null },
+      { label: name === 'back' ? 'Back on site' : 'At the supplier' });
+    setBusy(false);
+  };
+  const mins = Math.max(0, Math.floor((Date.now() - new Date(run.left_at).getTime()) / 60000));
+  return (
+    <div className="sec">
+      <h3>🚚 On a parts run — {mins} min</h3>
+      <div className="small muted">Left the site {time(run.left_at)}{run.at_supplier_at ? ` · at the supplier ${time(run.at_supplier_at)}` : ''}</div>
+      {!run.at_supplier_at && (
+        <>
+          <label>Supplier<input value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="e.g. Johnstone Supply" /></label>
+          <button className="primary big" disabled={busy} onClick={() => step('at_supplier')}>I'm at the supplier</button>
+        </>
+      )}
+      <button className={run.at_supplier_at ? 'primary big' : ''} disabled={busy} onClick={() => step('back')}>I'm back on site</button>
+      {!run.at_supplier_at && <div className="small muted">Tap "at the supplier" while you're there — that GPS point is what proves the trip.</div>}
+    </div>
+  );
+}
+
+function Leaving({ job }) {
+  const [pick, setPick] = useState(null);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const go = async (outcome) => {
+    setBusy(true);
+    const p = await T.position(5000);
+    T.act('tech_leave', { p_visit: job.visit.id, p_outcome: outcome, p_note: note.trim() || null, p_lat: p?.lat ?? null, p_lon: p?.lon ?? null }, { label: 'Leaving' });
+    setBusy(false);
+  };
+  const opts = [['completed', '✓ Done'], ['return_needed', '↺ Coming back'], ['parts_needed', '⏳ Waiting for parts']];
+  return (
+    <div className="sec">
+      <h3>Leaving</h3>
+      <div className="row" style={{ gap: 8 }}>
+        {opts.map(([k, label]) => (
+          <button key={k} className={pick === k ? 'primary' : ''} style={{ flex: '1 1 30%' }} onClick={() => setPick(k)}>{label}</button>
+        ))}
+      </div>
+      {pick && (
+        <>
+          <input value={note} onChange={(e) => setNote(e.target.value)}
+            placeholder={pick === 'completed' ? 'What you did (optional)' : pick === 'parts_needed' ? 'Which parts (optional)' : 'Why (optional)'} />
+          <button className="primary big" disabled={busy} onClick={() => go(pick)}>
+            {pick === 'completed' ? 'Leave — job done' : pick === 'parts_needed' ? 'Leave — waiting for parts' : 'Leave — coming back'}
+          </button>
+        </>
       )}
     </div>
   );
