@@ -979,6 +979,10 @@ select test.ok((select count(*) = 0 from notifications where work_order_id = tes
 update contractors set tech_call_alerts = true where id = test.v('PRAIRIE');
 
 reset role;
+\echo '=== 39. App lists keep working (one link from a visit to its technician)'
+select test.ok((select count(*) = 1 from pg_constraint where conrelid = 'visits'::regclass and confrelid = 'profiles'::regclass and contype = 'f'),
+  'visits have exactly one link to people, so "visit with technician name" lists work');
+reset role;
 \echo '=== 18. Audit'
 select test.ok((select count(*) > 50 from audit_log), 'every change is in the audit trail');
 \echo 'ALL TESTS PASSED'
