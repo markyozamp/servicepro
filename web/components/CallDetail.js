@@ -118,7 +118,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
           {!d && !err && <div className="muted">Loading…</div>}
           {wo && (
             <>
-              {wo.mode === 'verify' && <VerifyPanel wo={wo} side={side} profile={profile} busy={busy} run={run} />}
+              {wo.mode === 'verify' && <VerifyPanel wo={wo} side={side} profile={profile} busy={busy} run={run} visits={d.visits} techs={techs} />}
               {side === 'store' && <TechHereButton wo={wo} visits={d.visits} busy={busy} run={run} />}
 
               {/* ---- Store: approval ---- */}
@@ -206,7 +206,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
               )}
 
               {/* ---- Office: dispatch ---- */}
-              {side === 'office' && ['created', 'assigned', 'en_route', 'waiting_parts', 'return_needed', 'awaiting_approval'].includes(wo.status)
+              {side === 'office' && wo.mode !== 'verify' && ['created', 'assigned', 'en_route', 'waiting_parts', 'return_needed', 'awaiting_approval'].includes(wo.status)
                 && !d.visits.some((v) => v.status === 'on_site') && (
                 <div className="panel panel-pad stack">
                   <div className="row">

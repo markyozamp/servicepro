@@ -144,7 +144,9 @@ function JobCard({ j, onOpen }) {
         <span className="small">{j.wo.issue || j.wo.problem}</span>
       </div>
       {s === 'en_route' && j.visit.eta_at && <div className="small muted">ETA {time(j.visit.eta_at)}</div>}
-      {s === 'assigned' && <div className="small muted">Assigned {ago(j.visit.assigned_at)}</div>}
+      {s === 'assigned' && (j.visit.scheduled_start
+        ? <div className="small"><strong>Scheduled {new Date(j.visit.scheduled_start).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} {time(j.visit.scheduled_start)}{j.visit.scheduled_end ? `–${time(j.visit.scheduled_end)}` : ''}</strong></div>
+        : <div className="small muted">Assigned {ago(j.visit.assigned_at)}</div>)}
       {s === 'done' && <div className="small muted">{STATUS[j.wo.status]?.label || j.visit.outcome}</div>}
     </div>
   );

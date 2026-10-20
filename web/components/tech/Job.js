@@ -64,6 +64,7 @@ function Header({ job, wifi }) {
 // ---------------- Before arriving ----------------
 function StartDriving({ job }) {
   const [busy, setBusy] = useState(false);
+  const sch = job.visit.scheduled_start;
   async function go(min) {
     setBusy(true);
     const p = await T.position(5000);
@@ -73,6 +74,7 @@ function StartDriving({ job }) {
   }
   return (
     <div className="sec">
+      {sch && <div className="notice small">Scheduled with the store: <strong>{date(sch)} {time(sch)}{job.visit.scheduled_end ? `–${time(job.visit.scheduled_end)}` : ''}</strong>. The store expects you then — if you'll be late, call your office.</div>}
       <h3>Start driving — how long until you get there?</h3>
       <div className="row" style={{ gap: 8 }}>
         {ETAS.map((n) => <button key={n} className="primary" disabled={busy} onClick={() => go(n)} style={{ flex: '1 1 30%' }}>{n} min</button>)}

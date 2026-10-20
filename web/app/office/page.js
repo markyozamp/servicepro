@@ -13,7 +13,7 @@ import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox } from
 const LIST = `id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, invoiced_at, due_on,
   total_cost, invoice_ready, qbo_invoice_id, store_po_number, sites(name), customers(name),
   mode, source, accepted_at, accept_due_at, declined_at, scheduled_start, store_confirmed_at, nte,
-  visits(id, visit_no, status, eta_at, arrived_at, received_at, checkin_required, checkin_at, profiles(full_name)),
+  visits(id, visit_no, status, eta_at, arrived_at, received_at, checkin_required, checkin_at, scheduled_start, scheduled_end, missed_alert_at, profiles(full_name)),
   parts_orders(status, expected_on, description), po_lines(status)`;
 
 const latest = (w) => (w.visits || []).filter((v) => v.status !== 'cancelled').sort((a, b) => b.visit_no - a.visit_no)[0];
@@ -180,7 +180,11 @@ export default function OfficePortal() {
                         {col.key === 'done' && w.mode === 'verify' && <span className="chip tone-amber" style={{ alignSelf: 'flex-start' }}>Enter your invoice</span>}
                         {col.key === 'done' && <BillLine wo={w} />}
                         {blockingByWo[w.id] > 0 && <span className="chip tone-red" style={{ alignSelf: 'flex-start' }}>{blockingByWo[w.id]} to review</span>}
-                        {(col.key === 'new' || (col.key === 'parts' && w.status === 'return_needed')) && assignBox(w)}
+                        {w.mode === 'verify' && v && v.status === 'assigned' && v.scheduled_start && (
+                          <div className="small">📅 {dateTime(v.scheduled_start)}{v.missed_alert_at ? <span className="chip tone-red" style={{ marginLeft: 4 }}>missed</span> : ''}</div>)}
+                        {w.mode === 'verify' && !['on_site', 'completed', 'invoiced', 'cancelled'].includes(w.status) && !(v && ['assigned', 'en_route'].includes(v.status)) && !w.declined_at && (
+                          <button className="primary" onClick={(e) => { e.stopPropagation(); setOpen(w.id); }}>Schedule a trip</button>)}
+                        {w.mode !== 'verify' && (col.key === 'new' || (col.key === 'parts' && w.status === 'return_needed')) && assignBox(w)}
                         {col.key === 'new' && <div className="small muted">opened {ago(w.created_at)}</div>}
                       </article>
                     );

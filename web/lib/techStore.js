@@ -290,6 +290,15 @@ export async function sync({ refresh = true } = {}) {
         // Store guest Wi-Fi (only the stores where this tech has an open job), kept for no-signal use
         const wifi = await supabase.from('site_wifi').select('site_id, ssid, password').not('ssid', 'is', null);
         data.wifi = Object.fromEntries((wifi.data || []).map((x) => [x.site_id, { ssid: x.ssid, password: x.password }]));
+        // Scheduled trip times (Time Verify): shown on the job list and the job
+        const ids = (data.jobs || []).map((j) => j.visit.id);
+        if (ids.length) {
+          const sch = await supabase.from('visits').select('id, scheduled_start, scheduled_end').in('id', ids);
+          for (const r of sch.data || []) {
+            const j = data.jobs.find((x) => x.visit.id === r.id);
+            if (j) { j.visit.scheduled_start = r.scheduled_start; j.visit.scheduled_end = r.scheduled_end; }
+          }
+        }
         write(K_SNAP, data);
         const now = new Date().toISOString();
         write(K_SYNCED, now);

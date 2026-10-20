@@ -48,8 +48,18 @@ export default function Join() {
               {info.kind === 'contractor_owner'
                 ? <div><strong>{info.invited_by}</strong> will send their service calls to <strong>{info.company}</strong> through ServicePro. It's free for you: you'll get each call as a PO, your techs tap "I'm going", "I'm here" and "Leaving", and you enter your invoice against the PO.</div>
                 : <div>Sign in to <strong>{info.company}</strong> on this phone.</div>}
+              {info.kind === 'contractor_owner' && info.terms && (
+                <div className="notice small stack" style={{ gap: 4 }}>
+                  <strong>{info.invited_by}'s terms — by signing in you agree to them:</strong>
+                  <span>• Every trip is scheduled with the store before you go, and your technician checks in with the store's code when he arrives.</span>
+                  <span>• The store pays for time verified in ServicePro. {info.terms.unverified_time === 'no_pay' ? 'Time not checked in is not paid.' : 'Time not checked in is paid only if the store approves it.'}</span>
+                  <span>• Travel time: {info.terms.pays_travel === 'yes' ? 'paid' : info.terms.pays_travel === 'no' ? 'not paid' : 'paid after hours only'}.</span>
+                  <span>• Accept new calls within {info.terms.accept_emergency_min} minutes for emergencies and {Math.round(info.terms.accept_normal_min / 60)} hours otherwise.</span>
+                  <span>• Enter your invoice against the store's PO.</span>
+                </div>
+              )}
               <div className="small muted">No password: this link signs in this phone and keeps it signed in. It works once — if you change phones, ask for a new link.</div>
-              <button className="primary big" disabled={busy} onClick={go}>{busy ? 'Signing in…' : 'Sign in on this phone'}</button>
+              <button className="primary big" disabled={busy} onClick={go}>{busy ? 'Signing in…' : info.kind === 'contractor_owner' ? 'I agree — sign in on this phone' : 'Sign in on this phone'}</button>
               <div className="small muted">Tip: after signing in, use your browser's "Add to Home Screen" so ServicePro opens like an app.</div>
             </>
           )}

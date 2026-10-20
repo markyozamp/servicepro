@@ -8,7 +8,7 @@ import { money, dateTime, time, date } from '@/lib/format';
 const h = (n) => (n == null ? '—' : `${Number(n).toFixed(2)} h`);
 const hm = (m) => `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} m`;
 
-export function VerifyPanel({ wo, side, profile, busy, run: runOuter }) {
+export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [], techs = [] }) {
   const [chk, setChk] = useState(null);
   const [runs, setRuns] = useState([]);
   const [contractors, setContractors] = useState([]);
@@ -84,7 +84,8 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter }) {
           </div>
         )
       )}
-      {office && !closed && <div className="small muted">Any of your technicians can take it from their phone ("I'm going"), or assign one below.</div>}
+      {/* Trips: every trip is announced to the store before it happens */}
+      <Trips wo={wo} visits={visits} techs={techs} office={office} closed={closed} busy={busy} run={run} />
 
       {/* Store: confirm a call the contractor entered from a phone call */}
       {side === 'store' && wo.source === 'contractor' && !wo.store_confirmed_at && (
@@ -241,5 +242,56 @@ export function TechHereButton({ wo, visits, busy, run }) {
         run('store_tech_here', { p_wo: wo.id });
       }
     }}>🙋 The technician is here but hasn't checked in</button>
+  );
+}
+
+// Every trip to the store, announced ahead: who, when. The office (or owner) schedules; the store sees it as Expected.
+function Trips({ wo, visits, techs, office, closed, busy, run }) {
+  const [f, setF] = useState(null);
+  const trips = (visits || []).filter((v) => v.status !== 'cancelled');
+  const upcoming = trips.find((v) => ['assigned', 'en_route'].includes(v.status));
+  const onSite = trips.some((v) => v.status === 'on_site');
+  const when = (v) => (v.scheduled_start ? `${dateTime(v.scheduled_start)}${v.scheduled_end ? `–${time(v.scheduled_end)}` : ''}` : 'no time set');
+  return (
+    <div className="stack" style={{ gap: 6 }}>
+      {upcoming && (
+        <div className="small"><span className={`chip ${upcoming.status === 'en_route' ? 'tone-amber' : 'tone-blue'}`}>{upcoming.status === 'en_route' ? 'On the way' : 'Trip scheduled'}</span>{' '}
+          <strong>{upcoming.profiles?.full_name}</strong> · {when(upcoming)}{upcoming.visit_no > 1 ? ' · return trip' : ''}
+          {upcoming.missed_alert_at && <span className="chip tone-red" style={{ marginLeft: 6 }}>missed the window</span>}
+          {upcoming.outcome_note && <span className="muted"> · {upcoming.outcome_note}</span>}</div>
+      )}
+      {office && !closed && !onSite && !wo.declined_at && (upcoming?.status !== 'en_route') && (
+        f ? (
+          <form className="stack" style={{ gap: 6 }} onSubmit={(e) => {
+            e.preventDefault();
+            run('schedule_trip', { p_wo: wo.id, p_tech: f.tech, p_start: f.now ? null : new Date(f.start).toISOString(),
+              p_end: !f.now && f.end ? new Date(f.end).toISOString() : null, p_note: f.note || null }, () => setF(null));
+          }}>
+            <div className="row">
+              <label className="grow">Technician
+                <select value={f.tech} onChange={(e) => setF({ ...f, tech: e.target.value })} required>
+                  <option value="">Choose…</option>{techs.map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+                </select></label>
+              <label className="row small" style={{ gap: 4, fontWeight: 400, alignSelf: 'flex-end' }}>
+                <input type="checkbox" style={{ width: 'auto' }} checked={f.now} onChange={(e) => setF({ ...f, now: e.target.checked })} /> Going now</label>
+            </div>
+            {!f.now && (
+              <div className="row">
+                <label className="grow">From<input type="datetime-local" value={f.start} onChange={(e) => setF({ ...f, start: e.target.value })} required /></label>
+                <label className="grow">To<input type="datetime-local" value={f.end} onChange={(e) => setF({ ...f, end: e.target.value })} /></label>
+              </div>
+            )}
+            <input value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Note for the store (optional), e.g. Coming back with the part" />
+            <div className="row"><button className="primary" disabled={busy}>{upcoming ? 'Reschedule — tell the store' : 'Schedule — tell the store'}</button>
+              <button type="button" onClick={() => setF(null)}>Cancel</button></div>
+            <div className="small muted">The store sees who is coming and when, with a check-in code for this trip. The technician gets it on his phone, with a reminder that morning.</div>
+          </form>
+        ) : (
+          <button className={upcoming ? '' : 'primary'} onClick={() => setF({ tech: upcoming?.technician_id || '', now: false, start: '', end: '', note: '' })}>
+            {upcoming ? 'Reschedule this trip' : trips.some((v) => v.arrived_at) ? 'Schedule the next trip' : 'Schedule a trip'}</button>
+        )
+      )}
+      {office && !closed && !upcoming && !onSite && <div className="small muted">Every trip is announced to the store before it happens. A tech can also tap "I'm going" on his phone — the store is told he's coming now.</div>}
+    </div>
   );
 }

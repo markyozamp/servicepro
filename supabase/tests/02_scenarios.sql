@@ -867,6 +867,117 @@ select from save_push_subscription('https://push.example/abc', 'key', 'auth');
 select test.ok((select count(*) = 1 from push_subscriptions), 'a phone can sign up for alerts');
 reset role;
 
+\echo '=== 38. Every trip announced to the store; who is coming / who is inside; missed windows; unexpected visitors'
+set role authenticated;
+select test.login(:MARIA);
+select test.put('t3', (open_po_call(:S121, (select id from issue_types where code='drain_backup'), 'Hand sink slow', 'NS-5001')).id);
+select test.login(test.v('TONY'));
+select test.ok((select count(*) = 1 from notifications where work_order_id = test.v('t3') and type = 'new_call' and message like 'New call #%Take it with%'),
+  'the techs are alerted to the new call too');
+select test.blocked($$select schedule_trip((select test.v('t3')), (select test.v('TONY')), now() + interval '1 hour')$$, 'office', 'a tech (not office) cannot schedule trips');
+select test.login(test.v('PETE'));
+select test.ok((select count(*) = 0 from notifications where work_order_id = test.v('t3') and message like '%Take it with%'), 'the owner gets the office alert only, not twice');
+select test.put('tv3', (schedule_trip(test.v('t3'), test.v('TONY'), now() + interval '1 hour', now() + interval '3 hours', 'Bring the snake')).id);
+select test.ok((select status = 'assigned' and scheduled_start is not null and scheduled_by = test.v('PETE') from visits where id = test.v('tv3')), 'trip scheduled for Tony');
+select test.ok((select status = 'assigned' and accepted_at is not null from work_orders where id = test.v('t3')), 'scheduling also accepts the call');
+select test.login(:MARIA);
+select test.ok((select count(*) = 1 from notifications where work_order_id = test.v('t3') and type = 'assigned' and message like 'Tony Tech (Prairie Plumbing) is scheduled for call #%NS-5001%. Bring the snake'),
+  'the store is told who is coming and when');
+select test.ok((select count(*) = 1 from visit_codes where visit_id = test.v('tv3')), 'the trip has its own check-in code on the store screen');
+select test.login(test.v('TONY'));
+select test.ok((select count(*) = 1 from notifications where user_id = test.v('TONY') and message like 'New job #%. Bring the snake'), 'Tony gets it on his phone');
+select test.login(test.v('PETE'));
+select test.blocked($$select tech_claim_call((select test.v('t3')))$$, 'scheduled for it', 'nobody else can take a trip scheduled for Tony');
+select test.login(test.v('TONY'));
+select test.ok((select (tech_claim_call(test.v('t3'))).status = 'en_route'), 'Tony taps I''m going on his scheduled trip → on the way');
+select test.login(test.v('PETE'));
+select test.blocked($$select schedule_trip((select test.v('t3')), (select test.v('TONY')), now() + interval '1 day')$$, 'already on the way', 'no second trip while one is under way');
+
+-- missed window
+select test.login(:MARIA);
+select test.put('t4', (open_po_call(:S121, (select id from issue_types where code='no_hot_water'), 'No hot water, mop sink')).id);
+select test.login(test.v('PETE'));
+select test.put('tv4', (schedule_trip(test.v('t4'), test.v('TONY'), now() + interval '10 minutes', now() + interval '2 hours')).id);
+select test.put('tv4b', (schedule_trip(test.v('t4'), test.v('PETE'), now() + interval '20 minutes', now() + interval '2 hours')).id);
+select test.ok((select status = 'cancelled' from visits where id = test.v('tv4')), 'rescheduling replaces the trip that hadn''t started');
+select test.login(test.v('TONY'));
+select test.ok((select count(*) = 1 from notifications where user_id = test.v('TONY') and work_order_id = test.v('t4') and message like '%moved to someone else%'), 'Tony is told it was moved');
+reset role;
+do $$ begin update visits set scheduled_start = now() - interval '3 hours', scheduled_end = now() - interval '1 hour' where id = test.v('tv4b'); end $$;
+select test.ok(trip_watch() >= 1, 'the watcher finds the missed window');
+set role authenticated;
+select test.login(:MARIA);
+select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('t4') and flag = 'missed_window' and visible_to_customer), 'flagged on the call');
+select test.ok((select count(*) = 1 from notifications where work_order_id = test.v('t4') and message like '%was due at Store #121 by%has not checked in%'), 'the store is told');
+reset role;
+select test.ok((select missed_alert_at is not null from visits where id = test.v('tv4b')) and trip_watch() = 0, 'told once, not every 5 minutes');
+
+-- morning reminder
+set role authenticated;
+select test.login(:MARIA);
+select test.put('t5', (open_po_call(:S121, (select id from issue_types where code='water_leak'), 'Drip at the ice machine drain')).id);
+select test.login(test.v('PETE'));
+select test.put('tv5', (schedule_trip(test.v('t5'), test.v('TONY'), now() + interval '5 minutes')).id);
+reset role;
+select trip_watch();
+select test.ok((select (now() at time zone 'America/Chicago')::time < time '06:00'
+  or (now() at time zone 'America/Chicago')::date <> ((now() + interval '5 minutes') at time zone 'America/Chicago')::date
+  or exists (select 1 from notifications where user_id = test.v('TONY') and message like 'Today: job #%Tap Start driving%')), 'morning reminder for a trip scheduled today');
+
+-- unexpected visitor
+set role authenticated;
+select test.login(:SAM);
+select test.ok((select visitor_name = 'Kyle' from store_unexpected_visitor(:S114, 'Kyle', test.v('PRAIRIE'), null, 'In the back room checking the water heater')),
+  'Sam logs someone who showed up unannounced');
+select test.login(test.v('PETE'));
+select test.ok((select count(*) = 1 from notifications where user_id = test.v('PETE') and message like 'Unscheduled visit at Store #114: Kyle (Prairie Plumbing)%schedule the trip%'),
+  'the contractor''s office is told');
+select test.ok((select count(*) = 1 from site_visitors), 'the office can see the visitor log for its people');
+select test.login(:MARIA);
+select test.ok((select count(*) = 1 from notifications where user_id = :MARIA and message like 'Unscheduled visit at Store #114%'), 'the store''s other people are told');
+select test.login(:RIVAL);
+select test.ok((select count(*) = 0 from site_visitors), 'another contractor sees nothing');
+
+-- no-pay rule + invoice with no recorded visit
+select test.login(:DOUG);
+select test.ok((select unverified_time = 'no_pay' from set_unverified_rule(test.v('PRAIRIE'), 'no_pay')), 'store sets: time not verified is not paid');
+reset role;
+do $$ begin perform _allow_internal(true);
+  update work_orders set status = 'completed', completed_at = now(), invoice_due_at = now() + interval '7 days' where id = test.v('tp2');
+  perform _end_internal(); end $$;
+set role authenticated;
+select test.login(test.v('PETE'));
+select from submit_invoice(test.v('tp2'), 'PP-9', 210, 1.5);
+select test.login(:SAM);
+select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('tp2') and flag = 'no_recorded_visit'
+  and description like '%no visit was recorded%Store rule: time not verified in ServicePro is not paid.'), 'invoice with no recorded visit is flagged, with the store''s rule');
+select test.login(:DOUG);
+select from set_unverified_rule(test.v('PRAIRIE'), 'review');
+
+-- terms accepted when the contractor signed in from the invite
+reset role;
+select test.ok((select terms_accepted_at is not null from customer_contractors where contractor_id = test.v('PRAIRIE')), 'the contractor accepted the store''s terms by signing in from the invite');
+set role anon;
+select test.ok((select join_info((select tok from tv))->'terms'->>'unverified_time' = 'review'), 'the invite page shows the store''s terms');
+
+-- contractor record
+set role authenticated;
+select test.login(:MARIA);
+select test.ok((select (r->>'calls')::int >= 5 and (r->>'missed_windows')::int >= 1 and (r->>'unscheduled_visits')::int = 1 and (r->>'invoices')::int >= 1
+  from contractor_record(test.v('PRAIRIE')) r), 'the store sees the contractor''s record');
+select '      ' || contractor_record(test.v('PRAIRIE'))::text;
+select test.login(:RIVAL);
+select test.blocked($$select contractor_record((select test.v('PRAIRIE')))$$, 'Not allowed', 'another contractor cannot see it');
+
+-- owner turns off tech alerts
+select test.login(test.v('PETE'));
+select from set_tech_call_alerts(false);
+select test.login(:MARIA);
+select test.put('t6', (open_po_call(:S121, (select id from issue_types where code='drain_backup'), 'Floor drain smell')).id);
+reset role;
+select test.ok((select count(*) = 0 from notifications where work_order_id = test.v('t6') and user_id = test.v('TONY')), 'owner can turn off new-call alerts for techs');
+update contractors set tech_call_alerts = true where id = test.v('PRAIRIE');
+
 reset role;
 \echo '=== 18. Audit'
 select test.ok((select count(*) > 50 from audit_log), 'every change is in the audit trail');

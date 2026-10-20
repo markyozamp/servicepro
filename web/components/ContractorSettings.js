@@ -22,13 +22,14 @@ export default function ContractorSettings({ onClose }) {
   async function load() {
     try {
       const [a, b, c, d, e] = await Promise.all([
-        q(supabase.from('customer_contractors').select('contractor_id, mode, pays_travel, accept_emergency_min, accept_normal_min, min_hours, increment_min, is_primary, contractors(name, phone, email)').order('created_at')),
+        q(supabase.from('customer_contractors').select('contractor_id, mode, pays_travel, unverified_time, terms_accepted_at, accept_emergency_min, accept_normal_min, min_hours, increment_min, is_primary, contractors(name, phone, email)').order('created_at')),
         q(supabase.from('trades').select('id, name').order('id')),
         q(supabase.from('trade_contractors').select('site_id, trade_id, contractor_id')),
         q(supabase.from('sites').select('id, name').order('name')),
         q(supabase.from('join_links').select('token, full_name, email, phone, used_at, expires_at, contractors(name)').eq('kind', 'contractor_owner').order('created_at', { ascending: false })),
       ]);
-      setCc(a); setTrades(b); setTc(c); setLinks(e);
+      const recs = await Promise.all(a.map((r) => act('contractor_record', { p_contractor: r.contractor_id }).catch(() => null)));
+      setCc(a.map((r, i) => ({ ...r, rec: recs[i] }))); setTrades(b); setTc(c); setLinks(e);
       const has = await Promise.all(d.map((s) => act('site_has_report_pin', { p_site: s.id })));
       setSites(d.map((s, i) => ({ ...s, has_pin: has[i] })));
     } catch (x) { setErr(x.message); }
@@ -66,9 +67,19 @@ export default function ContractorSettings({ onClose }) {
             <label className="grow">Emergency calls must be accepted within (min)<input type="number" min="5" max="240" value={r.accept_emergency_min} onChange={(e) => setRow(r.contractor_id, 'accept_emergency_min', e.target.value)} /></label>
             <label className="grow">Other calls within (min)<input type="number" min="15" max="4320" step="15" value={r.accept_normal_min} onChange={(e) => setRow(r.contractor_id, 'accept_normal_min', e.target.value)} /></label>
           </div>
-          <div className="small muted">Their terms: {Number(r.min_hours)} h minimum per visit, billed in {r.increment_min}-minute steps (they set this).</div>
-          <button disabled={busy} onClick={() => run('set_contractor_terms', { p_contractor: r.contractor_id, p_mode: r.mode, p_pays_travel: r.pays_travel,
-            p_accept_emergency_min: Number(r.accept_emergency_min), p_accept_normal_min: Number(r.accept_normal_min) }, () => setMsg(`Saved ${r.contractors?.name}.`))}>Save</button>
+          <label>Time not verified in ServicePro
+            <select value={r.unverified_time} onChange={(e) => setRow(r.contractor_id, 'unverified_time', e.target.value)}>
+              <option value="review">We review it case by case</option>
+              <option value="no_pay">We don't pay it</option>
+            </select></label>
+          <div className="small muted">Their terms: {Number(r.min_hours)} h minimum per visit, billed in {r.increment_min}-minute steps (they set this).
+            {r.terms_accepted_at ? ` Accepted your terms ${new Date(r.terms_accepted_at).toLocaleDateString()}.` : ''}</div>
+          {r.rec && <Record rec={r.rec} />}
+          <button disabled={busy} onClick={async () => {
+            await run('set_unverified_rule', { p_contractor: r.contractor_id, p_rule: r.unverified_time });
+            await run('set_contractor_terms', { p_contractor: r.contractor_id, p_mode: r.mode, p_pays_travel: r.pays_travel,
+              p_accept_emergency_min: Number(r.accept_emergency_min), p_accept_normal_min: Number(r.accept_normal_min) }, () => setMsg(`Saved ${r.contractors?.name}.`));
+          }}>Save</button>
         </div>
       ))}
 
@@ -139,5 +150,26 @@ export default function ContractorSettings({ onClose }) {
       ))}
       <a href="/store/stickers" target="_blank" rel="noreferrer"><button type="button">Print QR stickers</button></a>
     </div>
+  );
+}
+
+// How this contractor has worked with you over the last 90 days
+function Record({ rec }) {
+  const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '—');
+  const rows = [
+    ['Calls', rec.calls],
+    ['Accepted on time', `${pct(rec.accepted_on_time, rec.accept_due)} (${rec.accepted_on_time} of ${rec.accept_due})`],
+    ['Trips checked in with your code', `${pct(rec.checked_in_code, rec.trips)} (${rec.checked_in_code} of ${rec.trips})`],
+    ['Arrivals your staff had to record', rec.arrival_by_store],
+    ['Missed time windows', rec.missed_windows],
+    ['Unscheduled visits', rec.unscheduled_visits],
+    ['Invoices with unexplained hours', `${rec.invoices_unexplained} of ${rec.invoices} (${Number(rec.hours_unexplained).toFixed(2)} h of ${Number(rec.hours_billed).toFixed(2)} h billed)`],
+    ['Repeat calls (same unit, 30 days)', rec.repeat_calls],
+  ];
+  return (
+    <details>
+      <summary className="small" style={{ cursor: 'pointer' }}>Their record — last {rec.days} days</summary>
+      <table><tbody>{rows.map(([k, v]) => <tr key={k}><td className="small">{k}</td><td className="num small">{v}</td></tr>)}</tbody></table>
+    </details>
   );
 }

@@ -10,6 +10,7 @@ import NewCallForm from '@/components/NewCallForm';
 import LocationSettings from '@/components/LocationSettings';
 import ContractorSettings from '@/components/ContractorSettings';
 import PoLog from '@/components/PoLog';
+import Presence from '@/components/Presence';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox, Notice } from '@/components/bits';
 
 const LIST = `id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, total_cost, store_po_number,
@@ -147,6 +148,7 @@ export default function StorePortal() {
             </div>
           );
         })}
+        <Presence onOpen={setOpen} refreshKey={calls} />
         {door.length > 0 && !sound && <button className="danger" onClick={enableAlerts}>🔔 Turn on sound and pop-up alerts for this screen</button>}
 
         {settings && <LocationSettings onClose={() => setSettings(false)} />}

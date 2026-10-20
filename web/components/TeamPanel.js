@@ -14,6 +14,7 @@ export default function TeamPanel({ profile }) {
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const [alerts, setAlerts] = useState(null);
   const admin = profile?.is_org_admin;
 
   async function load() {
@@ -24,6 +25,8 @@ export default function TeamPanel({ profile }) {
         q(supabase.from('customer_contractors').select('customer_id, mode, min_hours, increment_min, pays_travel, customers(name)').eq('contractor_id', profile.contractor_id)),
       ]);
       setPeople(p); setLinks(l.filter((x) => new Date(x.expires_at) > new Date())); setTerms(t);
+      const c = await q(supabase.from('contractors').select('tech_call_alerts').eq('id', profile.contractor_id));
+      setAlerts(c[0]?.tech_call_alerts ?? null);
     } catch (x) { setErr(x.message); }
   }
   useEffect(() => { load(); // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,6 +84,13 @@ export default function TeamPanel({ profile }) {
           </form>
         ) : <button onClick={() => setAdd({ name: '', phone: '', email: '', tech: true, office: false })}>+ Add a technician</button>)}
         {links.length > 0 && <div className="small muted">Links not used yet: {links.map((l) => l.full_name).join(', ')}</div>}
+        {admin && alerts !== null && (
+          <label className="row small" style={{ gap: 6, fontWeight: 400 }}>
+            <input type="checkbox" style={{ width: 'auto' }} checked={alerts} disabled={busy}
+              onChange={(e) => run('set_tech_call_alerts', { p_on: e.target.checked })} />
+            Alert my technicians about new Time Verify calls (so they can take them with "I'm going")
+          </label>
+        )}
       </div>
 
       {terms.some((t) => t.mode === 'verify') && (
