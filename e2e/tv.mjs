@@ -43,7 +43,7 @@ const S121 = '30000000-0000-0000-0000-000000000002';
   if (wo.mode !== 'verify' || Number(wo.nte) !== 300) throw new Error('call not Time Verify: ' + JSON.stringify(wo));
   log('✓ store opened PO', po, 'call #' + wo.number, '→ Prairie Plumbing, Time Verify, NTE $300');
 
-  // ---- 2. Office accepts ----
+  // ---- 2. Office accepts and schedules the trip (the store is told who is coming) ----
   const offCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const office = await offCtx.newPage(); watch(office, 'office');
   await signIn(office, 'pete@prairieplumbing.demo');
@@ -51,23 +51,35 @@ const S121 = '30000000-0000-0000-0000-000000000002';
   await office.getByText(`#${wo.number}`).first().click();
   await office.getByRole('button', { name: 'Accept — on the way now' }).click();
   await office.getByText('Accepted').first().waitFor({ timeout: 15000 });
-  await shot(office, 'office-accepted');
   log('✓ office accepted ("on the way now")');
+  await office.getByRole('button', { name: 'Schedule a trip' }).click();
+  await office.locator('label', { hasText: 'Technician' }).locator('select').selectOption({ label: 'Tony Berg' });
+  await office.locator('label', { hasText: 'Going now' }).locator('input').check();
+  await office.locator('input[placeholder^="Note for the store"]').fill('Bringing the drain machine');
+  await office.getByRole('button', { name: 'Schedule — tell the store' }).click();
+  await office.getByText('Trip scheduled').waitFor({ timeout: 15000 });
+  await shot(office, 'office-trip-scheduled');
+  log('✓ office scheduled Tony — store told who is coming');
+  for (let i = 0; i < 10; i++) { const n = await get(maria, `notifications?select=message&work_order_id=eq.${wo.id}&message=like.*is%20scheduled*`); if (n.length) { log('  store was told:', n[0].message); break; } await new Promise((r) => setTimeout(r, 1000)); }
+  await store.reload();
+  await store.getByText('Expected today').waitFor({ timeout: 15000 });
+  await store.locator('.panel', { hasText: 'Expected today' }).getByText('Tony Berg').first().waitFor({ timeout: 15000 });
+  await shot(store, 'store-expected-today');
+  log('✓ store sees Tony under "Expected today"');
 
-  // ---- 3. Tech: I'm going → I'm here → code → parts run → Leaving ----
+  // ---- 3. Tech: scheduled job → Start driving → I'm here → code → parts run → Leaving ----
   const phone = await browser.newContext({ ...devices['iPhone 13'], geolocation: { latitude: 47.92, longitude: -97.03 }, permissions: ['geolocation'] });
   const tech = await phone.newPage(); watch(tech, 'tech');
   await signIn(tech, 'tony@prairieplumbing.demo');
   await tech.waitForURL('**/tech', { timeout: 20000 });
-  await tech.getByText('Calls waiting for a tech').waitFor({ timeout: 20000 });
-  await shot(tech, 'tech-open-calls');
-  const card = tech.locator('.jobcard', { hasText: `#${wo.number}` });
-  await card.getByRole('button', { name: "I'm going" }).click();
-  await tech.locator('.jobcard', { hasText: `#${wo.number}` }).getByText('On the way').waitFor({ timeout: 20000 });
-  log('✓ tech tapped "I\'m going"');
+  await tech.getByText(`#${wo.number}`).first().waitFor({ timeout: 20000 });
+  await shot(tech, 'tech-job-list');
   try { await rpc(pete, 'tech_claim_call', { p_wo: wo.id }); throw new Error('double dispatch allowed'); }
   catch (e) { if (!/Already taken/.test(e.message)) throw e; log('✓ second tech blocked:', e.message.match(/Already taken[^"]*/)[0]); }
   await tech.getByText(`#${wo.number}`).first().click();
+  await tech.getByRole('button', { name: '20 min' }).click();
+  await tech.getByText('On the way').first().waitFor({ timeout: 15000 });
+  log('✓ Tony started driving');
   await phone.setGeolocation({ latitude: 47.8935, longitude: -97.0631 });
   await tech.getByText('Check in with the store').waitFor({ timeout: 20000 });
   log('✓ arrival by GPS');
@@ -78,6 +90,10 @@ const S121 = '30000000-0000-0000-0000-000000000002';
   await tech.getByText('Parts run — leaving to get parts').waitFor({ timeout: 20000 });
   await shot(tech, 'tech-on-site');
   log('✓ checked in with the store\'s code');
+  await store.reload();
+  await store.locator('.panel', { hasText: 'In the building now' }).getByText('Tony Berg').first().waitFor({ timeout: 20000 });
+  await shot(store, 'store-in-building');
+  log('✓ store sees Tony "In the building now"');
   await tech.getByText('Parts run — leaving to get parts').click();
   await tech.getByText('On a parts run').waitFor({ timeout: 10000 });
   await phone.setGeolocation({ latitude: 47.9005, longitude: -97.0580 });
@@ -126,6 +142,17 @@ const S121 = '30000000-0000-0000-0000-000000000002';
   await store.getByRole('button', { name: 'Approve invoice' }).click();
   await store.getByText('approved').first().waitFor({ timeout: 15000 });
   log('✓ store reviewed and approved the invoice');
+
+  // ---- 5b. Someone shows up unannounced ----
+  await store.goto(SITE + '/store');
+  await store.getByRole('button', { name: "Someone's here we weren't expecting" }).click();
+  await store.locator('label', { hasText: 'Location' }).locator('select').selectOption({ label: 'Store #121' });
+  await store.locator('label', { hasText: 'Their name' }).locator('input').fill('Kyle (E2E)');
+  await store.locator('label', { hasText: 'Company' }).first().locator('select').selectOption({ label: 'Prairie Plumbing (demo)' });
+  await store.getByRole('button', { name: 'Record it' }).click();
+  await store.getByText('Unscheduled today').waitFor({ timeout: 15000 });
+  await shot(store, 'store-unexpected-visitor');
+  log('✓ unexpected visitor logged; store and contractor office told');
 
   // ---- 6. QR sticker report (no login) ----
   const eq = (await get(maria, 'equipment?select=qr_token,site_id&site_id=eq.30000000-0000-0000-0000-000000000001'))[0];
