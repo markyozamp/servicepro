@@ -13,6 +13,8 @@ const DEMO = [
   { email: 'dispatch@arcticair.demo', who: 'Dispatcher', org: 'Arctic Air Mechanical' },
   { email: 'tech@arcticair.demo', who: 'Technician (phone app)', org: 'Arctic Air Mechanical · Mike' },
   { email: 'office@arcticair.demo', who: 'Owner / billing', org: 'Arctic Air Mechanical' },
+  { email: 'pete@prairieplumbing.demo', who: 'Time Verify contractor (owner)', org: 'Prairie Plumbing · accepts calls, enters invoices' },
+  { email: 'tony@prairieplumbing.demo', who: 'Time Verify technician (phone app)', org: "Prairie Plumbing · I'm going / I'm here / Leaving" },
   { email: 'pm@redriverpm.demo', who: 'Property manager', org: 'Red River Property Mgmt · up to $2,500 · owners approve above their limit' },
   { email: 'maint@redriverpm.demo', who: 'Maintenance coordinator', org: 'Red River Property Mgmt · up to $500' },
 ];
