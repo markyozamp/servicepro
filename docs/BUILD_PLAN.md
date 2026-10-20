@@ -211,13 +211,28 @@ Proof of temperature for bad-product claims, and early warning before product is
 - **Phone clock check (Mark, 2026-10-16):** at every sync the phone reports its clock. More than 2 minutes off → the tech sees a red bar ("set Date & Time to automatic") and the contractor office is told once a day. And no time from the phone can be earlier than that phone's last contact with the server — anything done offline happened after it — so a clock set back can't move arrival or work times earlier. Remaining limit: within an offline stretch the phone's clock is still the source; the store app version could add satellite (GPS) time.
 - **Wrong check-in code (Mark, 2026-10-16):** simply try again. A wrong code is never counted as a check-in (the door alarm keeps going). Tries 1–2 just say "wrong code, try again (1 of 3)"; on the 3rd wrong try the store and contractor office are told and it's noted on the call, and the tech is pointed to the store's backup code or "No code available". The right code still works after that and clears the note. With no signal the code is checked when the phone reconnects; if it was wrong, the check-in screen comes back with the message.
 
-### 19. Time Verify — the entry offering (Mark, 2026-10-20) — agreed, to build next
+### 19. Time Verify — the entry offering (Mark, 2026-10-20) — built 2026-10-20
 - **Why:** contractors already on ServiceTitan, Corrigo, etc. won't switch. A store can still **require** them to use ServicePro just to prove the call: who called, when, arrival, departure, check-in.
 - **Market position (honest):** store-first platforms exist (ServiceChannel, Corrigo) but they target 100+ location chains, quote-priced, months to set up, and charge contractors per invoice. Independent and regional grocers, c-store groups, restaurants and property managers are underserved. Pitch: "proof that protects both sides," not "catch cheating contractors." Sell to the owner / director who pays the bills.
 - **Ladder:** Time Verify (entry) → Base → Pro → Enterprise.
 - **Price:** the **store pays a flat $25 per location per month, unlimited calls** (a 10-store company = $250/month); **free for the contractor**. 90-day free pilot as before; wholesaler commission applies.
 - **What it does:** no double dispatch (any of the contractor's techs taps "I'm going" on the store's open call); tech: "I'm here" (GPS) → check-in code → "Leaving" (done / coming back / waiting for parts), photos optional, ~20 seconds per visit; a failed check-in never blocks payment (name-only fallback). Calls the contractor took by phone → the store confirms. **Invoice check:** invoice total + hours billed vs verified time on site. **Repeat-call flag:** same unit called again within 30 days. Door alarm, phone clock check, ETA all apply.
 - **Residential:** supported, not led with. Homeowners never download or sign in — texts with links (on the way + ETA, arrived, finished with photos, quote approval, bill, maintenance reminders), which comes with the texting build. Property managers are the strong residential angle. Start the US carrier texting registration (can take weeks) about a week before building texting.
+
+- **As built (2026-10-20):** the store chooses per contractor: *Time Verify* or *Full*.
+  - **Store opens the call as a PO** — its own PO number (or PO + call number), problem from the list, optional not-to-exceed. A PO number can't be reused on an open call.
+  - **Routed by trade:** "who gets which kind of call" per store (plumbing → Prairie, refrigeration → Arctic…), else the main contractor.
+  - **Contractor alerted, must accept** — "on the way now", a scheduled window, or "can't take it" (store told at once). Not accepted in time (store sets it: 15 min emergency / 4 h other by default) → the store is told with the contractor's phone number, and can send the call to another contractor.
+  - **Tech:** the call shows on every tech's phone; first to tap **I'm going** gets it (needs signal, so no double dispatch) → I'm here (GPS) → store's code → **Leaving**: done / coming back / waiting for parts, optional note and photos. **Parts run:** leaving → at the supplier (GPS) → back. Nothing else to fill in.
+  - **Contractor-entered phone calls:** entered with who called; the store must confirm (and can add its PO) or say "we didn't request this" — on record for both sides.
+  - **"The technician is here but hasn't checked in"** button for the store: records the arrival from the store side (the tech is paid from then), tells the tech and office, and starts the door alarm. If nobody took the call in the app, the office is told.
+  - **QR sticker per unit** + store PIN (4–6 digits, 5 wrong tries locks it 15 min): any employee reports a problem with no login; the call knows the unit and who reported; no duplicate within 2 hours. Printable sticker sheet.
+  - **Invoice check:** the contractor must enter the invoice # and total and hours billed (+ other hours with a reason, e.g. shop work). The store sees billed vs verified (on site, travel per "we pay travel: yes / no / after hours only", parts runs), with the contractor's minimum and billing steps applied; unexplained hours and over-the-limit are flagged; the store approves or questions it. The store can type in a paper invoice if the contractor doesn't.
+  - **Repeat-call flag** (same unit, or same location + problem, within 30 days). **PO log** with search, flagged-only filter and spreadsheet export.
+  - **Sign-in links, no passwords:** the store invites a contractor (link to email/text); the owner adds techs by mobile number → each gets a one-time link that signs that phone in. New link for a new phone.
+  - **Alerts:** phone/computer push ("Turn on alerts" button; on iPhone after Add to Home Screen), sent every minute. Email is wired but needs a sending account (Resend) — Mark to sign up. Texting waits for carrier registration.
+  - **Billing:** Time Verify calls carry no per-call fee; the store's monthly statement gets $25 × locations (included in Store Multi); the contractor pays nothing.
+  - Demo: Prairie Plumbing (demo) — pete@prairieplumbing.demo (owner, goes on calls) and tony@prairieplumbing.demo (tech); store PIN 2468.
 
 ### 20. Close-out override (Mark, 2026-10-20) — built
 - When a visit can't be finished the normal way (no problem found / fixed before arrival, store closed, customer cancelled, unsafe or unreachable equipment, camera broken, other), the tech closes out **with an override**: pick a reason + explain what happened, then approval:
@@ -227,7 +242,7 @@ Proof of temperature for bad-product claims, and early warning before product is
 - The store sees it on the call: "Closed without full documentation — reason: explanation. Approved by Pat Dispatch (office, by phone)." The codes themselves are visible only to the contractor's office.
 
 ### Order of work (proposed)
-Database v2 + portals v2 + technician app (done 2026-10-16) → **Time Verify** → notifications / texting → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
+Database v2 + portals v2 + technician app (done 2026-10-16) → Time Verify (done 2026-10-20) → **email + texting** (accounts needed) → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
 
 ### Open questions
@@ -243,8 +258,9 @@ The generalization changes (trades, equipment type table, work order kinds, cust
 - [x] **1b-v2. Portals v2** — store portal (issue dropdown showing the authorized amount, approvals with limits and escalation, PM panel that stays until done, late bills, check-in code) and office portal (board, PM, billing, review, history). Live 2026-10-16
 - [x] **1b. Web portals v1** — live at https://servicepro-two.vercel.app (Vercel project `servicepro`, auto-deploys from GitHub `main`). Sign-in, store portal (new call, approvals, call detail), office dispatch board, review queue, mark invoiced. Demo logins share password `DemoService2026!` — remove the demo list on the sign-in page before real customers
 - [x] **1c. Technician app (installable web app, works offline)** — live 2026-10-16 at /tech ("Add to Home Screen"). Job list, Start + ETA, GPS arrival (automatic while the app is open, or "I'm here"), check-in code / backup code / name-only, nameplate + equipment, before/after photos (kept on the phone until sent), repair from list with parts kit, parts with the limit check, PM checklist, live cost meter with the stop point, quotes from hours + parts, emergency pre-approved limit, finish (complete / parts needed / return needed / quote sent), timecard. Tested end to end at phone size including finishing a job with no signal. Limit: no background arrival detection with the screen off (needs a store app later if the pilot shows it matters)
+- [x] **1e. Time Verify** — live 2026-10-20 (see 19); 251-check test passing
 - [ ] **2. AI** — nameplate photo → manufacturer/model/serial suggestion
-- [ ] **3. Notifications** — push (tech), text/email (store); text the owner / homeowner approval links directly
+- [ ] **3. Notifications** — push done 2026-10-20; email (needs Resend account) and text (needs carrier registration); text the owner / homeowner approval links directly
 - [ ] **4. QuickBooks Online** — Intuit developer app, OAuth connect, invoice export
 - [ ] **5. Pilot** — one contractor, two stores
 - [ ] **6. Parts photo recognition, truck inventory, polish**
