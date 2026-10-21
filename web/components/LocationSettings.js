@@ -16,7 +16,7 @@ export default function LocationSettings({ onClose }) {
   async function load() {
     try {
       const [sites, wifi] = await Promise.all([
-        q(supabase.from('sites').select('id, name, address, emergency_limit').order('name')),
+        q(supabase.from('sites').select('id, name, address, emergency_limit, lat, lon').order('name')),
         q(supabase.from('site_wifi').select('site_id, ssid, password')),
       ]);
       setRows(sites.map((s) => {
@@ -39,6 +39,20 @@ export default function LocationSettings({ onClose }) {
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
 
+  function hereNow(r) {
+    setErr(''); setMsg('');
+    if (!navigator.geolocation) return setErr('This device cannot share its location.');
+    setBusy(true);
+    navigator.geolocation.getCurrentPosition(async (p) => {
+      try {
+        await act('set_site_location', { p_site: r.id, p_lat: p.coords.latitude, p_lon: p.coords.longitude });
+        setMsg(`Map location saved for ${r.name} (accurate to about ${Math.round(p.coords.accuracy * 3.28)} ft).`);
+        await load();
+      } catch (e) { setErr(e.message); } finally { setBusy(false); }
+    }, (e) => { setBusy(false); setErr(e.code === 1 ? 'Location is turned off for this site. Allow location in your browser, then try again.' : 'Could not get your location. Step outside or try again.'); },
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+  }
+
   return (
     <div className="panel panel-pad stack">
       <div className="spread"><h2>Location settings</h2><button onClick={onClose}>Close</button></div>
@@ -46,6 +60,11 @@ export default function LocationSettings({ onClose }) {
       {rows.map((r) => (
         <div key={r.id} className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
           <div><strong>{r.name}</strong> <span className="small muted">{r.address}</span></div>
+          <div className="row" style={{ gap: 8, alignItems: 'center' }}>
+            {r.lat != null ? <span className="chip tone-green">Map location set</span> : <span className="chip tone-amber">No map location yet</span>}
+            <button disabled={busy} onClick={() => hereNow(r)}>Use where I'm standing</button>
+          </div>
+          <div className="small muted">Stand at the entrance technicians use, then tap. Technicians' phones notice their arrival within about 300 ft of this point.</div>
           <label>Emergency calls are approved up to ($) <span className="muted" style={{ fontWeight: 400 }}>— leave blank to approve every emergency request yourself</span>
             <input type="number" min="0" step="50" value={r.em} onChange={set(r.id, 'em')} placeholder="e.g. 1500" /></label>
           {r.em !== '' && <div className="small muted">On emergency calls the technician can go ahead up to {money(r.em)} total without waiting; you're told immediately.</div>}

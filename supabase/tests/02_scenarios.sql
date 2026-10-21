@@ -999,3 +999,13 @@ select test.blocked($$select backup_code_hash from sites limit 1$$, 'permission 
 select test.blocked($$update sites set backup_code_hash = 'x' where id = '30000000-0000-0000-0000-000000000001'$$, 'permission denied', 'contractor office cannot change the store backup code');
 select test.ok((select count(*) >= 1 from sites), 'sites still readable for the rest of the app');
 reset role;
+
+\echo '=== 41. Store admin sets the map point from where they stand'
+set role authenticated;
+select test.login(:DOUG);
+select test.ok((select (set_site_location(:S121, 47.8936, -97.0632)->>'ok')::boolean), 'store admin sets the location');
+select test.login(:SAM);
+select test.blocked($$select set_site_location('30000000-0000-0000-0000-000000000002', 47.0, -97.0)$$, 'Only your company', 'a store manager who is not admin cannot');
+select test.login(:PAT);
+select test.blocked($$select set_site_location('30000000-0000-0000-0000-000000000002', 47.0, -97.0)$$, 'Only your company', 'the contractor cannot move the store');
+reset role;
