@@ -990,3 +990,12 @@ reset role;
 \echo '=== 18. Audit'
 select test.ok((select count(*) > 50 from audit_log), 'every change is in the audit trail');
 \echo 'ALL TESTS PASSED'
+
+
+\echo '=== 40. The store backup code cannot be read or changed by app users'
+set role authenticated;
+select test.login(:PAT);
+select test.blocked($$select backup_code_hash from sites limit 1$$, 'permission denied', 'contractor office cannot read the store backup code');
+select test.blocked($$update sites set backup_code_hash = 'x' where id = '30000000-0000-0000-0000-000000000001'$$, 'permission denied', 'contractor office cannot change the store backup code');
+select test.ok((select count(*) >= 1 from sites), 'sites still readable for the rest of the app');
+reset role;

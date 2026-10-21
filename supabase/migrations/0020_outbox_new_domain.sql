@@ -1,2 +1,7 @@
 -- The app moved to servicecallproof.com (2026-10-20). Alert links follow the address the scheduler calls.
-select cron.schedule('servicepro-outbox', '* * * * *', $c$select net.http_post(url := 'https://servicecallproof.com/api/outbox', headers := jsonb_build_object('x-outbox-key', (select value from public.app_secrets where name = 'outbox'), 'content-type', 'application/json'), body := '{}'::jsonb, timeout_milliseconds := 20000)$c$);
+do $$
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    perform cron.schedule('servicepro-outbox', '* * * * *', $c$select net.http_post(url := 'https://servicecallproof.com/api/outbox', headers := jsonb_build_object('x-outbox-key', (select value from public.app_secrets where name = 'outbox'), 'content-type', 'application/json'), body := '{}'::jsonb, timeout_milliseconds := 20000)$c$);
+  end if;
+end $$;
