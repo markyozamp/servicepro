@@ -274,7 +274,16 @@ Proof of temperature for bad-product claims, and early warning before product is
 
 **Already built that this reuses:** customer teams + dollar-limit chains, owner approval by no-login link (§16), lettered NTE POs and quotes, check-in codes, photos, tech app, announced trips / who's in the building, PO log, push alerts.
 **New to build:** FM as a customer type that manages many owners' sites nationwide (owner = client org under the FM); any trade in the trade list; FM-issued check-in codes on request; per-call message thread; owner decision package (photos + findings + estimate + options, one link); bid requests to several contractors with side-by-side comparison and award; quotation PDF on the contractor's letterhead (logo, address, terms); subcontractor directory by trade and area.
-**Questions to settle before building:** FM markup when billing the owner (shown to owner or not); does the FM need sub insurance / license tracking (COI expiry) before dispatch; pricing for FMs (per location like Time Verify, or per call); who sees the sub's bid prices (owner sees FM's price only?).
+**Answers (Mark, 2026-10-21):**
+- **Markup — yes, hidden from the owner.** The FM adds its markup when it bills or quotes the owner; the owner never sees the sub's price or the markup. Quotes to the owner usually go out **as the FM's quote** (re-issued on the FM's letterhead at the FM's price); sometimes the FM passes **the sub's own quote** through instead. Both options needed, per quote.
+- **Owner sees the FM, not the sub (most of the time).** Bids, quotes and billing reach the owner from the FM. Rarely the owner sees a sub's bid directly — allow it as an exception the FM chooses.
+- **Compliance tracking with expiry alerts — yes, required before dispatch.** The FM's contract with each sub covers this on paper; the dispatch system must track the dates and alert before things expire:
+  - company level: insurance certificates (general liability, workers' comp, auto, etc.), trade licenses (by state);
+  - person level: each tech's driver's license expiry, any site/base access credentials;
+  - vehicle level: plate number and **registration expiry** for every vehicle that enters secured sites (military bases — Air Force, Army — turn away expired plates or licenses);
+  - **base access requests**: some bases need advance notice that company X / tech Y / vehicle Z is coming in a set window — the system should prompt and track those.
+  - Dispatch to a site flagged "secured" warns or blocks when the company, tech or vehicle has anything expired. **To discuss further with Mark: the exact list of items and what blocks vs. warns.**
+- **Pricing for FMs:** leaning toward **per location** (not per call), possibly tied to an opening PO amount per location. Needs a short discussion.
 
 ### Order of work (proposed)
 Database v2 + portals v2 + technician app (done 2026-10-16) → Time Verify (done 2026-10-20) → Mark's Time Verify shakedown (acting as store and contractor, real tags) → **facility management package (§23)** → **email + texting** (accounts needed) → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
