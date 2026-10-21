@@ -21,7 +21,7 @@ export async function POST(req) {
 
   const origin = process.env.APP_URL || new URL(req.url).origin;
   const canPush = !!process.env.VAPID_PRIVATE_KEY;
-  if (canPush) webpush.setVapidDetails('mailto:alerts@servicepro.app', VAPID_PUBLIC, process.env.VAPID_PRIVATE_KEY);
+  if (canPush) webpush.setVapidDetails('mailto:support@servicecallproof.com', VAPID_PUBLIC, process.env.VAPID_PRIVATE_KEY);
   let pushed = 0; let emailed = 0;
 
   for (const n of items || []) {
@@ -49,4 +49,20 @@ export async function POST(req) {
     }
   }
   return Response.json({ taken: (items || []).length, pushed, emailed });
+}
+
+// One-off check that email delivery works: POST with the outbox key and {"to": "..."}.
+export async function PUT(req) {
+  const key = req.headers.get('x-outbox-key');
+  if (!key || key !== process.env.OUTBOX_KEY) return new Response('Not allowed', { status: 401 });
+  if (!process.env.RESEND_API_KEY || !process.env.ALERT_FROM) return Response.json({ error: 'Email is not set up' }, { status: 400 });
+  const { to } = await req.json().catch(() => ({}));
+  if (!to) return Response.json({ error: 'No address' }, { status: 400 });
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: process.env.ALERT_FROM, to, subject: 'Service Call Proof: email alerts are working',
+      text: 'This is a test from Service Call Proof. Email alerts are set up and working.\n\nhttps://servicecallproof.com' }),
+  });
+  return Response.json({ ok: r.ok, status: r.status, detail: r.ok ? undefined : (await r.text()).slice(0, 300) });
 }
