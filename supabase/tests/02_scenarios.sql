@@ -467,18 +467,22 @@ select test.ok((select bool_or((j->'wo'->>'id')::uuid = test.v('tw')) from jsonb
 select test.ok((select count(*) = 0 from jsonb_array_elements(tech_jobs()->'jobs') j where j ? 'code'), 'the check-in code is never sent to the tech');
 select from tech_start(test.v('tv'), now() - interval '190 minutes', 47.95, -97.10);
 select from tech_arrive(test.v('tv'), now() - interval '100 minutes', 47.8936, -97.0632);
-select test.ok((select (job_meter(test.v('tw'))->>'limit')::numeric = 125), 'meter limit = the $125 diagnosis');
+reset role; select sum(amount) as tdiag from po_lines where work_order_id = test.v('tw') and kind = 'diagnosis' \gset
+set role authenticated; select test.login(:MIKE);
+select test.ok((select (job_meter(test.v('tw'))->>'limit')::numeric = (:tdiag)::numeric), 'meter limit = the approved diagnosis ($125, more after hours)');
 select '      meter: ' || job_meter(test.v('tw'))::text;
-select test.ok((select (job_meter(test.v('tw'))->>'stop_at')::numeric < 125 * 0.8), 'small limit: stop point is earlier than 80% (room for the wait + wrap-up)');
+select test.ok((select (job_meter(test.v('tw'))->>'stop_at')::numeric < (:tdiag)::numeric * 0.8), 'small limit: stop point is earlier than 80% (room for the wait + wrap-up)');
 select test.ok((select job_meter(test.v('tw'))->>'state' in ('stop','over')), '100 min on site at $125/hr: the meter says STOP');
 reset role;
 select test.ok(meter_watch() >= 1, 'server check catches it even with the phone off');
 set role authenticated;
 select test.ok((select count(*) >= 1 from notifications where type = 'guardrail_flag' and message like 'Job #%STOP%'), 'tech is told to stop');
 select test.blocked($$select set_part_used(test.v('tv'), '40000000-0000-0000-0000-000000000005', 1)$$, 'over the approved', 'a part that would cross the limit cannot be added');
+reset role; select round(125 * case when is_after_hours(:S121, now()) then 1 + after_hours_pct / 100 else 1 end, 2) as trate from platform_settings \gset
+set role authenticated; select test.login(:MIKE);
 select test.put('tq', (request_quote(test.v('tw'), 1.5, '[{"part_id":"40000000-0000-0000-0000-000000000005","qty":1}]', 'Contactor burned; replace and test')).id);
-select test.ok((select amount = round(1.5 * 125, 2) + 58 and (breakdown->>'labor')::numeric = 187.50 from po_lines where id = test.v('tq')),
-  'quote = 1.5 h × $125 + contactor $58 = $245.50, with labor and parts shown separately');
+select test.ok((select amount = round(1.5 * :trate, 2) + 58 and (breakdown->>'labor')::numeric = round(1.5 * :trate, 2) from po_lines where id = test.v('tq')),
+  'quote = 1.5 h × $125 (after-hours rate at night) + contactor $58, with labor and parts shown separately');
 select '      ' || po_label(work_order_id, seq) || ' not to exceed $' || amount || '  ' || breakdown::text from po_lines where id = test.v('tq');
 select test.login(:MARIA);
 select from decide_po_line(test.v('tq'), true);
