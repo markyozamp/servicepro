@@ -15,6 +15,7 @@ const realEmail = (e) => e && !/\.demo$|servicepro\.app$/i.test(e);
 export async function POST(req) {
   const key = req.headers.get('x-outbox-key');
   if (!key || key !== process.env.OUTBOX_KEY) return new Response('Not allowed', { status: 401 });
+  if (new URL(req.url).searchParams.get('test') === 'email') return testEmail(req);
   const db = createClient(URL_, KEY, { auth: { persistSession: false } });
   const { data: items, error } = await db.rpc('outbox_take', { p_key: key, p_limit: 100 });
   if (error) return Response.json({ error: error.message }, { status: 500 });
@@ -51,11 +52,8 @@ export async function POST(req) {
   return Response.json({ taken: (items || []).length, pushed, emailed });
 }
 
-// One-off check that email delivery works: POST with the outbox key and {"to": "..."}.
-export async function PUT(req) {
-  const key = req.headers.get('x-outbox-key');
-  if (!key || key !== process.env.OUTBOX_KEY) return new Response('Not allowed', { status: 401 });
-  if (!process.env.RESEND_API_KEY || !process.env.ALERT_FROM) return Response.json({ error: 'Email is not set up' }, { status: 400 });
+// Check that email delivery works: POST ?test=email with the outbox key and {"to": "..."}.
+async function testEmail(req) {  if (!process.env.RESEND_API_KEY || !process.env.ALERT_FROM) return Response.json({ error: 'Email is not set up' }, { status: 400 });
   const { to } = await req.json().catch(() => ({}));
   if (!to) return Response.json({ error: 'No address' }, { status: 400 });
   const r = await fetch('https://api.resend.com/emails', {
