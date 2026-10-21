@@ -256,8 +256,28 @@ Proof of temperature for bad-product claims, and early warning before product is
 - Time Verify contractors on QuickBooks: invoices created in ServicePro (or read from QuickBooks by PO number) fill the invoice check with no retyping.
 - Open: QuickBooks Online (modern connection) vs Desktop (older, harder) — set by the pilot contractor.
 
+### 23. Facility management (FM) package — next after Time Verify (Mark, 2026-10-21) — planned
+**Who:** facility management companies that sit between the property owner and the trades — small "CBRE-style" firms (e.g. J&J Worldwide type) running work for many clients or franchisees across the country, hiring subcontractors for MEP **and any other trade** (elevator, parking lot, roofing, general maintenance or construction). Today they schedule and confirm by email and phone. The engine already built for MEP carries over; trade does not matter.
+
+**Three parties:** the **owner** (client / franchisee, decides and pays) ← the **FM** (dispatches, coordinates, bills the owner) → the **subcontractor** (does the work, invoices the FM).
+
+**First release (key things, in Mark's order):**
+1. **The call** — the FM sends the call (with PO number) to the sub through the portal; the sub accepts.
+2. **Arrival proof** — the tech reports arrival; location captured at that moment (outside the building) + photos of what he found.
+3. **Code to start** — the tech gets the check-in code from the FM (calls / requests it in the app); work starts only after check-in. (The FM issues the code remotely, since the FM is usually not at the site.)
+4. **Ongoing communication on the call** — diagnosis, why it can't be finished, parts to order, return trips; photos and notes; one thread per call that the FM and sub both see.
+5. **PO increase before more work** — the sub requests the next PO amount (the lettered not-to-exceed POs, §7/§17); the FM approves or sends it up to the owner.
+6. **Quotes for big work** (e.g. replace a large compressor or condenser after a service call) — photos, findings and the estimate packaged so the FM can **share it with the owner in one link** and the owner can make a good decision (approve / decline).
+7. **Bid requests** — for upgrades or projects the FM sends a request for bids to several contractors in the area through the platform; each contractor prepares a bid and sends it back through the portal **as a quotation on the contractor's own letterhead**; the FM compares them and forwards the chosen one(s) to the owner.
+
+**Later (during the FM pilot):** require the contractors to run the whole program on the platform — job costing, estimating, billing through the platform (Base/Pro).
+
+**Already built that this reuses:** customer teams + dollar-limit chains, owner approval by no-login link (§16), lettered NTE POs and quotes, check-in codes, photos, tech app, announced trips / who's in the building, PO log, push alerts.
+**New to build:** FM as a customer type that manages many owners' sites nationwide (owner = client org under the FM); any trade in the trade list; FM-issued check-in codes on request; per-call message thread; owner decision package (photos + findings + estimate + options, one link); bid requests to several contractors with side-by-side comparison and award; quotation PDF on the contractor's letterhead (logo, address, terms); subcontractor directory by trade and area.
+**Questions to settle before building:** FM markup when billing the owner (shown to owner or not); does the FM need sub insurance / license tracking (COI expiry) before dispatch; pricing for FMs (per location like Time Verify, or per call); who sees the sub's bid prices (owner sees FM's price only?).
+
 ### Order of work (proposed)
-Database v2 + portals v2 + technician app (done 2026-10-16) → Time Verify (done 2026-10-20) → **email + texting** (accounts needed) → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
+Database v2 + portals v2 + technician app (done 2026-10-16) → Time Verify (done 2026-10-20) → Mark's Time Verify shakedown (acting as store and contractor, real tags) → **facility management package (§23)** → **email + texting** (accounts needed) → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
 
 ### Open questions
@@ -274,6 +294,7 @@ The generalization changes (trades, equipment type table, work order kinds, cust
 - [x] **1b. Web portals v1** — live at https://servicecallproof.com (Vercel project `servicepro`, auto-deploys from GitHub `main`). Sign-in, store portal (new call, approvals, call detail), office dispatch board, review queue, mark invoiced. Demo logins share password `DemoService2026!` — remove the demo list on the sign-in page before real customers
 - [x] **1c. Technician app (installable web app, works offline)** — live 2026-10-16 at /tech ("Add to Home Screen"). Job list, Start + ETA, GPS arrival (automatic while the app is open, or "I'm here"), check-in code / backup code / name-only, nameplate + equipment, before/after photos (kept on the phone until sent), repair from list with parts kit, parts with the limit check, PM checklist, live cost meter with the stop point, quotes from hours + parts, emergency pre-approved limit, finish (complete / parts needed / return needed / quote sent), timecard. Tested end to end at phone size including finishing a job with no signal. Limit: no background arrival detection with the screen off (needs a store app later if the pilot shows it matters)
 - [x] **1e. Time Verify** — live 2026-10-20 (see 19), incl. announced trips and who's-in-the-building; 281-check test passing
+- [ ] **1f. Facility management package** — next after the Time Verify shakedown (see 23)
 - [ ] **2. AI** — nameplate photo → manufacturer/model/serial suggestion
 - [ ] **3. Notifications** — push done 2026-10-20; email (needs Resend account) and text (needs carrier registration); text the owner / homeowner approval links directly
 - [ ] **4. QuickBooks Online** — Intuit developer app, OAuth connect, invoice export
