@@ -67,7 +67,7 @@ export default function ContractorSettings({ onClose }) {
             <label className="grow">Emergency calls must be accepted within (min)<input type="number" min="5" max="240" value={r.accept_emergency_min} onChange={(e) => setRow(r.contractor_id, 'accept_emergency_min', e.target.value)} /></label>
             <label className="grow">Other calls within (min)<input type="number" min="15" max="4320" step="15" value={r.accept_normal_min} onChange={(e) => setRow(r.contractor_id, 'accept_normal_min', e.target.value)} /></label>
           </div>
-          <label>Time not verified in All Service Flow
+          <label>Time not verified in Service Call Proof
             <select value={r.unverified_time} onChange={(e) => setRow(r.contractor_id, 'unverified_time', e.target.value)}>
               <option value="review">We review it case by case</option>
               <option value="no_pay">We don't pay it</option>
@@ -105,8 +105,8 @@ export default function ContractorSettings({ onClose }) {
           <input readOnly value={link(sent.token)} onFocus={(e) => e.target.select()} />
           <div className="row">
             <button onClick={() => navigator.clipboard?.writeText(link(sent.token)).then(() => setMsg('Link copied.'))}>Copy link</button>
-            {sent.email && <a className="button" href={`mailto:${sent.email}?subject=${encodeURIComponent('Service calls from us — your sign-in link')}&body=${encodeURIComponent(`Hi ${sent.name},\n\nWe'll send our service calls through All Service Flow. It's free for you. Tap to sign in (no password):\n${link(sent.token)}\n\nThanks`)}`}><button type="button">Email it</button></a>}
-            {sent.phone && <a href={`sms:${sent.phone}?&body=${encodeURIComponent(`Our service calls now come through All Service Flow (free for you). Sign in: ${link(sent.token)}`)}`}><button type="button">Text it</button></a>}
+            {sent.email && <a className="button" href={`mailto:${sent.email}?subject=${encodeURIComponent('Service calls from us — your sign-in link')}&body=${encodeURIComponent(`Hi ${sent.name},\n\nWe'll send our service calls through Service Call Proof. It's free for you. Tap to sign in (no password):\n${link(sent.token)}\n\nThanks`)}`}><button type="button">Email it</button></a>}
+            {sent.phone && <a href={`sms:${sent.phone}?&body=${encodeURIComponent(`Our service calls now come through Service Call Proof (free for you). Sign in: ${link(sent.token)}`)}`}><button type="button">Text it</button></a>}
             <button onClick={() => setSent(null)}>Done</button>
           </div>
         </div>

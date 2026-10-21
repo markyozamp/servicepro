@@ -1,10 +1,10 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'All Service Flow',
+  title: 'Service Call Proof',
   description: 'Service calls with proof: photos, GPS, and no surprise invoices.',
   manifest: '/manifest.webmanifest',
-  appleWebApp: { capable: true, title: 'All Service Flow', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'Service Call Proof', statusBarStyle: 'black-translucent' },
   icons: { icon: '/icon-192.png', apple: '/icon-192.png' },
 };
 

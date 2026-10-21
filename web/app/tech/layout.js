@@ -1,7 +1,7 @@
 export const metadata = {
-  title: 'All Service Flow Tech',
+  title: 'Service Call Proof Tech',
   manifest: '/manifest.webmanifest',
-  appleWebApp: { capable: true, title: 'All Service Flow', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'Service Call Proof', statusBarStyle: 'black-translucent' },
   icons: { icon: '/icon-192.png', apple: '/icon-192.png' },
 };
 

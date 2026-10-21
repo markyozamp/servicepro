@@ -1,6 +1,6 @@
 {
-  "name": "All Service Flow",
-  "short_name": "AllServiceFlow",
+  "name": "Service Call Proof",
+  "short_name": "Call Proof",
   "description": "Technician app: jobs, check-in, photos, parts and completion — works without signal.",
   "start_url": "/",
   "scope": "/",

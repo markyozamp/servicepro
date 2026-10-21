@@ -59,8 +59,8 @@ export default function TeamPanel({ profile }) {
             <input readOnly value={url(sent.token)} onFocus={(e) => e.target.select()} />
             <div className="row">
               <button onClick={() => navigator.clipboard?.writeText(url(sent.token)).then(() => setMsg('Link copied.'))}>Copy link</button>
-              {sent.phone && <a href={`sms:${sent.phone}?&body=${encodeURIComponent(`Your All Service Flow sign-in link: ${url(sent.token)}`)}`}><button type="button">Text it from this phone</button></a>}
-              {sent.email && !sent.email.endsWith('servicepro.app') && <a href={`mailto:${sent.email}?subject=All Service Flow sign-in&body=${encodeURIComponent(url(sent.token))}`}><button type="button">Email it</button></a>}
+              {sent.phone && <a href={`sms:${sent.phone}?&body=${encodeURIComponent(`Your Service Call Proof sign-in link: ${url(sent.token)}`)}`}><button type="button">Text it from this phone</button></a>}
+              {sent.email && !sent.email.endsWith('servicepro.app') && <a href={`mailto:${sent.email}?subject=Service Call Proof sign-in&body=${encodeURIComponent(url(sent.token))}`}><button type="button">Email it</button></a>}
               <button onClick={() => setSent(null)}>Done</button>
             </div>
           </div>

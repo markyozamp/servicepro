@@ -244,8 +244,11 @@ Proof of temperature for bad-product claims, and early warning before product is
 - Works from the check-in step too (store closed → can't check in). **Money rules are never overridden:** a pending approval or a cost over the approved limit still has to be handled first.
 - The store sees it on the call: "Closed without full documentation — reason: explanation. Approved by Pat Dispatch (office, by phone)." The codes themselves are visible only to the contractor's office.
 
-### 22. Name: All Service Flow (Mark, 2026-10-20) — decided
-- "ServicePro" is crowded in field-service software (ServSuite formerly ServicePro, Service Pro on Capterra/Sage). New name: **All Service Flow** — allserviceflow.com (+ .app) available 2026-10-20. Always say/print the full name (serviceflow.com belongs to someone else). Tagline idea: "All Service Flow — every visit confirmed." Trademark search (USPTO) before printing. App renamed 2026-10-20; repo/database names unchanged.
+### 22. Name: Service Call Proof (Mark, 2026-10-20) — decided
+- Mark bought servicecallproof.com and servicecallproof.app (2026-10-20). His USPTO search: no live SERVICE CALL PROOF; PROOF OF SERVICE and CALLPROF dead; other live PROOF marks unrelated.
+- Rejected: ServicePro (crowded), All Service Flow (live SERVICEFLO, class 42 scheduling SaaS, first use 2023), plus many "Service + word" names (generic or taken). Lesson: "All/The/Pro" never distinguishes a name.
+- Still to do before printing: attorney clearance check; file the trademark once in use. Tagline: "Service Call Proof — know who's in your building, and for how long."
+- App renamed 2026-10-20; repo/database names unchanged.
 
 ### 21. Connections: QuickBooks only (Mark, 2026-10-20) — decided
 - **No connections to ServiceTitan, Corrigo, ServiceChannel** or similar. They already do this for big companies; we serve smaller stores and the contractors who serve them. Later, win ServiceTitan users over on price and simplicity (they pay thousands a year and use a small part of it).
