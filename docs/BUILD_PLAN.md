@@ -274,6 +274,10 @@ Proof of temperature for bad-product claims, and early warning before product is
 
 **Already built that this reuses:** customer teams + dollar-limit chains, owner approval by no-login link (§16), lettered NTE POs and quotes, check-in codes, photos, tech app, announced trips / who's in the building, PO log, push alerts.
 **New to build:** FM as a customer type that manages many owners' sites nationwide (owner = client org under the FM); any trade in the trade list; FM-issued check-in codes on request; per-call message thread; owner decision package (photos + findings + estimate + options, one link); bid requests to several contractors with side-by-side comparison and award; quotation PDF on the contractor's letterhead (logo, address, terms); subcontractor directory by trade and area.
+**"Nothing slips" board (Mark, 2026-10-21 — the core pain):** FMs today have open work orders "floating around" with nobody minding them. The FM needs one board of every open call across all owners and subs, with aging and automatic nudges: sub hasn't accepted, no arrival by the window, no update in X days, quote waiting on the owner, parts ETA passed, invoice not in. Each stalled call shows who it's waiting on.
+**Market check (2026-10-21):** ServiceChannel (clients pay; subs pay 1.5% of each invoice, max $4), Corrigo (JLL) and Fexa (100+ location chains) are enterprise and built around the big chain as the customer. In-house CMMS tools (MaintainX, UpKeep, Limble) don't handle three parties with a hidden markup. Small/mid FM firms are largely on email and spreadsheets. Model: **the FM pays, subs use it free** — getting 100 subs onboard only works if it costs them nothing.
+**Before building:** sit down with one of the FMs Mark knows and walk through a week of their real calls.
+
 **Answers (Mark, 2026-10-21):**
 - **Markup — yes, hidden from the owner.** The FM adds its markup when it bills or quotes the owner; the owner never sees the sub's price or the markup. Quotes to the owner usually go out **as the FM's quote** (re-issued on the FM's letterhead at the FM's price); sometimes the FM passes **the sub's own quote** through instead. Both options needed, per quote.
 - **Owner sees the FM, not the sub (most of the time).** Bids, quotes and billing reach the owner from the FM. Rarely the owner sees a sub's bid directly — allow it as an exception the FM chooses.
@@ -285,8 +289,12 @@ Proof of temperature for bad-product claims, and early warning before product is
   - Dispatch to a site flagged "secured" warns or blocks when the company, tech or vehicle has anything expired. **To discuss further with Mark: the exact list of items and what blocks vs. warns.**
 - **Pricing for FMs:** leaning toward **per location** (not per call), possibly tied to an opening PO amount per location. Needs a short discussion.
 
+### 24. Construction — residential and light commercial (Mark, 2026-10-21) — parked, long term
+- Idea: the same verified-visit engine for builders/remodelers and small commercial (dental, clinics, franchise buildouts): each trade's arrival verified; when one trade misses or is late (excavator, insulation) the next trade is warned before he drives out; owner/homeowner sees the day; sub bid collection with plans in the portal; contractor's own estimate and proposal; permits, insurance, draws, sub payments in one project file; optional jobsite cameras (drones later — cost and FAA rules).
+- Assessment: need 8/10; head-on vs Buildertrend/JobTread 4/10; as "verified trades + next-trade warning" 7/10. Same engine could also serve landscaping and other service trades later.
+
 ### Order of work (proposed)
-Database v2 + portals v2 + technician app (done 2026-10-16) → Time Verify (done 2026-10-20) → Mark's Time Verify shakedown (acting as store and contractor, real tags) → **facility management package (§23)** → **email + texting** (accounts needed) → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
+Database v2 + portals v2 + technician app (done 2026-10-16) → Time Verify (done 2026-10-20) → Mark's Time Verify shakedown (acting as store and contractor, real tags) → **facility management package (§23)** → finish Base/Pro/Enterprise (email + texting, Stripe, QuickBooks, estimating, job costing) → construction (§24, later) (accounts needed) → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
 
 ### Open questions
