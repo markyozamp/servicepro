@@ -317,7 +317,7 @@ The generalization changes (trades, equipment type table, work order kinds, cust
 - [x] **1e. Time Verify** — live 2026-10-20 (see 19), incl. announced trips and who's-in-the-building; 281-check test passing
 - [ ] **1f. Facility management package** — next after the Time Verify shakedown (see 23)
 - [ ] **2. AI** — nameplate photo → manufacturer/model/serial suggestion
-- [ ] **3. Notifications** — push done 2026-10-20; email (needs Resend account) and text (needs carrier registration); text the owner / homeowner approval links directly
+- [ ] **3. Notifications** — push done 2026-10-20; email done 2026-10-21 (Resend, alerts@servicecallproof.com) and text (needs carrier registration); text the owner / homeowner approval links directly
 - [ ] **4. QuickBooks Online** — Intuit developer app, OAuth connect, invoice export
 - [ ] **5. Pilot** — one contractor, two stores
 - [ ] **6. Parts photo recognition, truck inventory, polish**
