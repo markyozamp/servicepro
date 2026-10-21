@@ -1,4 +1,4 @@
-# ServicePro (working name)
+# All Service Flow
 
 Store-first service dispatch: photo-driven, GPS-verified, zero typing for the tech.
 Built for refrigeration / HVAC / all-trade contractors, the stores and homes they serve,
@@ -11,7 +11,7 @@ and the wholesalers who refer stores.
 | `supabase/migrations/` | Database v2: 45 tables, every business rule, security, schedules, catalog | **Live, tested** |
 | `supabase/seed.sql` | Demo contractor, stores, homeowner, team, chain, agreement, PM plans | Live |
 | `supabase/demo_calls.sql` | Demo calls in every state, created through the real rules | Live |
-| `supabase/tests/` | End-to-end scenarios (281 checks) | Passing |
+| `supabase/tests/` | End-to-end scenarios (282 checks) | Passing |
 | `web/` | Store portal (`/store`) + contractor office portal (`/office`), Next.js on Vercel | v2 live |
 | `web/app/tech` | Technician app — installable web app, works offline | Live |
 | `e2e/` | Phone-size browser test of the tech app against the live site | Passing |
