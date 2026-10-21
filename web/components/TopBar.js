@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { signOut } from '@/lib/useProfile';
 import AlertsButton from './AlertsButton';
+import PasswordButton from './PasswordButton';
 
 export default function TopBar({ profile, org, portal }) {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function TopBar({ profile, org, portal }) {
         </span>
         <AlertsButton />
         {profile?.is_technician && portal === 'Office' && <button onClick={() => router.push('/tech')}>My jobs (tech app)</button>}
+        <PasswordButton />
         <button onClick={() => signOut(router)}>Sign out</button>
       </div>
     </header>
