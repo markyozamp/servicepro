@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { act } from '@/lib/supabase';
 import { money, dateTime } from '@/lib/format';
+import { LegalFooter } from '@/components/Legal';
 
 export default function Approve() {
   const { token } = useParams();
@@ -98,6 +99,7 @@ export default function Approve() {
             {d.contractor_phone && <div className="small muted">Questions? Call {d.contractor} at <a href={`tel:${d.contractor_phone}`}>{d.contractor_phone}</a>.</div>}
           </div>
         )}
+        <LegalFooter />
       </div>
     </main>
   );

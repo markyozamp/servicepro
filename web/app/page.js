@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { portalFor } from '@/lib/useProfile';
+import { LegalFooter } from '@/components/Legal';
 
 // Demo logins — remove this list before real customers use the site.
 const DEMO = [
@@ -98,6 +99,7 @@ export default function SignIn() {
             </button>
           ))}
         </div>
+        <LegalFooter />
       </div>
     </main>
   );

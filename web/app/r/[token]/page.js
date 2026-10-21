@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { act } from '@/lib/supabase';
+import { LegalFooter } from '@/components/Legal';
 
 export default function Report() {
   const { token } = useParams();
@@ -66,6 +67,7 @@ export default function Report() {
           )}
           {err && !d && <div className="error">{err}</div>}
         </div>
+        <LegalFooter />
       </div>
     </main>
   );

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase, act } from '@/lib/supabase';
 import { portalFor } from '@/lib/useProfile';
+import { LegalFooter } from '@/components/Legal';
 
 export default function Join() {
   const { token } = useParams();
@@ -60,10 +61,12 @@ export default function Join() {
               )}
               <div className="small muted">No password: this link signs in this phone and keeps it signed in. It works once — if you change phones, ask for a new link.</div>
               <button className="primary big" disabled={busy} onClick={go}>{busy ? 'Signing in…' : info.kind === 'contractor_owner' ? 'I agree — sign in on this phone' : 'Sign in on this phone'}</button>
+              <div className="small muted">By signing in you agree to the <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</div>
               <div className="small muted">Tip: after signing in, use your browser's "Add to Home Screen" so Service Call Proof opens like an app.</div>
             </>
           )}
         </div>
+        <LegalFooter />
       </div>
     </main>
   );
