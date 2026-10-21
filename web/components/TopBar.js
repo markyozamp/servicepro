@@ -9,7 +9,7 @@ export default function TopBar({ profile, org, portal }) {
   return (
     <header className="topbar">
       <div className="brand">
-        Service<span>Pro</span> <span className="small muted" style={{ color: '#9fb0c0', fontWeight: 500 }}>· {portal}</span>
+        All Service <span>Flow</span> <span className="small muted" style={{ color: '#9fb0c0', fontWeight: 500 }}>· {portal}</span>
       </div>
       <div className="who">
         <span className="hide-sm">

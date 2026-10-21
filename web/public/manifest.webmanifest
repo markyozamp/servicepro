@@ -1,6 +1,6 @@
 {
-  "name": "ServicePro",
-  "short_name": "ServicePro",
+  "name": "All Service Flow",
+  "short_name": "AllServiceFlow",
   "description": "Technician app: jobs, check-in, photos, parts and completion — works without signal.",
   "start_url": "/",
   "scope": "/",

@@ -33,7 +33,7 @@ export default function Report() {
   return (
     <main className="login-wrap">
       <div className="login stack">
-        <div style={{ textAlign: 'center' }}><div className="brand" style={{ fontSize: 24, color: 'var(--ink)' }}>Service<span style={{ color: 'var(--brand)' }}>Pro</span></div></div>
+        <div style={{ textAlign: 'center' }}><div className="brand" style={{ fontSize: 24, color: 'var(--ink)' }}>All Service <span style={{ color: 'var(--brand)' }}>Flow</span></div></div>
         <div className="panel panel-pad stack">
           {!d && !err && <div className="muted">Loading…</div>}
           {d && !d.ok && <div className="error">This sticker isn't recognized. Tell your manager.</div>}
@@ -45,7 +45,7 @@ export default function Report() {
               )}
               {done ? (
                 <div className="stack">
-                  <div className="notice"><strong>Sent.</strong> Call #{done.number} ({done.po}) went to {done.contractor}. Your manager can follow it on ServicePro.</div>
+                  <div className="notice"><strong>Sent.</strong> Call #{done.number} ({done.po}) went to {done.contractor}. Your manager can follow it on All Service Flow.</div>
                 </div>
               ) : !d.has_pin ? <div className="error">Your store hasn't set a reporting PIN yet. Ask your manager.</div> : (
                 <form className="stack" onSubmit={send}>

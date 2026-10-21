@@ -67,7 +67,7 @@ export default function SignIn() {
       <div className="login stack">
         <div style={{ textAlign: 'center', marginBottom: 8 }}>
           <div className="brand" style={{ fontSize: 28, color: 'var(--ink)' }}>
-            Service<span style={{ color: 'var(--brand)' }}>Pro</span>
+            All Service <span style={{ color: 'var(--brand)' }}>Flow</span>
           </div>
           <div className="muted small">Proof of work. No surprise invoices.</div>
         </div>

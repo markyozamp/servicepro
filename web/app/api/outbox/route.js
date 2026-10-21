@@ -30,7 +30,7 @@ export async function POST(req) {
       for (const s of n.push || []) {
         try {
           await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-            JSON.stringify({ title: n.number ? `ServicePro · call #${n.number}` : 'ServicePro', body: n.message, url: link, tag: n.work_order_id || n.id }),
+            JSON.stringify({ title: n.number ? `All Service Flow · call #${n.number}` : 'All Service Flow', body: n.message, url: link, tag: n.work_order_id || n.id }),
             { TTL: 3600, urgency: 'high' });
           pushed++;
         } catch (e) {
@@ -43,7 +43,7 @@ export async function POST(req) {
         method: 'POST',
         headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ from: process.env.ALERT_FROM, to: n.email, subject: n.number ? `Call #${n.number}: ${n.message.slice(0, 80)}` : n.message.slice(0, 90),
-          text: `${n.message}\n\nOpen ServicePro: ${link}\n\nYou get this because of your ServicePro alert settings.` }),
+          text: `${n.message}\n\nOpen All Service Flow: ${link}\n\nYou get this because of your All Service Flow alert settings.` }),
       }).catch(() => null);
       if (r && r.ok) emailed++;
     }

@@ -1,6 +1,6 @@
 'use client';
 
-// Phone / computer alerts (web push). On iPhone this works once ServicePro is added to the Home Screen.
+// Phone / computer alerts (web push). On iPhone this works once All Service Flow is added to the Home Screen.
 import { act } from './supabase';
 
 export const VAPID_PUBLIC = 'BPA3sWa1d2hEphpa0xf8hRXStbDVc5sQas7SBtmM7Jcqo27JZe0tZi4cjui0VoxaBG4qjvcrMPkqSXf-CZj7MtE';
@@ -24,7 +24,7 @@ export async function pushState() {
 }
 
 export async function turnOnPush() {
-  if (!pushSupported()) throw new Error('This browser cannot show alerts. On iPhone, add ServicePro to your Home Screen first, then open it from there.');
+  if (!pushSupported()) throw new Error('This browser cannot show alerts. On iPhone, add All Service Flow to your Home Screen first, then open it from there.');
   const perm = await Notification.requestPermission();
   if (perm !== 'granted') throw new Error('Alerts were not allowed. You can allow them in your phone settings.');
   const reg = (await navigator.serviceWorker.getRegistration()) || (await navigator.serviceWorker.register('/sw.js'));

@@ -244,6 +244,9 @@ Proof of temperature for bad-product claims, and early warning before product is
 - Works from the check-in step too (store closed → can't check in). **Money rules are never overridden:** a pending approval or a cost over the approved limit still has to be handled first.
 - The store sees it on the call: "Closed without full documentation — reason: explanation. Approved by Pat Dispatch (office, by phone)." The codes themselves are visible only to the contractor's office.
 
+### 22. Name: All Service Flow (Mark, 2026-10-20) — decided
+- "ServicePro" is crowded in field-service software (ServSuite formerly ServicePro, Service Pro on Capterra/Sage). New name: **All Service Flow** — allserviceflow.com (+ .app) available 2026-10-20. Always say/print the full name (serviceflow.com belongs to someone else). Tagline idea: "All Service Flow — every visit confirmed." Trademark search (USPTO) before printing. App renamed 2026-10-20; repo/database names unchanged.
+
 ### 21. Connections: QuickBooks only (Mark, 2026-10-20) — decided
 - **No connections to ServiceTitan, Corrigo, ServiceChannel** or similar. They already do this for big companies; we serve smaller stores and the contractors who serve them. Later, win ServiceTitan users over on price and simplicity (they pay thousands a year and use a small part of it).
 - **QuickBooks is the one connection:** invoice straight from ServicePro into QuickBooks (PO number on the invoice, customer matched, labor and parts lines), send the invoice from there, and read payments back. It also feeds job costing and estimating (Pro).

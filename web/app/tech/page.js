@@ -67,7 +67,7 @@ export default function TechApp() {
   return (
     <>
       <header className="topbar" style={{ padding: '0 12px' }}>
-        {job ? <button onClick={() => setOpen(null)}>‹ Jobs</button> : <div className="brand">Service<span>Pro</span></div>}
+        {job ? <button onClick={() => setOpen(null)}>‹ Jobs</button> : <div className="brand">All Service <span>Flow</span></div>}
         <div className="who"><span>{me.full_name}</span>
           {!job && <AlertsButton />}
           {!job && (me.is_org_admin || me.can_dispatch || me.can_bill) && <button onClick={() => router.push('/office')}>Office</button>}

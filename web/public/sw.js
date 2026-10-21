@@ -1,6 +1,6 @@
-// ServicePro offline worker: keeps the tech app's screens on the phone so it opens with no signal.
+// All Service Flow offline worker: keeps the tech app's screens on the phone so it opens with no signal.
 // Data (jobs, actions, photos) is handled by the app itself; this only caches the app's own files.
-const CACHE = 'sp-shell-v2';
+const CACHE = 'sp-shell-v3';
 const SHELL = ['/', '/tech', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -45,11 +45,11 @@ self.addEventListener('fetch', (e) => {
   );
 });
 
-// Alerts sent by ServicePro (new call, tech at the door, not accepted, invoice…)
+// Alerts sent by All Service Flow (new call, tech at the door, not accepted, invoice…)
 self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data && e.data.text() }; }
-  e.waitUntil(self.registration.showNotification(d.title || 'ServicePro', {
+  e.waitUntil(self.registration.showNotification(d.title || 'All Service Flow', {
     body: d.body || '', tag: d.tag, renotify: true, icon: '/icon-192.png', badge: '/icon-192.png', data: { url: d.url || '/' },
   }));
 });

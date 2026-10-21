@@ -1,7 +1,7 @@
 export const metadata = {
-  title: 'ServicePro Tech',
+  title: 'All Service Flow Tech',
   manifest: '/manifest.webmanifest',
-  appleWebApp: { capable: true, title: 'ServicePro', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'All Service Flow', statusBarStyle: 'black-translucent' },
   icons: { icon: '/icon-192.png', apple: '/icon-192.png' },
 };
 

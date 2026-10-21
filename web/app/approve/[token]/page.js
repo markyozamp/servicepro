@@ -44,7 +44,7 @@ export default function Approve() {
     <main className="login-wrap">
       <div className="login stack" style={{ width: 'min(480px, 100%)' }}>
         <div style={{ textAlign: 'center' }}>
-          <div className="brand" style={{ fontSize: 24, color: 'var(--ink)' }}>Service<span style={{ color: 'var(--brand)' }}>Pro</span></div>
+          <div className="brand" style={{ fontSize: 24, color: 'var(--ink)' }}>All Service <span style={{ color: 'var(--brand)' }}>Flow</span></div>
           <div className="muted small">Repair approval</div>
         </div>
         {err && <div className="error">{err}</div>}
