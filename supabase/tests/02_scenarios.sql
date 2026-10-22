@@ -1009,3 +1009,17 @@ select test.blocked($$select set_site_location('30000000-0000-0000-0000-00000000
 select test.login(:PAT);
 select test.blocked($$select set_site_location('30000000-0000-0000-0000-000000000002', 47.0, -97.0)$$, 'Only your company', 'the contractor cannot move the store');
 reset role;
+
+\echo '=== 42. Forgot password: one-time reset link'
+reset role;
+select request_password_reset((select value from app_secrets where name = 'outbox'), 'Store@Northside.demo')->>'token' as rtok \gset
+select test.ok(length(:'rtok') = 64, 'a reset is issued for a real login (email case does not matter)');
+select test.ok((select (request_password_reset((select value from app_secrets where name = 'outbox'), 'nobody@nowhere.test')->>'ok')::boolean = false), 'unknown email: nothing issued');
+select test.blocked($$select request_password_reset('wrong-key', 'store@northside.demo')$$, 'Not allowed', 'only the website (with its key) can issue resets');
+set role anon;
+select test.blocked($$select reset_password_with_token('abc', 'longenough123')$$, 'not valid', 'a made-up link does nothing');
+select test.blocked(format('select reset_password_with_token(%L, %L)', :'rtok', 'short'), 'at least 10', 'password must be long enough');
+select test.ok((select reset_password_with_token(:'rtok', 'NewPassword2026')->>'email' = 'store@northside.demo'), 'the link sets the new password');
+select test.blocked(format('select reset_password_with_token(%L, %L)', :'rtok', 'AnotherOne2026'), 'not valid', 'the link works only once');
+reset role;
+select test.ok((select count(*) from password_resets where user_id = '00000000-0000-0000-0000-0000000000c1' and created_at > now() - interval '1 hour') = 1, 'reset logged');

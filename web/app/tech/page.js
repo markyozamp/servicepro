@@ -8,6 +8,8 @@ import * as T from '@/lib/techStore';
 import { time, ago, PRIORITY, KIND, STATUS } from '@/lib/format';
 import Job from '@/components/tech/Job';
 import AlertsButton from '@/components/AlertsButton';
+import HeaderMenu from '@/components/HeaderMenu';
+import PasswordButton from '@/components/PasswordButton';
 
 const useTech = () => useSyncExternalStore(T.subscribe, T.getState, T.getState);
 
@@ -68,10 +70,15 @@ export default function TechApp() {
     <>
       <header className="topbar" style={{ padding: '0 12px' }}>
         {job ? <button onClick={() => setOpen(null)}>‹ Jobs</button> : <div className="brand">Service Call <span>Proof</span></div>}
-        <div className="who"><span>{me.full_name}</span>
-          {!job && <AlertsButton />}
-          {!job && (me.is_org_admin || me.can_dispatch || me.can_bill) && <button onClick={() => router.push('/office')}>Office</button>}
-          {!job && <button onClick={signOut}>Sign out</button>}</div>
+        {!job && (
+          <HeaderMenu name={me.full_name}>
+            <div className="hdr-who">{me.full_name}</div>
+            <AlertsButton />
+            {(me.is_org_admin || me.can_dispatch || me.can_bill) && <button onClick={() => router.push('/office')}>Office</button>}
+            <PasswordButton />
+            <button onClick={signOut}>Sign out</button>
+          </HeaderMenu>
+        )}
       </header>
       <SyncBar st={st} />
       {st.clock && !st.clock.ok && (

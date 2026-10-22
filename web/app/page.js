@@ -27,6 +27,8 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [forgot, setForgot] = useState(false);
+  const [sent, setSent] = useState('');
 
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -63,6 +65,17 @@ export default function SignIn() {
     router.replace(portalFor(p));
   }
 
+  async function sendReset(e) {
+    e.preventDefault();
+    setBusy(true); setErr(''); setSent('');
+    try {
+      const r = await fetch('/api/password-reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email.trim() }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Could not send the email. Try again in a minute.');
+      setSent(email.trim());
+    } catch (e2) { setErr(e2.message); } finally { setBusy(false); }
+  }
+
   return (
     <main className="login-wrap">
       <div className="login stack">
@@ -73,19 +86,40 @@ export default function SignIn() {
           <div className="muted small">Proof of work. No surprise invoices.</div>
         </div>
 
-        <form className="panel panel-pad stack" onSubmit={signIn}>
-          <h2>Sign in</h2>
-          {err && <div className="error">{err}</div>}
-          <label>
-            Email
-            <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </label>
-          <label>
-            Password
-            <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </label>
-          <button className="primary big" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
-        </form>
+        {forgot ? (
+          <form className="panel panel-pad stack" onSubmit={sendReset}>
+            <h2>Reset your password</h2>
+            {err && <div className="error">{err}</div>}
+            {sent ? (
+              <div className="notice">If <strong>{sent}</strong> has a login, a reset link is on its way. Check your inbox (and Junk). The link works once, for 1 hour.</div>
+            ) : (
+              <>
+                <div className="small muted">Enter the email you sign in with. We'll email you a link to set a new password.</div>
+                <label>
+                  Email
+                  <input id="reset-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </label>
+                <button className="primary big" disabled={busy}>{busy ? 'Sending…' : 'Email me a reset link'}</button>
+              </>
+            )}
+            <button type="button" onClick={() => { setForgot(false); setSent(''); setErr(''); }}>Back to sign in</button>
+          </form>
+        ) : (
+          <form className="panel panel-pad stack" onSubmit={signIn}>
+            <h2>Sign in</h2>
+            {err && <div className="error">{err}</div>}
+            <label>
+              Email
+              <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </label>
+            <label>
+              Password
+              <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </label>
+            <button className="primary big" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+            <button type="button" className="linkish" onClick={() => { setForgot(true); setErr(''); }}>Forgot password?</button>
+          </form>
+        )}
 
         <div className="panel panel-pad stack demo-list">
           <div>
