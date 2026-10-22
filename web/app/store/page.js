@@ -12,6 +12,7 @@ import Info from '@/components/Info';
 import AppFooter from '@/components/AppFooter';
 import GettingStarted from '@/components/GettingStarted';
 import LocationPicker from '@/components/LocationPicker';
+import { useTabBadge } from '@/lib/tabBadge';
 import PoLog from '@/components/PoLog';
 import Presence from '@/components/Presence';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox, Notice } from '@/components/bits';
@@ -130,6 +131,10 @@ export default function StorePortal() {
     try { setSiteF(localStorage.getItem(`scp_site_${profile.customer_id}`) || ''); } catch { /* fine */ }
   }, [profile]);
   const pickSite = (id) => { setSiteF(id); try { localStorage.setItem(`scp_site_${profile.customer_id}`, id); } catch { /* fine */ } };
+
+  // Browser tab: number of things waiting on this store, flashing when a technician is at the door.
+  const waitingCount = pending.length + calls.filter((c) => c.status === 'completed' && c.invoice_due_at && new Date(c.invoice_due_at) < new Date()).length + door.length;
+  useTabBadge(org?.name, waitingCount, door.length ? `Tech at the door: code ${door[0]?.code || ''}` : null);
 
   // Opening the call or quote form scrolls to it; closing it returns to the top.
   const openWork = (which) => {

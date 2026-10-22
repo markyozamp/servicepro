@@ -10,6 +10,7 @@ import NewCallForm from '@/components/NewCallForm';
 import TeamPanel from '@/components/TeamPanel';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox } from '@/components/bits';
 import AppFooter from '@/components/AppFooter';
+import { useTabBadge } from '@/lib/tabBadge';
 
 const LIST = `id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, invoiced_at, due_on,
   total_cost, invoice_ready, qbo_invoice_id, store_po_number, sites(name), customers(name),
@@ -80,6 +81,10 @@ export default function OfficePortal() {
       setBusy(false);
     }
   }
+
+  // Browser tab: new calls waiting to be accepted, plus open flags.
+  const toAccept = calls.filter((w) => w.status === 'created' && w.mode === 'verify' && !w.accepted_at && !w.declined_at);
+  useTabBadge(org?.name, toAccept.length + flags.length, toAccept.some((w) => w.accept_due_at && new Date(w.accept_due_at) < new Date(Date.now() + 10 * 60000)) ? 'New call: accept now' : null);
 
   if (!profile) return <div className="page muted">Loading…</div>;
 
