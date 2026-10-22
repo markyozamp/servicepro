@@ -243,9 +243,9 @@ export default function StorePortal() {
         <Presence onOpen={setOpen} refreshKey={calls} siteId={validSite} />
         {door.length > 0 && !sound && <button className="danger" onClick={enableAlerts}>🔔 Turn on sound and pop-up alerts for this screen</button>}
 
-        <div ref={panelRef} style={{ scrollMarginTop: 12 }} />
+        <div ref={panelRef} className="anchor" />
         {settings && <StoreSettings key={org?.id || 'org'} tab={settings} setTab={setSettings} onClose={() => { setAddLoc(false); closeArea(); }} startAdding={addLoc} onLocationsChanged={load} me={profile} org={org} hideTabs onOrgChanged={(logoData) => { if (logoData !== undefined) setLogoOverride(logoData); }} />}
-        <div ref={workRef} style={{ scrollMarginTop: 12 }} />
+        <div ref={workRef} className="anchor" />
         {project && (
           <div className="panel panel-pad stack">
             <div className="spread"><h2>Install or project quote <span className="soon">Coming soon</span> <Info title="Installs and projects">For bigger work: a new condensing unit, a walk-in freezer, a remodel. You describe the job, pick one or more contractors to quote it, and they send their quotes back on their own letterhead with photos. You compare, approve one, and it runs like any other call: scheduled, verified on arrival, the new equipment added to your list with its warranty.</Info></h2><button onClick={() => closeWork('project')}>Close</button></div>
@@ -281,7 +281,7 @@ export default function StorePortal() {
           </div>
         ))}
 
-        <div ref={callRef} style={{ scrollMarginTop: 12 }} />
+        <div ref={callRef} className="anchor" />
         {creating && (
           <NewCallForm side="store" profile={profile} defaultSite={validSite} onCancel={() => closeWork('call')} onCreated={async (wo) => {
             closeWork('call'); await load(); setOpen(wo.id);
@@ -289,7 +289,7 @@ export default function StorePortal() {
         )}
 
         {/* Approvals */}
-        <span id="approvals" />
+        <span id="approvals" className="anchor" />
         {fpending.map((a) => (
           <div key={a.id} className="panel panel-pad spread" style={{ borderColor: '#e6b3ab', background: '#fffaf9' }}>
             <div className="stack" style={{ gap: 4 }}>

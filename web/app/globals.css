@@ -292,3 +292,5 @@ label.button-like { display: inline-flex; align-items: center; padding: 8px 14px
 .gs-pill { border-radius: 999px; padding: 6px 14px; font-size: 13px; color: var(--brand); border-color: var(--brand-soft); background: var(--brand-soft); font-weight: 600; }
 .order-choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
 .order-choice > div { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+/* Invisible scroll targets inside spaced stacks: take no room */
+.stack > .anchor { display: block; height: 0; margin-top: -16px; scroll-margin-top: 28px; }
