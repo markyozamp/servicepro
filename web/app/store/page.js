@@ -7,8 +7,8 @@ import { money, ago, dateTime, date, poLabel, PO_KIND } from '@/lib/format';
 import TopBar from '@/components/TopBar';
 import CallDetail from '@/components/CallDetail';
 import NewCallForm from '@/components/NewCallForm';
-import LocationSettings from '@/components/LocationSettings';
-import ContractorSettings from '@/components/ContractorSettings';
+import StoreSettings from '@/components/StoreSettings';
+import Info from '@/components/Info';
 import PoLog from '@/components/PoLog';
 import Presence from '@/components/Presence';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox, Notice } from '@/components/bits';
@@ -33,8 +33,8 @@ export default function StorePortal() {
   const [busy, setBusy] = useState(false);
   const [door, setDoor] = useState([]);       // technicians on site waiting for the check-in code
   const [sound, setSound] = useState(false);
-  const [settings, setSettings] = useState(false);
-  const [cset, setCset] = useState(false);
+  const [settings, setSettings] = useState(null);   // which Settings tab is open, or null
+  const [project, setProject] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -58,8 +58,11 @@ export default function StorePortal() {
   // Opened from an alert: show that call
   useEffect(() => {
     if (!profile) return;
-    const c = new URLSearchParams(window.location.search).get('call');
+    const sp = new URLSearchParams(window.location.search);
+    const c = sp.get('call');
     if (c) setOpen(c);
+    if (sp.get('settings') && profile.is_org_admin) setSettings(sp.get('settings'));
+    if (sp.get('welcome') && profile.is_org_admin) setSettings('locations');
   }, [profile]);
 
   useEffect(() => {
@@ -126,8 +129,8 @@ export default function StorePortal() {
             <div className="muted small">{profile.title || ''}{profile.approval_limit != null ? ` · approves up to ${money(profile.approval_limit)}` : profile.can_approve ? ' · approves any amount' : ''}</div>
           </div>
           <div className="row">
-            {profile.is_org_admin && !settings && <button onClick={() => setSettings(true)}>Location settings</button>}
-            {profile.is_org_admin && !cset && <button onClick={() => setCset(true)}>Contractors &amp; QR</button>}
+            {profile.is_org_admin && !settings && <button onClick={() => setSettings('company')}>⚙ Settings</button>}
+            {(profile.can_open_calls || profile.is_org_admin) && !project && <button onClick={() => setProject(true)}>Install / project quote</button>}
             {!creating && (profile.can_open_calls || profile.is_org_admin) && <button className="primary big" onClick={() => setCreating(true)}>+ New service call</button>}
           </div>
         </div>
@@ -151,8 +154,21 @@ export default function StorePortal() {
         <Presence onOpen={setOpen} refreshKey={calls} />
         {door.length > 0 && !sound && <button className="danger" onClick={enableAlerts}>🔔 Turn on sound and pop-up alerts for this screen</button>}
 
-        {settings && <LocationSettings onClose={() => setSettings(false)} />}
-        {cset && <ContractorSettings onClose={() => setCset(false)} />}
+        {settings && <StoreSettings key={org?.id || 'org'} tab={settings} setTab={setSettings} onClose={() => setSettings(null)} me={profile} org={org} />}
+        {project && (
+          <div className="panel panel-pad stack">
+            <div className="spread"><h2>Install or project quote <span className="soon">Coming soon</span> <Info title="Installs and projects">For bigger work: a new condensing unit, a walk-in freezer, a remodel. You describe the job, pick one or more contractors to quote it, and they send their quotes back on their own letterhead with photos. You compare, approve one, and it runs like any other call: scheduled, verified on arrival, the new equipment added to your list with its warranty.</Info></h2><button onClick={() => setProject(false)}>Close</button></div>
+            <div className="muted">Coming soon. Here's how it will work:</div>
+            <ol className="stack" style={{ gap: 4, margin: 0, paddingLeft: 20 }}>
+              <li>Describe the job and the location, add photos.</li>
+              <li>Pick the contractors you want quotes from (one, or several to compare).</li>
+              <li>They send quotes back here, on their letterhead.</li>
+              <li>Compare side by side and approve one; it becomes a PO.</li>
+              <li>The install runs like any call: scheduled, checked in, verified. The new equipment and its warranty are added to your list.</li>
+            </ol>
+            <div className="small muted">Until then: open a regular service call and write "Quote for new …" in the description.</div>
+          </div>
+        )}
 
         {/* Calls a contractor entered from a phone call — confirm your store asked for them */}
         {calls.filter((c) => c.source === 'contractor' && c.mode === 'verify' && !c.store_confirmed_at && !['cancelled'].includes(c.status)).map((c) => (

@@ -1,11 +1,10 @@
 {
   "name": "Service Call Proof",
   "short_name": "Call Proof",
-  "description": "Technician app: jobs, check-in, photos, parts and completion — works without signal.",
+  "description": "Service calls with proof: who is in your building, for how long, and what was billed.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#16202b",
   "theme_color": "#16202b",
   "icons": [

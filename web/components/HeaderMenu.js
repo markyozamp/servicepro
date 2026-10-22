@@ -16,7 +16,7 @@ export default function HeaderMenu({ name, children }) {
     <div className={`hdr-menu who${open ? ' open' : ''}`}>
       {name && <span className="hdr-name">{name}</span>}
       <button type="button" className="hdr-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? 'Close' : 'Menu'}</button>
-      <div className="hdr-items" onClick={(e) => { if (e.target.closest('button')) setOpen(false); }}>{children}</div>
+      <div className="hdr-items" onClick={(e) => { if (e.target.closest('button') && !e.target.closest('[data-keep]')) setOpen(false); }}>{children}</div>
     </div>
   );
 }

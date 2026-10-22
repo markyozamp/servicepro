@@ -1045,3 +1045,33 @@ select test.ok((select (invite_contractor('Puget Refrigeration', 'Sam Puget', 's
 select test.login(:MARIA);
 select test.blocked($$select add_location('Sneaky', '1 C St, Fargo, ND', '', null, null, null)$$, 'admin', 'a non-admin cannot add locations');
 reset role;
+
+\echo '=== 44. Store admin: company profile, locations, backup-code status, equipment, team logins'
+set role authenticated;
+select test.login(:'lee');
+select test.ok((select (update_company('M&L Market Inc', '701-555-0301', 'office@mlmarket.test')->>'ok')::boolean), 'owner edits the company profile');
+select test.ok((select (update_location((select id from sites where name = 'M&L Fargo'), 'M&L Fargo Main', null, null, null, null, null)->>'ok')::boolean), 'owner renames a location');
+select set_backup_code((select id from sites where name = 'M&L Fargo Main'), '4455');
+select test.ok((select backup_code_set_at is not null and backup_code_set_by_name = 'Lee Owner' from sites where name = 'M&L Fargo Main'), 'backup code shows who set it and when');
+select test.ok((select (save_equipment(null, (select id from sites where name = 'M&L Fargo Main'), (select code from equipment_types where contractor_id is null limit 1),
+  'Hussmann', 'RL-12', 'SN-001', 'Back wall, dairy', '2024-05-01')->>'ok')::boolean), 'store adds its own equipment');
+select test.blocked($$select save_equipment(null, (select id from sites where name = 'M&L Fargo Main'), null, 'Hussmann', 'RL-12', 'SN-001', 'dup', null)$$, 'already has equipment', 'no duplicate serial at a location');
+select test.ok((select (add_equipment_warranty((select id from equipment where serial = 'SN-001'), 'manufacturer', '2024-05-01', '2029-05-01', 'Compressor 5 years')->>'ok')::boolean), 'store records the manufacturer warranty');
+select test.ok((select (seat_info()->>'included')::int = 2 and (seat_info()->>'used')::int = 1), 'two locations = two logins, one used');
+select invite_store_user('Jo Manager', 'jo@mlmarket.test', null, 'Store manager', false, true, 500, false, array[(select id from sites where name = 'M&L Seattle')])->>'token' as jotok \gset
+select test.blocked($$select invite_store_user('Third Person', 'three@mlmarket.test', null, null, false, false, null, true, null)$$, 'logins are in use', 'cannot go past the included logins');
+reset role; set role anon;
+select test.ok((select (join_redeem(:'jotok')->>'email') = 'jo@mlmarket.test'), 'the new store manager signs in from the link');
+reset role;
+select id as jo from profiles where email = 'jo@mlmarket.test' \gset
+set role authenticated;
+select test.login(:'jo');
+select test.ok((select count(*) = 1 from sites), 'the manager sees only the Seattle store');
+select test.blocked($$select add_location('Mine', '1 Z St, Seattle, WA', '', null, null, null)$$, 'admin', 'the manager cannot add locations');
+select test.login(:'lee');
+select test.ok((select (update_store_user(:'jo', 'Store manager', false, true, 750, false, array[(select id from sites where name = 'M&L Seattle'), (select id from sites where name = 'M&L Fargo Main')], true)->>'ok')::boolean), 'owner gives the manager a second store');
+select test.login(:'jo');
+select test.ok((select count(*) = 2 from sites), 'now the manager sees both');
+select test.login(:'lee');
+select test.blocked(format('select update_store_user(%L, null, false, true, null, true, null, false)', :'lee'), 'own admin', 'owner cannot lock themselves out');
+reset role;

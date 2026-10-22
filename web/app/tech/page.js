@@ -10,6 +10,8 @@ import Job from '@/components/tech/Job';
 import AlertsButton from '@/components/AlertsButton';
 import HeaderMenu from '@/components/HeaderMenu';
 import PasswordButton from '@/components/PasswordButton';
+import InstallButton from '@/components/InstallButton';
+import UpgradeButton from '@/components/UpgradeButton';
 
 const useTech = () => useSyncExternalStore(T.subscribe, T.getState, T.getState);
 
@@ -75,6 +77,8 @@ export default function TechApp() {
             <div className="hdr-who">{me.full_name}</div>
             <AlertsButton />
             {(me.is_org_admin || me.can_dispatch || me.can_bill) && <button onClick={() => router.push('/office')}>Office</button>}
+            {me.is_org_admin && <UpgradeButton />}
+            <InstallButton />
             <PasswordButton />
             <button onClick={signOut}>Sign out</button>
           </HeaderMenu>

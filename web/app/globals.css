@@ -219,3 +219,14 @@ td.num, th.num { text-align: right; white-space: nowrap; }
 }
 @media (min-width: 761px) { .hdr-items .hdr-who { display: none; } }
 button.linkish { background: none; border: none; color: var(--brand); padding: 4px 0; text-decoration: underline; align-self: center; box-shadow: none; }
+
+/* ⓘ info bubbles */
+.info-wrap { position: relative; display: inline-block; vertical-align: middle; }
+.info-btn { padding: 0 7px; border-radius: 50%; font-size: 13px; line-height: 20px; min-height: 0; color: var(--brand); border-color: var(--line); background: var(--panel); }
+.info-box { position: absolute; z-index: 25; left: 0; top: 26px; width: min(340px, 80vw); background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 10px; box-shadow: 0 10px 24px rgba(0,0,0,.15); padding: 12px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 400; line-height: 1.45; text-transform: none; letter-spacing: 0; }
+.info-box button { align-self: flex-start; }
+.hdr-help { background: var(--panel); color: var(--ink); border-radius: 8px; padding: 8px 10px; max-width: 320px; }
+.tabs-row { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.tabs-row button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.soon { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; background: #fff4d6; color: #8a5a00; border: 1px solid #f0d58a; border-radius: 999px; padding: 1px 8px; }

@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { ErrorBox, Notice } from './bits';
+import Info from './Info';
 
 export default function ContractorSettings({ onClose }) {
   const [cc, setCc] = useState([]);
@@ -44,11 +45,11 @@ export default function ContractorSettings({ onClose }) {
   const link = (tok) => `${window.location.origin}/join/${tok}`;
 
   return (
-    <div className="panel panel-pad stack">
-      <div className="spread"><h2>Contractors &amp; reporting</h2><button onClick={onClose}>Close</button></div>
+    <div className={onClose ? 'panel panel-pad stack' : 'stack'}>
+      {onClose && <div className="spread"><h2>Contractors &amp; reporting</h2><button onClick={onClose}>Close</button></div>}
       <ErrorBox error={err} /><Notice>{msg}</Notice>
 
-      <h3>Your contractors</h3>
+      <h3>Your contractors <Info title="Your contractors">The service companies you send calls to. For each one you set your rules: whether you pay travel time, what happens to time that wasn't checked in, and how fast they must accept a call. Their record shows how they're doing: on-time acceptance, check-ins with the code, missed windows and unexplained hours.</Info></h3>
       {cc.map((r) => (
         <div key={r.contractor_id} className="stack" style={{ gap: 6, borderTop: '1px solid var(--line)', paddingTop: 10 }}>
           <div><strong>{r.contractors?.name}</strong> <span className="small muted">{r.contractors?.phone || ''}</span></div>
@@ -83,7 +84,7 @@ export default function ContractorSettings({ onClose }) {
         </div>
       ))}
 
-      <h3 style={{ marginTop: 8 }}>Who gets which kind of call (all locations)</h3>
+      <h3 style={{ marginTop: 8 }}>Who gets which kind of call (all locations) <Info title="Who gets which call">Pick a contractor for each trade (refrigeration, plumbing, electrical…). When you open a call, it goes to the right one automatically. Contractors invited for specific locations are routed there only.</Info></h3>
       <table><tbody>
         {trades.map((t) => {
           const cur = tc.find((x) => !x.site_id && x.trade_id === t.id)?.contractor_id || '';
@@ -97,7 +98,7 @@ export default function ContractorSettings({ onClose }) {
         })}
       </tbody></table>
 
-      <h3 style={{ marginTop: 8 }}>Invite a contractor to Time Verify</h3>
+      <h3 style={{ marginTop: 8 }}>Invite a contractor <Info title="Invite a contractor">Enter the company, a contact and their email, tick the trades they do and which locations they serve, then send them the sign-in link. It's free for them. They review your terms and sign in from their office or just a phone, then add their own technicians.</Info></h3>
       <div className="small muted">Free for them. They get a sign-in link — no password. Calls for the trades you pick go to them.</div>
       {sent ? (
         <div className="notice stack" style={{ gap: 6 }}>
@@ -153,7 +154,7 @@ export default function ContractorSettings({ onClose }) {
         <div className="small muted">Waiting to sign in: {links.filter((l) => !l.used_at).map((l) => `${l.contractors?.name} (${l.full_name}${new Date(l.expires_at) < new Date() ? ', link expired' : ''})`).join(', ')}</div>
       )}
 
-      <h3 style={{ marginTop: 8 }}>QR stickers on your equipment</h3>
+      <h3 style={{ marginTop: 8 }}>QR stickers on your equipment <Info title="QR stickers and store PIN">Each unit on your Equipment list gets a sticker. Any employee scans it with their phone camera, enters the store PIN below and picks the problem; the call goes to the right contractor and already knows which unit it is. The PIN keeps people outside your store from opening calls.</Info></h3>
       <div className="small muted">Any employee scans the sticker on a unit, enters the store PIN, picks the problem — the call goes to the right contractor and knows which unit it is.</div>
       {sites.map((s) => (
         <div key={s.id} className="row">
