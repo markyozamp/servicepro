@@ -62,10 +62,11 @@ export default function Terms() {
 
       <h2>7. Fees</h2>
       <ul>
-        <li>Customers pay the subscription shown when they sign up — currently $25 per location per month for Time Verify — billed monthly in advance.</li>
-        <li>Contractors use Time Verify free of charge. Paid contractor features, if chosen, are priced when offered.</li>
-        <li>Fees are not refundable for a partial month. You can cancel at any time and the account stays active to the end of the paid month.</li>
-        <li>We will give at least 30 days&rsquo; notice before raising a price you already pay. Taxes are extra where they apply.</li>
+        <li>Customers pay <strong>$295 per location per year</strong>, billed once a year in advance. It covers all trades and unlimited service calls.</li>
+        <li>A location added during the year is charged for the rest of that year, so all of a customer&rsquo;s locations renew on the same date.</li>
+        <li><strong>No refunds.</strong> You can cancel at any time; the account stays active to the end of the paid year and does not renew.</li>
+        <li>Contractors and their technicians use the Service free of charge. Paid contractor plans, if chosen, are priced when offered.</li>
+        <li>We will give at least 30 days&rsquo; notice before a price change takes effect at your renewal. Taxes are extra where they apply.</li>
       </ul>
 
       <h2>8. Text messages and alerts</h2>

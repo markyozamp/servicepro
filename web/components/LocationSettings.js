@@ -6,12 +6,15 @@ import { useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { money } from '@/lib/format';
 import { ErrorBox, Notice } from './bits';
+import AddressFinder from './AddressFinder';
 
 export default function LocationSettings({ onClose }) {
   const [rows, setRows] = useState([]);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const [adding, setAdding] = useState(null);
+  const [found, setFound] = useState(null);
 
   async function load() {
     try {
@@ -39,6 +42,19 @@ export default function LocationSettings({ onClose }) {
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
 
+  async function addLocation(e) {
+    e.preventDefault();
+    setErr(''); setMsg('');
+    if (!found) return setErr('Tap Find next to the address first.');
+    setBusy(true);
+    try {
+      const r = await act('add_location', { p_name: adding.name, p_address: found.address, p_zip: found.zip, p_lat: found.lat, p_lon: found.lon, p_timezone: found.timezone });
+      setMsg(`Added ${adding.name}. You now have ${r.locations} locations.`);
+      setAdding(null); setFound(null);
+      await load();
+    } catch (x) { setErr(x.message); } finally { setBusy(false); }
+  }
+
   function hereNow(r) {
     setErr(''); setMsg('');
     if (!navigator.geolocation) return setErr('This device cannot share its location.');
@@ -57,6 +73,15 @@ export default function LocationSettings({ onClose }) {
     <div className="panel panel-pad stack">
       <div className="spread"><h2>Location settings</h2><button onClick={onClose}>Close</button></div>
       <ErrorBox error={err} /><Notice>{msg}</Notice>
+      {adding ? (
+        <form className="stack" style={{ gap: 8, border: '1px solid var(--line)', borderRadius: 10, padding: 12 }} onSubmit={addLocation}>
+          <h3>Add a location</h3>
+          <label>Location name<input id="add-loc-name" value={adding.name} onChange={(e) => setAdding({ ...adding, name: e.target.value })} placeholder="e.g. M&L Market — Seattle" required /></label>
+          <AddressFinder id="add-loc-addr" value={adding.addr} onChange={(v) => setAdding({ ...adding, addr: v })} onFound={setFound} found={found} />
+          <div className="small muted">$295 per year for this location, prorated to your renewal date. All trades, unlimited service calls.</div>
+          <div className="row"><button className="primary" disabled={busy || !found}>Add location</button><button type="button" onClick={() => { setAdding(null); setFound(null); }}>Cancel</button></div>
+        </form>
+      ) : <div><button onClick={() => { setAdding({ name: '', addr: '' }); setFound(null); }}>+ Add a location</button> <span className="small muted">{rows.length} location{rows.length === 1 ? '' : 's'}</span></div>}
       {rows.map((r) => (
         <div key={r.id} className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
           <div><strong>{r.name}</strong> <span className="small muted">{r.address}</span></div>

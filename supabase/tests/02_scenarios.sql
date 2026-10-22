@@ -1023,3 +1023,25 @@ select test.ok((select reset_password_with_token(:'rtok', 'NewPassword2026')->>'
 select test.blocked(format('select reset_password_with_token(%L, %L)', :'rtok', 'AnotherOne2026'), 'not valid', 'the link works only once');
 reset role;
 select test.ok((select count(*) from password_resets where user_id = '00000000-0000-0000-0000-0000000000c1' and created_at > now() - interval '1 hour') = 1, 'reset logged');
+
+\echo '=== 43. New store customer from a start link; adds locations; invites a contractor for one location'
+reset role;
+select create_start_link('M&L Market test') as stok \gset
+set role anon;
+select test.blocked(format('select start_customer(%L, %L, %L, %L, %L, %L, %L, %L, %L, null, null, null)', :'stok', 'M&L Market', 'Lee Owner', 'not-an-email', '', 'longpassword1', 'Store 1', '100 Main St, Fargo, ND', '58102'), 'valid email', 'bad email is caught');
+select test.ok((select start_customer(:'stok', 'M&L Market', 'Lee Owner', 'lee@mlmarket.test', '701-555-0300', 'longpassword1',
+  'M&L Fargo', '100 Main St, Fargo, ND', '58102', 46.8772, -96.7898, 'America/Chicago')->>'email' = 'lee@mlmarket.test'), 'owner sets up the company and first location');
+select test.blocked(format('select start_customer(%L, %L, %L, %L, %L, %L, %L, %L, %L, null, null, null)', :'stok', 'X', 'Y', 'y@x.test', '', 'longpassword1', 'S', '1 A St', ''), 'already used', 'a start link works once');
+reset role;
+select id as lee from profiles where email = 'lee@mlmarket.test' \gset
+select test.ok((select is_org_admin and can_approve and approval_limit is null from profiles where id = :'lee'), 'owner is admin with no approval limit');
+set role authenticated;
+select test.login(:'lee');
+select test.ok((select (add_location('M&L Seattle', '200 Pike St, Seattle, WA', '98101', 47.61, -122.34, 'America/Los_Angeles')->>'locations')::int = 2), 'owner adds a second location (Pacific time)');
+select test.blocked($$select add_location('M&L Seattle', '1 B St, Seattle, WA', '', null, null, null)$$, 'already have', 'no duplicate location names');
+select test.ok((select count(*) = 2 from sites), 'owner sees exactly their two locations');
+select test.ok((select timezone = 'America/Los_Angeles' from sites where name = 'M&L Seattle'), 'Seattle runs on Pacific time');
+select test.ok((select (invite_contractor('Puget Refrigeration', 'Sam Puget', 'sam@puget.test', null, '{}', array[(select id from sites where name = 'M&L Seattle')])->>'token') is not null), 'invite a contractor for just the Seattle store');
+select test.login(:MARIA);
+select test.blocked($$select add_location('Sneaky', '1 C St, Fargo, ND', '', null, null, null)$$, 'admin', 'a non-admin cannot add locations');
+reset role;

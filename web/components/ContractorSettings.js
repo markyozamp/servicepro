@@ -114,7 +114,7 @@ export default function ContractorSettings({ onClose }) {
         <form className="stack" style={{ gap: 6 }} onSubmit={(e) => {
           e.preventDefault();
           run('invite_contractor', { p_company: inv.company, p_contact_name: inv.name, p_email: inv.email || null, p_phone: inv.phone || null,
-            p_trade_ids: inv.trades }, (r) => { setSent({ token: r.token, name: inv.name, email: inv.email, phone: inv.phone }); setInv(null); });
+            p_trade_ids: inv.trades, p_site_ids: inv.sites.length && inv.sites.length < sites.length ? inv.sites : null }, (r) => { setSent({ token: r.token, name: inv.name, email: inv.email, phone: inv.phone }); setInv(null); });
         }}>
           <div className="row">
             <label className="grow">Company<input value={inv.company} onChange={(e) => setInv({ ...inv, company: e.target.value })} required /></label>
@@ -132,9 +132,23 @@ export default function ContractorSettings({ onClose }) {
               </label>
             ))}
           </div>
+          {sites.length > 1 && (
+            <div className="stack" style={{ gap: 4 }}>
+              <div className="small"><strong>Which locations?</strong> <span className="muted">Calls for the trades above at these locations go to this contractor. Leave all unticked for every location.</span></div>
+              <div className="row" style={{ gap: 10 }}>
+                {sites.map((st) => (
+                  <label key={st.id} className="row small" style={{ gap: 4, fontWeight: 400 }}>
+                    <input type="checkbox" style={{ width: 'auto' }} checked={inv.sites.includes(st.id)}
+                      onChange={(e) => setInv({ ...inv, sites: e.target.checked ? [...inv.sites, st.id] : inv.sites.filter((x) => x !== st.id) })} />{st.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="small muted">Each contractor needs their own email: one email is one sign-in.</div>
           <div className="row"><button className="primary" disabled={busy}>Create sign-in link</button><button type="button" onClick={() => setInv(null)}>Cancel</button></div>
         </form>
-      ) : <button onClick={() => setInv({ company: '', name: '', email: '', phone: '', trades: [] })}>+ Invite a contractor</button>}
+      ) : <button onClick={() => setInv({ company: '', name: '', email: '', phone: '', trades: [], sites: [] })}>+ Invite a contractor</button>}
       {links.filter((l) => !l.used_at).length > 0 && (
         <div className="small muted">Waiting to sign in: {links.filter((l) => !l.used_at).map((l) => `${l.contractors?.name} (${l.full_name}${new Date(l.expires_at) < new Date() ? ', link expired' : ''})`).join(', ')}</div>
       )}
