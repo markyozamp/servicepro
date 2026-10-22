@@ -11,11 +11,12 @@ import StoreSettings, { SETTINGS_TABS, storePerms } from '@/components/StoreSett
 import Info from '@/components/Info';
 import AppFooter from '@/components/AppFooter';
 import GettingStarted from '@/components/GettingStarted';
+import LocationPicker from '@/components/LocationPicker';
 import PoLog from '@/components/PoLog';
 import Presence from '@/components/Presence';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox, Notice } from '@/components/bits';
 
-const LIST = `id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, total_cost, store_po_number,
+const LIST = `id, site_id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, total_cost, store_po_number,
   mode, source, store_confirmed_at, store_disputed, accepted_at, accept_due_at, declined_at, nte, contact_name, contractors(name),
   sites(name), visits(id, visit_no, status, eta_at, arrived_at, received_at, checkin_required, checkin_at, profiles(full_name)),
   parts_orders(status, expected_on)`;
@@ -43,20 +44,28 @@ export default function StorePortal() {
   const [logoOverride, setLogoOverride] = useState(undefined);
   const [admins, setAdmins] = useState([]);
   const panelRef = useRef(null);
+  const workRef = useRef(null);
+  const callRef = useRef(null);
+  const [siteF, setSiteF] = useState('');
+  const [allSites, setAllSites] = useState([]);
+  const [attention, setAttention] = useState([]);
+  const [addLoc, setAddLoc] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const [c, p, pm, st, dv, codes] = await Promise.all([
         q(supabase.from('work_orders').select(LIST).order('created_at', { ascending: false }).limit(300)),
-        q(supabase.from('po_lines').select('id, seq, kind, amount, description, requested_at, owner_status, owner:property_owners(name), work_orders(id, number, store_po_number, unit, sites(name))').eq('status', 'pending')),
+        q(supabase.from('po_lines').select('id, seq, kind, amount, description, requested_at, owner_status, owner:property_owners(name), work_orders(id, site_id, number, store_po_number, unit, sites(name))').eq('status', 'pending')),
         q(supabase.from('pm_status').select('*').order('due_on')),
         q(supabase.from('sites').select('id, name')),
-        q(supabase.from('visits').select('id, arrived_at, profiles(full_name), work_orders(id, number, unit, sites(name))')
+        q(supabase.from('visits').select('id, arrived_at, profiles(full_name), work_orders(id, site_id, number, unit, sites(name))')
           .eq('status', 'on_site').eq('checkin_required', true).is('checkin_at', null)),
         q(supabase.from('visit_codes').select('visit_id, code')),
       ]);
       setDoor(dv.map((v) => ({ ...v, code: codes.find((x) => x.visit_id === v.id)?.code })));
       const siteName = Object.fromEntries(st.map((x) => [x.id, x.name]));
+      const [att, ss] = await Promise.all([act('site_attention', {}).catch(() => []), q(supabase.from('sites').select('id, name').order('name')).catch(() => [])]);
+      setAttention(att || []); setAllSites(ss || []);
       setCalls(c); setPending(p); setPms(pm.map((x) => ({ ...x, site_name: siteName[x.site_id] })));
     } catch (e) {
       setErr(e.message);
@@ -116,6 +125,22 @@ export default function StorePortal() {
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') Notification.requestPermission();
   }
 
+  useEffect(() => {
+    if (!profile) return;
+    try { setSiteF(localStorage.getItem(`scp_site_${profile.customer_id}`) || ''); } catch { /* fine */ }
+  }, [profile]);
+  const pickSite = (id) => { setSiteF(id); try { localStorage.setItem(`scp_site_${profile.customer_id}`, id); } catch { /* fine */ } };
+
+  // Opening the call or quote form scrolls to it; closing it returns to the top.
+  const openWork = (which) => {
+    if (which === 'call') setCreating(true); else setProject(true);
+    setTimeout(() => (which === 'call' ? callRef : workRef).current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  };
+  const closeWork = (which) => {
+    if (which === 'call') setCreating(false); else setProject(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Opening a panel scrolls to it; closing one returns to the top.
   const openArea = (k) => {
     if (k === 'company' && !storePerms(profile).company) { setLocked(true); return; }
@@ -136,12 +161,16 @@ export default function StorePortal() {
   const orgLogo = logoOverride !== undefined ? logoOverride : org?.logo_data;
 
   const isOpen = (s) => !['completed', 'invoiced', 'cancelled'].includes(s);
-  const late = calls.filter((c) => c.status === 'completed' && c.invoice_due_at && new Date(c.invoice_due_at) < new Date());
-  const shown = calls.filter((c) => c.kind !== 'pm' || !isOpen(c.status)).filter((c) =>
+  const validSite = siteF && allSites.some((x) => x.id === siteF) ? siteF : '';
+  const fcalls = validSite ? calls.filter((c) => c.site_id === validSite) : calls;
+  const fpending = validSite ? pending.filter((a) => a.work_orders?.site_id === validSite) : pending;
+  const fdoor = validSite ? door.filter((v) => v.work_orders?.site_id === validSite) : door;
+  const late = fcalls.filter((c) => c.status === 'completed' && c.invoice_due_at && new Date(c.invoice_due_at) < new Date());
+  const shown = fcalls.filter((c) => c.kind !== 'pm' || !isOpen(c.status)).filter((c) =>
     tab === 'open' ? isOpen(c.status) : tab === 'billing' ? c.status === 'completed' : ['invoiced', 'cancelled'].includes(c.status));
   const counts = {
-    open: calls.filter((c) => c.kind !== 'pm' && isOpen(c.status)).length,
-    billing: calls.filter((c) => c.status === 'completed').length,
+    open: fcalls.filter((c) => c.kind !== 'pm' && isOpen(c.status)).length,
+    billing: fcalls.filter((c) => c.status === 'completed').length,
   };
 
   return (
@@ -151,6 +180,8 @@ export default function StorePortal() {
         <div className="spread">
           <div>
             {orgLogo ? <img className="org-logo" src={orgLogo} alt={org?.name || 'Company logo'} /> : <h1>{org?.name || 'Your locations'}</h1>}
+            <div style={{ margin: '6px 0 2px' }}><LocationPicker sites={allSites} attention={attention} value={validSite} onChange={pickSite}
+              canAdd={storePerms(profile).locations} onAdd={() => { setAddLoc(true); setLocked(false); setSettings('locations'); setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); }} /></div>
             <div className="muted small">{profile.title || ''}{profile.approval_limit != null ? ` · approves up to ${money(profile.approval_limit)}` : profile.can_approve ? ' · approves any amount' : ''}</div>
           </div>
           {(profile.can_open_calls || profile.is_org_admin) && (
@@ -158,11 +189,11 @@ export default function StorePortal() {
               <div className="order-label">Order work</div>
               <div className="row" style={{ alignItems: 'flex-start' }}>
                 <div className="order-btn">
-                  <button disabled={project} onClick={() => setProject(true)}>Install / project quote</button>
+                  <button disabled={project} onClick={() => openWork('project')}>Install / project quote</button>
                   <span>New equipment or a bigger job</span>
                 </div>
                 <div className="order-btn">
-                  <button className="primary big" disabled={creating} onClick={() => setCreating(true)}>+ New service call</button>
+                  <button className="primary big" disabled={creating} onClick={() => openWork('call')}>+ New service call</button>
                   <span>Something's broken or needs a repair</span>
                 </div>
               </div>
@@ -186,18 +217,18 @@ export default function StorePortal() {
 
         <div className="tiles">
           <button className="tile" onClick={() => setTab('open')}><span className="tile-n">{counts.open}</span><span>Open calls</span></button>
-          <button className={`tile${pending.length ? ' warn' : ''}`} onClick={() => document.getElementById('approvals')?.scrollIntoView({ behavior: 'smooth' })}><span className="tile-n">{pending.length}</span><span>Waiting for approval</span></button>
+          <button className={`tile${fpending.length ? ' warn' : ''}`} onClick={() => document.getElementById('approvals')?.scrollIntoView({ behavior: 'smooth' })}><span className="tile-n">{fpending.length}</span><span>Waiting for approval</span></button>
           <button className="tile" onClick={() => setTab('billing')}><span className="tile-n">{counts.billing}</span><span>Done, bill pending</span></button>
           <button className={`tile${late.length ? ' bad' : ''}`} onClick={() => setTab('billing')}><span className="tile-n">{late.length}</span><span>Bills overdue</span></button>
         </div>
 
-        <GettingStarted me={profile} onGo={(k) => openArea(k)} onNewCall={() => setCreating(true)} />
+        <GettingStarted me={profile} onGo={(k) => openArea(k)} onNewCall={() => openWork('call')} />
 
         <ErrorBox error={err} />
         <Notice>{msg}</Notice>
 
         {/* Technician waiting at the door for the check-in code */}
-        {door.map((v) => {
+        {fdoor.map((v) => {
           const mins = Math.floor((Date.now() - new Date(v.arrived_at).getTime()) / 60000);
           return (
             <div key={v.id} className="doorbell">
@@ -209,14 +240,15 @@ export default function StorePortal() {
             </div>
           );
         })}
-        <Presence onOpen={setOpen} refreshKey={calls} />
+        <Presence onOpen={setOpen} refreshKey={calls} siteId={validSite} />
         {door.length > 0 && !sound && <button className="danger" onClick={enableAlerts}>🔔 Turn on sound and pop-up alerts for this screen</button>}
 
         <div ref={panelRef} style={{ scrollMarginTop: 12 }} />
-        {settings && <StoreSettings key={org?.id || 'org'} tab={settings} setTab={setSettings} onClose={closeArea} me={profile} org={org} hideTabs onOrgChanged={(logoData) => { if (logoData !== undefined) setLogoOverride(logoData); }} />}
+        {settings && <StoreSettings key={org?.id || 'org'} tab={settings} setTab={setSettings} onClose={() => { setAddLoc(false); closeArea(); }} startAdding={addLoc} onLocationsChanged={load} me={profile} org={org} hideTabs onOrgChanged={(logoData) => { if (logoData !== undefined) setLogoOverride(logoData); }} />}
+        <div ref={workRef} style={{ scrollMarginTop: 12 }} />
         {project && (
           <div className="panel panel-pad stack">
-            <div className="spread"><h2>Install or project quote <span className="soon">Coming soon</span> <Info title="Installs and projects">For bigger work: a new condensing unit, a walk-in freezer, a remodel. You describe the job, pick one or more contractors to quote it, and they send their quotes back on their own letterhead with photos. You compare, approve one, and it runs like any other call: scheduled, verified on arrival, the new equipment added to your list with its warranty.</Info></h2><button onClick={() => setProject(false)}>Close</button></div>
+            <div className="spread"><h2>Install or project quote <span className="soon">Coming soon</span> <Info title="Installs and projects">For bigger work: a new condensing unit, a walk-in freezer, a remodel. You describe the job, pick one or more contractors to quote it, and they send their quotes back on their own letterhead with photos. You compare, approve one, and it runs like any other call: scheduled, verified on arrival, the new equipment added to your list with its warranty.</Info></h2><button onClick={() => closeWork('project')}>Close</button></div>
             <div className="muted">Coming soon. Here's how it will work:</div>
             <ol className="stack" style={{ gap: 4, margin: 0, paddingLeft: 20 }}>
               <li>Describe the job and the location, add photos.</li>
@@ -249,15 +281,16 @@ export default function StorePortal() {
           </div>
         ))}
 
+        <div ref={callRef} style={{ scrollMarginTop: 12 }} />
         {creating && (
-          <NewCallForm side="store" profile={profile} onCancel={() => setCreating(false)} onCreated={async (wo) => {
-            setCreating(false); await load(); setOpen(wo.id);
+          <NewCallForm side="store" profile={profile} defaultSite={validSite} onCancel={() => closeWork('call')} onCreated={async (wo) => {
+            closeWork('call'); await load(); setOpen(wo.id);
           }} />
         )}
 
         {/* Approvals */}
         <span id="approvals" />
-        {pending.map((a) => (
+        {fpending.map((a) => (
           <div key={a.id} className="panel panel-pad spread" style={{ borderColor: '#e6b3ab', background: '#fffaf9' }}>
             <div className="stack" style={{ gap: 4 }}>
               <div className="row" style={{ gap: 8 }}>

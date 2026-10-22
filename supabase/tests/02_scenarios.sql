@@ -1128,3 +1128,13 @@ select from update_team_member(:'pat', 'Facilities', '{"calls":true,"equipment":
 select test.login(:'pat');
 select test.ok((select (update_company('M&L Market Inc', '701-555-0301', 'office@mlmarket.test')->>'ok')::boolean), 'with it ticked, they can');
 reset role;
+
+\echo '=== 48. Locations needing attention; add a unit while opening a call'
+set role authenticated;
+select test.login(:'lee');
+select test.ok((select bool_or(x->'reasons' ? 'Unscheduled visitor today') from jsonb_array_elements(site_attention()) x), 'a location with an unscheduled visitor today needs attention');
+select test.ok((select count(*) = 2 from jsonb_array_elements(site_attention())), 'one entry per location the person sees');
+select test.login(:'pat');
+select test.ok((select (add_equipment_from_call((select id from sites where name = 'M&L Seattle'), null, 'Walk-in freezer, back room', 'Kolpak', null)->>'ok')::boolean), 'someone who opens calls adds the broken unit while opening the call');
+select test.blocked($$select add_equipment_from_call((select id from sites where name = 'M&L Seattle'), null, '', '', '')$$, 'kind of unit', 'needs at least a type or where it is');
+reset role;

@@ -24,7 +24,7 @@ export function storePerms(me) {
   };
 }
 
-export default function StoreSettings({ tab, setTab, onClose, me, org, onOrgChanged, hideTabs }) {
+export default function StoreSettings({ tab, setTab, onClose, me, org, onOrgChanged, hideTabs, startAdding, onLocationsChanged }) {
   const can = storePerms(me);
   const allowed = SETTINGS_TABS.filter(([k]) => can[k]);
   const [own, setOwn] = useState(null);
@@ -38,7 +38,7 @@ export default function StoreSettings({ tab, setTab, onClose, me, org, onOrgChan
         {allowed.map(([k, label]) => <button key={k} className={t === k ? 'on' : ''} onClick={() => go(k)}>{label}</button>)}
       </div>}
       {t === 'company' && <CompanyPlan org={org} onSaved={onOrgChanged} />}
-      {t === 'locations' && <LocationSettings />}
+      {t === 'locations' && <LocationSettings startAdding={startAdding} onChanged={onLocationsChanged} />}
       {t === 'team' && <StoreTeam me={me} />}
       {t === 'equipment' && <StoreEquipment />}
       {t === 'contractors' && <ContractorSettings />}

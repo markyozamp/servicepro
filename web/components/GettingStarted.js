@@ -26,7 +26,7 @@ export default function GettingStarted({ me, onGo, onNewCall }) {
     return () => { alive = false; };
   }, [me.customer_id, key]);
 
-  if (!st || hidden || !me.is_org_admin) return null;
+  if (!st || !me.is_org_admin) return null;
   const steps = [
     ['Add your locations', 'Every store or building, with its address.', st.sites > 0 && st.mapped, () => onGo('locations')],
     ['Invite your contractors', 'One for each trade. It\'s free for them.', st.cc > 0, () => onGo('contractors')],
@@ -37,11 +37,18 @@ export default function GettingStarted({ me, onGo, onNewCall }) {
   ];
   const done = steps.filter((s) => s[2]).length;
   if (done === steps.length) return null;
+  if (hidden) {
+    return (
+      <div><button className="gs-pill" onClick={() => { try { localStorage.removeItem(key); } catch { /* fine */ } setHidden(false); }}>
+        ✓ Getting started: {steps.length - done} step{steps.length - done === 1 ? '' : 's'} left · Show
+      </button></div>
+    );
+  }
   return (
     <div className="panel panel-pad stack gs">
       <div className="spread">
         <div><h3>Getting started</h3><div className="small muted">{done} of {steps.length} done. About 15 minutes for everything.</div></div>
-        <button className="linkish" onClick={() => { try { localStorage.setItem(key, '1'); } catch { /* fine */ } setHidden(true); }}>Hide this</button>
+        <button className="linkish" onClick={() => { try { localStorage.setItem(key, '1'); } catch { /* fine */ } setHidden(true); }}>Hide for now</button>
       </div>
       <div className="gs-bar"><span style={{ width: `${(done / steps.length) * 100}%` }} /></div>
       <div className="gs-list">

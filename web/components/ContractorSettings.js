@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { ErrorBox, Notice } from './bits';
 import Info from './Info';
+import OrderStickers from './OrderStickers';
 
 export default function ContractorSettings({ onClose }) {
   const [cc, setCc] = useState([]);
@@ -155,6 +156,7 @@ export default function ContractorSettings({ onClose }) {
       )}
 
       <h3 style={{ marginTop: 8 }}>QR stickers on your equipment <Info title="QR stickers and store PIN">Each unit on your Equipment list gets a sticker. Any employee scans it with their phone camera, enters the store PIN below and picks the problem; the call goes to the right contractor and already knows which unit it is. The PIN keeps people outside your store from opening calls.</Info></h3>
+      <OrderStickers sites={sites} />
       <div className="small muted">Any employee scans the sticker on a unit, enters the store PIN, picks the problem — the call goes to the right contractor and knows which unit it is.</div>
       {sites.map((s) => (
         <div key={s.id} className="row">

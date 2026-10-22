@@ -18,10 +18,10 @@ async function shrink(file) {
 const telOf = (p) => (p || '').replace(/[^0-9+]/g, '');
 
 const SEL = `id, status, arrived_at, scheduled_start, scheduled_end, missed_alert_at, visit_no, checkin_at, checkin_verified,
-  profiles(full_name), work_orders(id, number, unit, issue_description, store_po_number, sites(id, name), contractors(name),
+  profiles(full_name), work_orders(id, site_id, number, unit, issue_description, store_po_number, sites(id, name), contractors(name),
   equipment(location_description, equipment_types(name)))`;
 
-export default function Presence({ onOpen, refreshKey }) {
+export default function Presence({ onOpen, refreshKey, siteId }) {
   const [inside, setInside] = useState([]);
   const [expected, setExpected] = useState([]);
   const [visitors, setVisitors] = useState([]);
@@ -39,11 +39,12 @@ export default function Presence({ onOpen, refreshKey }) {
       const [a, b, c] = await Promise.all([
         q(supabase.from('visits').select(SEL).eq('status', 'on_site').order('arrived_at')),
         q(supabase.from('visits').select(SEL).in('status', ['assigned', 'en_route']).lt('scheduled_start', day1.toISOString()).order('scheduled_start')),
-        q(supabase.from('site_visitors').select('id, visitor_name, company, note, recorded_at, vehicle_plate, photo_path, sites(name), contractors(name, phone)').gte('recorded_at', day0.toISOString()).order('recorded_at', { ascending: false })),
+        q(supabase.from('site_visitors').select('id, site_id, visitor_name, company, note, recorded_at, vehicle_plate, photo_path, sites(name), contractors(name, phone)').gte('recorded_at', day0.toISOString()).order('recorded_at', { ascending: false })),
       ]);
-      setInside(a); setExpected(b); setVisitors(c);
+      const keep = (x) => !siteId || x.work_orders?.site_id === siteId;
+      setInside(a.filter(keep)); setExpected(b.filter(keep)); setVisitors(c.filter((x) => !siteId || x.site_id === siteId));
     } catch (e) { setErr(e.message); }
-  }, []);
+  }, [siteId]);
   useEffect(() => { load(); }, [load, refreshKey]);
 
   async function openForm() {
@@ -52,7 +53,7 @@ export default function Presence({ onOpen, refreshKey }) {
       const [s, c] = await Promise.all([q(supabase.from('sites').select('id, name, customer_id, visitor_require_plate, visitor_require_photo').order('name')),
         q(supabase.from('customer_contractors').select('contractor_id, contractors(name, phone)'))]);
       setSites(s); setCc(c);
-      if (s.length === 1) setForm((f) => ({ ...f, site: s[0].id }));
+      if (s.length === 1 || siteId) setForm((f) => ({ ...f, site: siteId || s[0].id }));
     } catch (e) { setErr(e.message); }
   }
 

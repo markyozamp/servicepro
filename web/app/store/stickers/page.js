@@ -6,6 +6,7 @@ import QRCode from 'qrcode';
 import { supabase, q } from '@/lib/supabase';
 import { useProfile } from '@/lib/useProfile';
 import { useRouter } from 'next/navigation';
+import OrderStickers from '@/components/OrderStickers';
 
 export default function Stickers() {
   const { profile } = useProfile('/store');
@@ -13,6 +14,7 @@ export default function Stickers() {
   const [rows, setRows] = useState([]);
   const [site, setSite] = useState('');
   const [err, setErr] = useState('');
+  const [siteList, setSiteList] = useState([]);
 
   useEffect(() => {
     if (!profile) return;
@@ -20,6 +22,7 @@ export default function Stickers() {
       const eq = await q(supabase.from('equipment').select('id, qr_token, location_description, manufacturer, model, site_id, sites(name), equipment_types(name)').is('retired_at', null).order('site_id'));
       const withQr = await Promise.all(eq.map(async (e) => ({ ...e, img: await QRCode.toDataURL(`${window.location.origin}/r/${e.qr_token}`, { margin: 1, width: 240 }) })));
       setRows(withQr);
+      setSiteList(await q(supabase.from('sites').select('id, name, address').order('name')));
     })().catch((e) => setErr(e.message));
   }, [profile]);
 
@@ -37,6 +40,9 @@ export default function Stickers() {
         </div>
       </div>
       {err && <div className="error">{err}</div>}
+      <div className="noprint panel panel-pad" style={{ marginBottom: 12 }}>
+        <OrderStickers sites={siteList} unitsBySite={rows.reduce((a, r) => ({ ...a, [r.site_id]: (a[r.site_id] || 0) + 1 }), {})} />
+      </div>
       <div className="noprint small muted" style={{ marginBottom: 12 }}>Stick one on each unit. Employees scan it with their phone camera, enter the store PIN and pick the problem. Units not listed? Add them under Settings → Equipment, or your contractor adds them on their next visit.</div>
       {rows.length === 0 && !err && <div className="panel panel-pad stack noprint" style={{ maxWidth: 560 }}><strong>No equipment yet, so no stickers to print.</strong><span className="muted">Add your units under Settings → Equipment (each unit gets its own sticker), then come back here.</span><div><button onClick={() => router.push('/store?settings=equipment')}>Go to Equipment</button></div></div>}
       <div className="row" style={{ gap: 12, alignItems: 'flex-start' }}>

@@ -10,12 +10,12 @@ import AddressFinder from './AddressFinder';
 import Info from './Info';
 import { dateTime } from '@/lib/format';
 
-export default function LocationSettings({ onClose }) {
+export default function LocationSettings({ onClose, startAdding, onChanged }) {
   const [rows, setRows] = useState([]);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
-  const [adding, setAdding] = useState(null);
+  const [adding, setAdding] = useState(startAdding ? { name: '', addr: '' } : null);
   const [found, setFound] = useState(null);
   const [edit, setEdit] = useState(null);
   const [efound, setEfound] = useState(null);
@@ -73,7 +73,7 @@ export default function LocationSettings({ onClose }) {
       const r = await act('add_location', { p_name: adding.name, p_address: found.address, p_zip: found.zip, p_lat: found.lat, p_lon: found.lon, p_timezone: found.timezone });
       setMsg(`Added ${adding.name}. You now have ${r.locations} locations.`);
       setAdding(null); setFound(null);
-      await load();
+      await load(); onChanged?.();
     } catch (x) { setErr(x.message); } finally { setBusy(false); }
   }
 

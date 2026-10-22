@@ -320,6 +320,13 @@ Proof of temperature for bad-product claims, and early warning before product is
 15. Backups: "Your data" downloads (calls, equipment, team) + restore request at $75 (done by us) — **built**. Needs Supabase Pro for automatic daily backups before promising them.
 16. Dashboard: one button per area (Locations, Team, Equipment, Contractors & QR, Company & plan) by permission, beside Install / project quote and New service call — **built**.
 17. Unexpected visitor: one-tap "Call their office" — **built**; vehicle plate and photo optional, each location can require them (Locations tab) — **built**.
+18. QR stickers: print your own, or "Order stickers from us" (email order for now; in-app ordering later). Later: a small store for useful refrigeration items — **email ordering built**.
+19. Getting started: "Hide for now" leaves a "Getting started: N steps left · Show" pill — **built**.
+20. Location menu: shows the current location, all others, "+ Add location" (if permitted); filters the dashboard; remembers the choice — **built**.
+21. Attention pin: red, blinking pin when any location needs attention (tech waiting for code, approval waiting, overdue bill, missed window, unscheduled visitor, flagged call); red dot + reasons per location; "Blink" can be turned off — **built** (per device).
+22. New service call / install quote scroll to their form and back — **built**.
+23. Service call form: Type of problem (trade) → problem list filtered; "Send to" lists that trade's contractors first, then others. Receipt confirmation = contractor taps Accept within the store's window (email read receipts are unreliable; Accept is the proof) — **built**.
+24. Which unit → "+ It's not listed: add it now" saves the unit to Equipment with the call — **built**.
 **Before the paid launch (Mark, 2026-10-22):** move Supabase to Pro (daily backups, no pausing) and Vercel to Pro (commercial use); then the "Your data" text can promise daily backups.
 Earlier from the remote test: arrival watched only after "I'm going"; owner-tech needs I'm going/I'm here on the office screen — open.
 
