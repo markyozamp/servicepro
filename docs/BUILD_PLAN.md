@@ -303,6 +303,20 @@ Proof of temperature for bad-product claims, and early warning before product is
 - How: each visitor gets a private throw-away demo store (no sign-up), the contractor side is played automatically on a short timer (seconds, not hours), alerts show on screen (and as a real phone alert if they allow it). Demo data is wiped after a day. Ends with "Buy for $295 per location per year."
 - Same engine as the real product, so the demo stays accurate as features change.
 
+### 26. Shakedown list — M&L Market test (Mark, 2026-10-22)
+1. Logins: each $295 location includes 1 login, company-wide pool; extra logins $25/yr; admin picks which locations each person sees — **built** (Team tab); buying extra logins by card — placeholder until Stripe.
+2. QR sticker page back button — **done**.
+3. "Use where I'm standing" explained — **done** (renamed "Fine-tune map point (on site)", refuses rough computer locations; the address sets the map point).
+4/6. Store adds its own equipment + warranties; note "Service Call Proof can tag and organize your equipment — contact us for a quote" — **built** (Equipment tab).
+5. Backup code: shows who set it and when; explanation of when it's used — **done**.
+7. Desktop shortcut: "Install on this computer" in the menu — **done**.
+8. Company profile + edit location name/address — **built**.
+9. Add store logins — **built** (Team); purchase by card later (Stripe).
+10. Contractor "Upgrade" (Base / Pro / Enterprise) — placeholder in menu.
+11. Installs / project quotes / bid jobs — placeholder on dashboard; real build with the bid-request feature (§23).
+12. ⓘ info bubbles on each section — **done** (Settings tabs, contractor sections).
+Earlier from the remote test: arrival watched only after "I'm going"; owner-tech needs I'm going/I'm here on the office screen — open.
+
 ### Order of work (proposed)
 Database v2 + portals v2 + technician app (done 2026-10-16) → Time Verify (done 2026-10-20) → Mark's Time Verify shakedown (acting as store and contractor, real tags) → **facility management package (§23)** → finish Base/Pro/Enterprise (email + texting, Stripe, QuickBooks, estimating, job costing) → construction (§24, later) (accounts needed) → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
