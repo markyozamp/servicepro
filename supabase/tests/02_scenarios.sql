@@ -1103,3 +1103,14 @@ select test.login(:'pat');
 select test.ok((select (invite_contractor('Yes Co', 'Some One', 'yes@yesco.test', null, '{}', null)->>'token') is not null), 'now they can invite contractors');
 select test.blocked(format('select update_team_member(%L, null, %L, true, null, true)', :'pat', '{"admin":true}'), 'Only an admin', 'nobody but an admin makes admins');
 reset role;
+
+\echo '=== 46. Unexpected visitor: plate and photo can be required per location'
+set role authenticated;
+select test.login(:'lee');
+select test.ok((select (store_visitor_log((select id from sites where name = 'M&L Fargo Main'), 'Walk In', null, 'Some Co', null, null, null)->>'ok')::boolean), 'by default name and company are enough');
+select from set_visitor_rules((select id from sites where name = 'M&L Fargo Main'), true, false);
+select test.blocked($$select store_visitor_log((select id from sites where name = 'M&L Fargo Main'), 'Walk In', null, 'Some Co', null, null, null)$$, 'plate', 'when required, the plate must be entered');
+select test.ok((select (store_visitor_log((select id from sites where name = 'M&L Fargo Main'), 'Walk In', null, 'Some Co', null, 'abc 123', null)->>'ok')::boolean), 'with the plate it records');
+select test.ok((select vehicle_plate = 'ABC 123' from site_visitors where visitor_name = 'Walk In' order by recorded_at desc limit 1), 'plate saved in capitals');
+select test.blocked($$select store_visitor_log((select id from sites where name = 'M&L Fargo Main'), 'Walk In', null, 'X', null, 'Z1', '00000000-0000-0000-0000-000000000000/x.jpg')$$, 'Photo not valid', 'a photo must be in the store''s own folder');
+reset role;

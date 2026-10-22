@@ -6,6 +6,17 @@ import { supabase, act, q } from '@/lib/supabase';
 import { time, dateTime } from '@/lib/format';
 import { ErrorBox, Notice } from './bits';
 
+// Shrink a phone photo before upload (faster on store Wi-Fi, smaller to keep).
+async function shrink(file) {
+  const img = await createImageBitmap(file);
+  const k = Math.min(1, 1280 / Math.max(img.width, img.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.72));
+}
+const telOf = (p) => (p || '').replace(/[^0-9+]/g, '');
+
 const SEL = `id, status, arrived_at, scheduled_start, scheduled_end, missed_alert_at, visit_no, checkin_at, checkin_verified,
   profiles(full_name), work_orders(id, number, unit, issue_description, store_po_number, sites(id, name), contractors(name),
   equipment(location_description, equipment_types(name)))`;
@@ -28,7 +39,7 @@ export default function Presence({ onOpen, refreshKey }) {
       const [a, b, c] = await Promise.all([
         q(supabase.from('visits').select(SEL).eq('status', 'on_site').order('arrived_at')),
         q(supabase.from('visits').select(SEL).in('status', ['assigned', 'en_route']).lt('scheduled_start', day1.toISOString()).order('scheduled_start')),
-        q(supabase.from('site_visitors').select('id, visitor_name, company, note, recorded_at, sites(name)').gte('recorded_at', day0.toISOString()).order('recorded_at', { ascending: false })),
+        q(supabase.from('site_visitors').select('id, visitor_name, company, note, recorded_at, vehicle_plate, photo_path, sites(name), contractors(name, phone)').gte('recorded_at', day0.toISOString()).order('recorded_at', { ascending: false })),
       ]);
       setInside(a); setExpected(b); setVisitors(c);
     } catch (e) { setErr(e.message); }
@@ -36,10 +47,10 @@ export default function Presence({ onOpen, refreshKey }) {
   useEffect(() => { load(); }, [load, refreshKey]);
 
   async function openForm() {
-    setForm({ site: '', name: '', contractor: '', company: '', note: '' });
+    setForm({ site: '', name: '', contractor: '', company: '', note: '', plate: '', photo: null });
     try {
-      const [s, c] = await Promise.all([q(supabase.from('sites').select('id, name').order('name')),
-        q(supabase.from('customer_contractors').select('contractor_id, contractors(name)'))]);
+      const [s, c] = await Promise.all([q(supabase.from('sites').select('id, name, customer_id, visitor_require_plate, visitor_require_photo').order('name')),
+        q(supabase.from('customer_contractors').select('contractor_id, contractors(name, phone)'))]);
       setSites(s); setCc(c);
       if (s.length === 1) setForm((f) => ({ ...f, site: s[0].id }));
     } catch (e) { setErr(e.message); }
@@ -49,11 +60,28 @@ export default function Presence({ onOpen, refreshKey }) {
     e.preventDefault();
     setBusy(true); setErr('');
     try {
-      await act('store_unexpected_visitor', { p_site: form.site, p_name: form.name, p_contractor: form.contractor || null,
-        p_company: form.company || null, p_note: form.note || null });
+      const st = sites.find((x) => x.id === form.site);
+      let path = null;
+      if (form.photo) {
+        const blob = await shrink(form.photo);
+        path = `${st.customer_id}/${crypto.randomUUID()}.jpg`;
+        const up = await supabase.storage.from('visitor-photos').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+        if (up.error) throw new Error(`Photo didn't upload: ${up.error.message}`);
+      }
+      await act('store_visitor_log', { p_site: form.site, p_name: form.name, p_contractor: form.contractor || null,
+        p_company: form.company || null, p_note: form.note || null, p_plate: form.plate || null, p_photo_path: path });
       setMsg(`Recorded. ${form.contractor ? 'Their office and ' : ''}your people have been told.`); setForm(null); await load();
     } catch (x) { setErr(x.message); } finally { setBusy(false); }
   }
+
+  async function showPhoto(path) {
+    const { data, error } = await supabase.storage.from('visitor-photos').createSignedUrl(path, 300);
+    if (error) return setErr(error.message);
+    window.open(data.signedUrl, '_blank', 'noopener');
+  }
+
+  const site = form && sites.find((x) => x.id === form.site);
+  const office = form && cc.find((c) => c.contractor_id === form.contractor)?.contractors;
 
   const label = (v) => {
     const w = v.work_orders || {};
@@ -90,7 +118,17 @@ export default function Presence({ onOpen, refreshKey }) {
               <option value="">Other / not one of ours</option>{cc.map((c) => <option key={c.contractor_id} value={c.contractor_id}>{c.contractors?.name}</option>)}</select></label>
             {!form.contractor && <label className="grow">Company name<input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} /></label>}
           </div>
+          {office?.phone && (
+            <a className="callbtn" href={`tel:${telOf(office.phone)}`}>📞 Call {office.name}'s office · {office.phone}</a>
+          )}
+          {office && !office.phone && <div className="small muted">No office phone on file for {office.name}.</div>}
           <input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="What are they doing? (optional)" />
+          <div className="row">
+            <label className="grow">Vehicle plate {site?.visitor_require_plate ? <span className="chip tone-amber">required here</span> : <span className="muted" style={{ fontWeight: 400 }}>(optional)</span>}
+              <input value={form.plate} onChange={(e) => setForm({ ...form, plate: e.target.value })} required={!!site?.visitor_require_plate} placeholder="e.g. ND 123-ABC" /></label>
+            <label className="grow">Photo {site?.visitor_require_photo ? <span className="chip tone-amber">required here</span> : <span className="muted" style={{ fontWeight: 400 }}>(optional: person, badge or vehicle)</span>}
+              <input type="file" accept="image/*" capture="environment" onChange={(e) => setForm({ ...form, photo: e.target.files?.[0] || null })} required={!!site?.visitor_require_photo} /></label>
+          </div>
           <div className="row"><button className="primary" disabled={busy}>Record it</button><button type="button" onClick={() => setForm(null)}>Cancel</button></div>
         </form>
       )}
@@ -106,7 +144,18 @@ export default function Presence({ onOpen, refreshKey }) {
         </div>
       ))}
       {visitors.length > 0 && (
-        <div className="small" style={{ color: 'var(--red-fg)' }}>Unscheduled today: {visitors.map((x) => `${x.visitor_name} (${x.company}) at ${x.sites?.name}, ${dateTime(x.recorded_at)}`).join('; ')}</div>
+        <div className="stack" style={{ gap: 4 }}>
+          <div className="small" style={{ color: 'var(--red-fg)', fontWeight: 700 }}>Unscheduled today</div>
+          {visitors.map((x) => (
+            <div key={x.id} className="spread small">
+              <span>{x.visitor_name} ({x.company}) at {x.sites?.name}, {dateTime(x.recorded_at)}{x.vehicle_plate ? ` · plate ${x.vehicle_plate}` : ''}{x.note ? ` · ${x.note}` : ''}</span>
+              <span className="row" style={{ gap: 6 }}>
+                {x.photo_path && <button onClick={() => showPhoto(x.photo_path)}>Photo</button>}
+                {x.contractors?.phone && <a className="callbtn small" href={`tel:${telOf(x.contractors.phone)}`}>📞 Call office</a>}
+              </span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

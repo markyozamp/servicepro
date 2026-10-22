@@ -319,7 +319,8 @@ Proof of temperature for bad-product claims, and early warning before product is
 14. Equipment who/when: added/changed/warranty/removed stamped with name and time, history per unit; remove needs a reason, restore anytime — **built**.
 15. Backups: "Your data" downloads (calls, equipment, team) + restore request at $75 (done by us) — **built**. Needs Supabase Pro for automatic daily backups before promising them.
 16. Dashboard: one button per area (Locations, Team, Equipment, Contractors & QR, Company & plan) by permission, beside Install / project quote and New service call — **built**.
-17. Unexpected visitor: explained; possible additions (vehicle plate, photo, contractor-office phone button) — to decide.
+17. Unexpected visitor: one-tap "Call their office" — **built**; vehicle plate and photo optional, each location can require them (Locations tab) — **built**.
+**Before the paid launch (Mark, 2026-10-22):** move Supabase to Pro (daily backups, no pausing) and Vercel to Pro (commercial use); then the "Your data" text can promise daily backups.
 Earlier from the remote test: arrival watched only after "I'm going"; owner-tech needs I'm going/I'm here on the office screen — open.
 
 ### Order of work (proposed)

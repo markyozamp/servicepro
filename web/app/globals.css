@@ -230,3 +230,5 @@ button.linkish { background: none; border: none; color: var(--brand); padding: 4
 .tabs-row { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
 .tabs-row button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
 .soon { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; background: #fff4d6; color: #8a5a00; border: 1px solid #f0d58a; border-radius: 999px; padding: 1px 8px; }
+a.callbtn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); text-decoration: none; font-weight: 600; }
+a.callbtn.small { padding: 4px 8px; font-weight: 500; }

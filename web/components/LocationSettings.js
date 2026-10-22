@@ -23,7 +23,7 @@ export default function LocationSettings({ onClose }) {
   async function load() {
     try {
       const [sites, wifi] = await Promise.all([
-        q(supabase.from('sites').select('id, name, address, emergency_limit, lat, lon, timezone, backup_code_set_at, backup_code_set_by_name').order('name')),
+        q(supabase.from('sites').select('id, name, address, emergency_limit, lat, lon, timezone, backup_code_set_at, backup_code_set_by_name, visitor_require_plate, visitor_require_photo').order('name')),
         q(supabase.from('site_wifi').select('site_id, ssid, password')),
       ]);
       setRows(sites.map((s) => {
@@ -44,6 +44,14 @@ export default function LocationSettings({ onClose }) {
       setMsg(`Saved ${r.name}.`);
       await load();
     } catch (e) { setErr(e.message); } finally { setBusy(false); }
+  }
+
+  async function visitorRule(r, k, v) {
+    setBusy(true); setErr(''); setMsg('');
+    try {
+      await act('set_visitor_rules', { p_site: r.id, p_require_plate: k === 'plate' ? v : r.visitor_require_plate, p_require_photo: k === 'photo' ? v : r.visitor_require_photo });
+      setMsg(`Saved ${r.name}.`); await load();
+    } catch (x) { setErr(x.message); } finally { setBusy(false); }
   }
 
   async function saveEdit(e) {
@@ -125,6 +133,12 @@ export default function LocationSettings({ onClose }) {
             <label className="grow">Wi-Fi password<input value={r.pw} onChange={set(r.id, 'pw')} placeholder="optional" /></label>
           </div>
           <div className="small muted">Only your people and a technician with an open job here can see the Wi-Fi details.</div>
+          <div className="row small" style={{ gap: 12 }}>
+            <strong>Unexpected visitors must give:</strong>
+            <label className="row" style={{ gap: 4, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} disabled={busy} checked={!!r.visitor_require_plate} onChange={(e) => visitorRule(r, 'plate', e.target.checked)} />Vehicle plate</label>
+            <label className="row" style={{ gap: 4, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} disabled={busy} checked={!!r.visitor_require_photo} onChange={(e) => visitorRule(r, 'photo', e.target.checked)} />Photo</label>
+            <Info title="Unexpected visitors">When someone shows up with no trip scheduled, your people log them with "Someone's here we weren't expecting". By default a name and company are enough; plate and photo are optional. Tick these to make them required at this location (for example a location with security rules). Leave them off if it would slow your people down.</Info>
+          </div>
           <div className="small"><strong>Backup check-in code</strong> <Info title="Backup check-in code">Every call has its own check-in code; it shows on the call and in the alert when the technician arrives, and someone at the store reads it to them. The backup code is a standing code for when that isn't possible (the person with the call's code is away, the screen is down). The technician taps "Use store backup code" and enters it; the call is marked "checked in with backup code" so you can see it was used. It's stored scrambled, so nobody can look it up, not even us. Tell it only to people at your store, and change it if it gets around.</Info>
             {' '}{r.backup_code_set_at ? <span className="chip tone-green">Set {dateTime(r.backup_code_set_at)}{r.backup_code_set_by_name ? ` by ${r.backup_code_set_by_name}` : ''}</span> : <span className="chip tone-amber">No backup code yet</span>}</div>
           <label>{r.backup_code_set_at ? 'Replace the backup code' : 'Set a backup code'} <span className="muted" style={{ fontWeight: 400 }}>— leave blank to keep {r.backup_code_set_at ? 'the current one' : 'none'}</span>
