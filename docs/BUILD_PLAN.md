@@ -330,6 +330,11 @@ Proof of temperature for bad-product claims, and early warning before product is
 **Before the paid launch (Mark, 2026-10-22):** move Supabase to Pro (daily backups, no pausing) and Vercel to Pro (commercial use); then the "Your data" text can promise daily backups.
 Earlier from the remote test: arrival watched only after "I'm going"; owner-tech needs I'm going/I'm here on the office screen — open.
 
+### 27. Contractor growth path and QR inventory (Mark, 2026-10-22) — idea, for Enterprise
+- Contractors start free on Time Verify because their stores use it; once used to it, Base → Pro → Enterprise is a natural move. Goal: a good enough product to pull small/mid contractors off ServiceTitan.
+- **QR inventory (Enterprise):** QR labels on bins, shelves and truck stock; techs scan to take a part (it lands on the job and the invoice), scan to restock; low-stock alerts, truck-by-truck counts, reorder lists. Ties into the existing parts list and the live cost meter.
+- What it takes to win ServiceTitan users (honest list): one-time data import (customers, equipment, history), QuickBooks sync, simple pricebook, payroll/timecards export, reporting. Price below them per tech.
+
 ### Order of work (proposed)
 Database v2 + portals v2 + technician app (done 2026-10-16) → Time Verify (done 2026-10-20) → Mark's Time Verify shakedown (acting as store and contractor, real tags) → **facility management package (§23)** → finish Base/Pro/Enterprise (email + texting, Stripe, QuickBooks, estimating, job costing) → construction (§24, later) (accounts needed) → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
