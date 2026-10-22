@@ -315,6 +315,11 @@ Proof of temperature for bad-product claims, and early warning before product is
 10. Contractor "Upgrade" (Base / Pro / Enterprise) — placeholder in menu.
 11. Installs / project quotes / bid jobs — placeholder on dashboard; real build with the bid-request feature (§23).
 12. ⓘ info bubbles on each section — **done** (Settings tabs, contractor sections).
+13. Per-person permissions (admin ticks: open calls, approve + limit, equipment, contractors & QR, locations, team; only admins make admins) — **built**.
+14. Equipment who/when: added/changed/warranty/removed stamped with name and time, history per unit; remove needs a reason, restore anytime — **built**.
+15. Backups: "Your data" downloads (calls, equipment, team) + restore request at $75 (done by us) — **built**. Needs Supabase Pro for automatic daily backups before promising them.
+16. Dashboard: one button per area (Locations, Team, Equipment, Contractors & QR, Company & plan) by permission, beside Install / project quote and New service call — **built**.
+17. Unexpected visitor: explained; possible additions (vehicle plate, photo, contractor-office phone button) — to decide.
 Earlier from the remote test: arrival watched only after "I'm going"; owner-tech needs I'm going/I'm here on the office screen — open.
 
 ### Order of work (proposed)
