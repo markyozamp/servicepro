@@ -153,10 +153,21 @@ export default function StorePortal() {
             {orgLogo ? <img className="org-logo" src={orgLogo} alt={org?.name || 'Company logo'} /> : <h1>{org?.name || 'Your locations'}</h1>}
             <div className="muted small">{profile.title || ''}{profile.approval_limit != null ? ` · approves up to ${money(profile.approval_limit)}` : profile.can_approve ? ' · approves any amount' : ''}</div>
           </div>
-          <div className="row">
-            {(profile.can_open_calls || profile.is_org_admin) && !project && <button onClick={() => setProject(true)}>Install / project quote</button>}
-            {!creating && (profile.can_open_calls || profile.is_org_admin) && <button className="primary big" onClick={() => setCreating(true)}>+ New service call</button>}
-          </div>
+          {(profile.can_open_calls || profile.is_org_admin) && (
+            <div className="order-box">
+              <div className="order-label">Order work</div>
+              <div className="row" style={{ alignItems: 'flex-start' }}>
+                <div className="order-btn">
+                  <button disabled={project} onClick={() => setProject(true)}>Install / project quote</button>
+                  <span>New equipment or a bigger job</span>
+                </div>
+                <div className="order-btn">
+                  <button className="primary big" disabled={creating} onClick={() => setCreating(true)}>+ New service call</button>
+                  <span>Something's broken or needs a repair</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <nav className="navstrip" aria-label="Manage">
