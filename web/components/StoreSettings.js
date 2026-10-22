@@ -9,14 +9,14 @@ import StoreEquipment from './StoreEquipment';
 import ContractorSettings from './ContractorSettings';
 
 export const SETTINGS_TABS = [
-  ['company', 'Company & plan'], ['locations', 'Locations'], ['team', 'Team'], ['equipment', 'Equipment'], ['contractors', 'Contractors & QR'],
+  ['company', 'Settings & plan'], ['locations', 'Locations'], ['team', 'Team'], ['equipment', 'Equipment'], ['contractors', 'Contractors & QR'],
 ];
 
 // What this person may open (admin sees everything).
 export function storePerms(me) {
   const a = !!me?.is_org_admin;
   return {
-    company: a,
+    company: a || !!me?.can_manage_company,
     locations: a || !!me?.can_manage_locations,
     team: a || !!me?.can_manage_team,
     equipment: a || !!me?.can_manage_equipment || !!me?.can_manage_pm,

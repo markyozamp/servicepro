@@ -263,3 +263,7 @@ td.empty-cell { padding: 28px 16px; color: var(--ink-2); text-align: center; }
 .app-footer-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .app-footer-links { display: flex; gap: 14px; flex-wrap: wrap; }
 .tech .app-footer { margin: 16px -12px 0; }
+.org-logo { display: block; max-height: 56px; max-width: min(340px, 60vw); height: auto; }
+.logo-preview { min-height: 56px; min-width: 200px; display: flex; align-items: center; padding: 6px 10px; border: 1px dashed var(--line); border-radius: 8px; background: #fff; }
+.logo-preview img { max-height: 56px; max-width: 320px; }
+label.button-like { display: inline-flex; align-items: center; padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); cursor: pointer; font-weight: 600; }

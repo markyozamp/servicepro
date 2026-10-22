@@ -8,16 +8,17 @@ import { ErrorBox, Notice } from './bits';
 import Info from './Info';
 import { PRICE_PER_LOGIN } from './CompanyPlan';
 
-const blank = { name: '', email: '', phone: '', title: '', admin: false, calls: true, approve: true, limit: '', equipment: false, contractors: false, locations: false, team: false, all: false, sites: [] };
+const blank = { name: '', email: '', phone: '', title: '', admin: false, calls: true, approve: true, limit: '', equipment: false, contractors: false, locations: false, team: false, company: false, all: false, sites: [] };
 const PERMS = [
   ['calls', 'Open service calls'],
   ['equipment', 'Add and change equipment'],
   ['contractors', 'Contractors & QR (invite contractors, set rules, store PIN)'],
   ['locations', 'Locations (add and edit locations, backup code, Wi-Fi)'],
   ['team', 'Team (add and change people)'],
+  ['company', 'Settings & plan (company profile, logo, plan, your data)'],
 ];
 const permsOf = (p) => ({ calls: p.can_open_calls, approve: p.can_approve, equipment: p.can_manage_equipment || p.can_manage_pm,
-  contractors: p.can_manage_contractors, locations: p.can_manage_locations, team: p.can_manage_team });
+  contractors: p.can_manage_contractors, locations: p.can_manage_locations, team: p.can_manage_team, company: p.can_manage_company });
 const summary = (p) => (p.is_org_admin ? 'Admin: everything' : PERMS.filter(([k]) => permsOf(p)[k]).map(([, l]) => l.split(' (')[0]).join(', ') || 'View only');
 
 export default function StoreTeam({ me }) {
@@ -34,7 +35,7 @@ export default function StoreTeam({ me }) {
   async function load() {
     try {
       const [p, s, si, l] = await Promise.all([
-        q(supabase.from('profiles').select('id, full_name, title, email, phone, is_org_admin, can_open_calls, can_approve, approval_limit, can_manage_pm, can_manage_equipment, can_manage_contractors, can_manage_locations, can_manage_team, all_sites, site_ids, active').eq('customer_id', me.customer_id).order('full_name')),
+        q(supabase.from('profiles').select('id, full_name, title, email, phone, is_org_admin, can_open_calls, can_approve, approval_limit, can_manage_pm, can_manage_equipment, can_manage_contractors, can_manage_locations, can_manage_team, can_manage_company, all_sites, site_ids, active').eq('customer_id', me.customer_id).order('full_name')),
         q(supabase.from('sites').select('id, name').order('name')),
         act('seat_info', {}),
         q(supabase.from('join_links').select('token, full_name, email, expires_at, used_at').eq('kind', 'customer_member').is('used_at', null).order('created_at', { ascending: false })),
@@ -49,7 +50,7 @@ export default function StoreTeam({ me }) {
   const full = seats && seats.used >= seats.included + seats.extra;
 
   const permsJson = (f) => ({ admin: f.admin, calls: f.calls, approve: f.approve, limit: f.approve && f.limit !== '' ? String(f.limit) : '',
-    equipment: f.equipment, contractors: f.contractors, locations: f.locations, team: f.team });
+    equipment: f.equipment, contractors: f.contractors, locations: f.locations, team: f.team, company: f.company });
 
   async function save(e) {
     e.preventDefault();

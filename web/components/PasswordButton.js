@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function PasswordButton() {
   const [open, setOpen] = useState(false);
+  const [cur, setCur] = useState('');
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
   const [busy, setBusy] = useState(false);
@@ -16,13 +17,18 @@ export default function PasswordButton() {
   async function save(e) {
     e.preventDefault();
     setErr(''); setMsg('');
+    if (!cur) return setErr('Enter your current password.');
     if (pw.length < 10) return setErr('Use at least 10 characters.');
     if (pw !== pw2) return setErr('The two passwords don\'t match.');
     setBusy(true);
+    const { data: u } = await supabase.auth.getUser();
+    const email = u?.user?.email;
+    const check = email ? await supabase.auth.signInWithPassword({ email, password: cur }) : { error: { message: 'x' } };
+    if (check.error) { setBusy(false); return setErr('Your current password isn\'t right. If you forgot it, sign out and use "Forgot password?" on the sign-in page.'); }
     const { error } = await supabase.auth.updateUser({ password: pw });
     setBusy(false);
     if (error) return setErr(error.message);
-    setPw(''); setPw2(''); setMsg('Password saved. Use it with your email to sign in on any device.');
+    setCur(''); setPw(''); setPw2(''); setMsg('Password saved. Use it with your email to sign in on any device.');
   }
 
   return (
@@ -40,6 +46,10 @@ export default function PasswordButton() {
               <div className="small muted">Pick a password you'll remember. Your sign-in is your email address and this password.</div>
               {err && <div className="error">{err}</div>}
               {msg && <div className="notice">{msg}</div>}
+              <label>Current password
+                <input id="pw-cur" type="password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} required />
+              </label>
+              <div className="small muted">Signed in with a link and never set one? Sign out and use "Forgot password?" on the sign-in page to set your first password.</div>
               <label>New password
                 <input id="pw-new" type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} required />
               </label>

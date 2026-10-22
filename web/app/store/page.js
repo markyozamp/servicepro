@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { useProfile } from '@/lib/useProfile';
 import { money, ago, dateTime, date, poLabel, PO_KIND } from '@/lib/format';
@@ -20,7 +20,7 @@ const LIST = `id, number, kind, status, priority, issue_description, created_at,
   sites(name), visits(id, visit_no, status, eta_at, arrived_at, received_at, checkin_required, checkin_at, profiles(full_name)),
   parts_orders(status, expected_on)`;
 
-const ICONS = { locations: '📍', team: '👥', equipment: '🧰', contractors: '🔧', company: '💳' };
+const ICONS = { locations: '📍', team: '👥', equipment: '🧰', contractors: '🔧', company: '⚙️' };
 
 const latest = (w) => (w.visits || []).filter((v) => v.status !== 'cancelled').sort((a, b) => b.visit_no - a.visit_no)[0];
 
@@ -39,6 +39,10 @@ export default function StorePortal() {
   const [sound, setSound] = useState(false);
   const [settings, setSettings] = useState(null);   // which Settings tab is open, or null
   const [project, setProject] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [logoOverride, setLogoOverride] = useState(undefined);
+  const [admins, setAdmins] = useState([]);
+  const panelRef = useRef(null);
 
   const load = useCallback(async () => {
     try {
@@ -112,7 +116,24 @@ export default function StorePortal() {
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') Notification.requestPermission();
   }
 
+  // Opening a panel scrolls to it; closing one returns to the top.
+  const openArea = (k) => {
+    if (k === 'company' && !storePerms(profile).company) { setLocked(true); return; }
+    setLocked(false);
+    const next = settings === k ? null : k;
+    setSettings(next);
+    if (next) setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const closeArea = () => { setSettings(null); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+  useEffect(() => {
+    if (!locked || !profile) return;
+    q(supabase.from('profiles').select('full_name').eq('customer_id', profile.customer_id).eq('is_org_admin', true).eq('active', true)).then(setAdmins).catch(() => {});
+  }, [locked, profile]);
+
   if (!profile) return <div className="page muted">Loading…</div>;
+  const orgLogo = logoOverride !== undefined ? logoOverride : org?.logo_data;
 
   const isOpen = (s) => !['completed', 'invoiced', 'cancelled'].includes(s);
   const late = calls.filter((c) => c.status === 'completed' && c.invoice_due_at && new Date(c.invoice_due_at) < new Date());
@@ -129,7 +150,7 @@ export default function StorePortal() {
       <main className="page stack" style={{ gap: 16 }}>
         <div className="spread">
           <div>
-            <h1>{org?.name || 'Your locations'}</h1>
+            {orgLogo ? <img className="org-logo" src={orgLogo} alt={org?.name || 'Company logo'} /> : <h1>{org?.name || 'Your locations'}</h1>}
             <div className="muted small">{profile.title || ''}{profile.approval_limit != null ? ` · approves up to ${money(profile.approval_limit)}` : profile.can_approve ? ' · approves any amount' : ''}</div>
           </div>
           <div className="row">
@@ -138,14 +159,18 @@ export default function StorePortal() {
           </div>
         </div>
 
-        {SETTINGS_TABS.some(([k]) => storePerms(profile)[k]) && (
-          <nav className="navstrip" aria-label="Manage">
-            {[...SETTINGS_TABS.slice(1), SETTINGS_TABS[0]].filter(([k]) => storePerms(profile)[k]).map(([k, label]) => (
-              <button key={k} className={settings === k ? 'on' : ''} aria-pressed={settings === k} onClick={() => setSettings(settings === k ? null : k)}>
-                <span aria-hidden="true">{ICONS[k]}</span>{label}
-              </button>
-            ))}
-          </nav>
+        <nav className="navstrip" aria-label="Manage">
+          {[...SETTINGS_TABS.slice(1), SETTINGS_TABS[0]].filter(([k]) => k === 'company' || storePerms(profile)[k]).map(([k, label]) => (
+            <button key={k} className={settings === k ? 'on' : ''} aria-pressed={settings === k} onClick={() => openArea(k)}>
+              <span aria-hidden="true">{k === 'company' && !storePerms(profile).company ? '🔒' : ICONS[k]}</span>{label}
+            </button>
+          ))}
+        </nav>
+        {locked && (
+          <div className="notice spread">
+            <span><strong>Settings &amp; plan is locked.</strong> Only your admin{admins.length ? ` (${admins.map((a) => a.full_name).join(', ')})` : ''} or someone they give access to can open it. Ask them if you need a change to the company profile, logo or plan.</span>
+            <button onClick={() => setLocked(false)}>OK</button>
+          </div>
         )}
 
         <div className="tiles">
@@ -155,7 +180,7 @@ export default function StorePortal() {
           <button className={`tile${late.length ? ' bad' : ''}`} onClick={() => setTab('billing')}><span className="tile-n">{late.length}</span><span>Bills overdue</span></button>
         </div>
 
-        <GettingStarted me={profile} onGo={(k) => setSettings(k)} onNewCall={() => setCreating(true)} />
+        <GettingStarted me={profile} onGo={(k) => openArea(k)} onNewCall={() => setCreating(true)} />
 
         <ErrorBox error={err} />
         <Notice>{msg}</Notice>
@@ -176,7 +201,8 @@ export default function StorePortal() {
         <Presence onOpen={setOpen} refreshKey={calls} />
         {door.length > 0 && !sound && <button className="danger" onClick={enableAlerts}>🔔 Turn on sound and pop-up alerts for this screen</button>}
 
-        {settings && <StoreSettings key={org?.id || 'org'} tab={settings} setTab={setSettings} onClose={() => setSettings(null)} me={profile} org={org} hideTabs />}
+        <div ref={panelRef} style={{ scrollMarginTop: 12 }} />
+        {settings && <StoreSettings key={org?.id || 'org'} tab={settings} setTab={setSettings} onClose={closeArea} me={profile} org={org} hideTabs onOrgChanged={(logoData) => { if (logoData !== undefined) setLogoOverride(logoData); }} />}
         {project && (
           <div className="panel panel-pad stack">
             <div className="spread"><h2>Install or project quote <span className="soon">Coming soon</span> <Info title="Installs and projects">For bigger work: a new condensing unit, a walk-in freezer, a remodel. You describe the job, pick one or more contractors to quote it, and they send their quotes back on their own letterhead with photos. You compare, approve one, and it runs like any other call: scheduled, verified on arrival, the new equipment added to your list with its warranty.</Info></h2><button onClick={() => setProject(false)}>Close</button></div>

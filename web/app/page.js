@@ -29,6 +29,7 @@ export default function SignIn() {
   const [err, setErr] = useState('');
   const [forgot, setForgot] = useState(false);
   const [sent, setSent] = useState('');
+  const [who, setWho] = useState(false);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -117,7 +118,11 @@ export default function SignIn() {
               <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </label>
             <button className="primary big" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
-            <button type="button" className="linkish" onClick={() => { setForgot(true); setErr(''); }}>Forgot password?</button>
+            <div className="row" style={{ justifyContent: 'center', gap: 16 }}>
+              <button type="button" className="linkish" onClick={() => { setForgot(true); setErr(''); }}>Forgot password?</button>
+              <button type="button" className="linkish" aria-expanded={who} onClick={() => setWho(!who)}>Forgot your sign-in?</button>
+            </div>
+            {who && <div className="notice small" style={{ textAlign: 'center' }}>Your sign-in is your email address. Not sure which one? Your company's admin can see it under Team, or email support@servicecallproof.com.</div>}
           </form>
         )}
 

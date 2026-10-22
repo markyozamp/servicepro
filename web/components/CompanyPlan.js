@@ -27,6 +27,36 @@ export default function CompanyPlan({ org, onSaved }) {
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [soon, setSoon] = useState('');
+  const [logo, setLogo] = useState(org?.logo_data || null);
+
+  async function pickLogo(file) {
+    setErr(''); setMsg('');
+    if (!file) return;
+    try {
+      let data;
+      if (file.type === 'image/svg+xml') {
+        if (file.size > 250000) throw new Error('That SVG is too large. Use one under 250 KB.');
+        data = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+        data = data.replace(/^data:image\/svg\+xml(;[^,]*)?,/, 'data:image/svg+xml;base64,');
+        if (!data.startsWith('data:image/svg+xml;base64,')) throw new Error('Could not read that SVG.');
+      } else {
+        const img = await createImageBitmap(file);
+        const k = Math.min(1, 600 / img.width, 160 / img.height);
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        data = c.toDataURL('image/png');
+        if (data.length > 380000) data = c.toDataURL('image/jpeg', 0.85);
+      }
+      await act('set_company_logo', { p_data: data });
+      setLogo(data); setMsg('Logo saved. It shows at the top of your dashboard.'); onSaved?.(data);
+    } catch (x) { setErr(x.message); }
+  }
+  async function removeLogo() {
+    setErr(''); setMsg('');
+    try { await act('set_company_logo', { p_data: null }); setLogo(null); setMsg('Logo removed. Your company name shows instead.'); onSaved?.(null); }
+    catch (x) { setErr(x.message); }
+  }
 
   useEffect(() => {
     Promise.all([q(supabase.from('sites').select('id')), act('seat_info', {})])
@@ -75,6 +105,15 @@ export default function CompanyPlan({ org, onSaved }) {
       </form>
 
       <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+        <h3>Logo <Info title="Your logo">Optional. Your logo shows at the top left of your dashboard instead of your company name. A wide logo works best (about 4 times wider than tall). PNG, JPG or SVG.</Info></h3>
+        <div className="row" style={{ gap: 12, alignItems: 'center' }}>
+          <div className="logo-preview">{logo ? <img src={logo} alt={`${f.name} logo`} /> : <span className="muted small">No logo: your company name shows instead.</span>}</div>
+          <label className="button-like">{logo ? 'Change logo' : 'Upload logo'}<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style={{ display: 'none' }} onChange={(e) => pickLogo(e.target.files?.[0])} /></label>
+          {logo && <button type="button" onClick={removeLogo}>Remove</button>}
+        </div>
+      </div>
+
+      <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
         <h3>Your plan <Info title="Your plan">{`$${PRICE_PER_LOCATION} per location per year, paid once a year. Covers all trades (plumbing, electrical, heating, refrigeration) and unlimited service calls. Each location comes with one login; your whole company shares the logins. Extra logins are $${PRICE_PER_LOGIN} per year each. Your contractors use it free. No refunds; cancel anytime to stop the next renewal.`}</Info></h3>
         <table><tbody>
           <tr><td>Locations</td><td className="num">{n.sites} × {money(PRICE_PER_LOCATION)}</td><td className="num">{money(n.sites * PRICE_PER_LOCATION)}</td></tr>
@@ -98,7 +137,7 @@ export default function CompanyPlan({ org, onSaved }) {
           <button type="button" onClick={() => exportData('calls')}>Download service calls</button>
           <button type="button" onClick={() => exportData('equipment')}>Download equipment</button>
           <button type="button" onClick={() => exportData('team')}>Download team</button>
-          <button type="button" onClick={() => setSoon('restore')}>Restore from a backup (${RESTORE_FEE})</button>
+          <button type="button" onClick={() => setSoon('restore')}>Restore from a backup</button>
         </div>
       </div>
     </div>

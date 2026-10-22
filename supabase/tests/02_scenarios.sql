@@ -1114,3 +1114,17 @@ select test.ok((select (store_visitor_log((select id from sites where name = 'M&
 select test.ok((select vehicle_plate = 'ABC 123' from site_visitors where visitor_name = 'Walk In' order by recorded_at desc limit 1), 'plate saved in capitals');
 select test.blocked($$select store_visitor_log((select id from sites where name = 'M&L Fargo Main'), 'Walk In', null, 'X', null, 'Z1', '00000000-0000-0000-0000-000000000000/x.jpg')$$, 'Photo not valid', 'a photo must be in the store''s own folder');
 reset role;
+
+
+\echo '=== 47. Company logo and the Settings & plan permission'
+set role authenticated;
+select test.login(:'lee');
+select test.ok((select (set_company_logo('data:image/svg+xml;base64,PHN2Zy8+')->>'ok')::boolean), 'admin sets a company logo');
+select test.blocked($$select set_company_logo('javascript:alert(1)')$$, 'PNG', 'only images are accepted');
+select test.login(:'pat');
+select test.blocked($$select update_company('Hijack', null, null)$$, 'permission', 'without Settings & plan permission the company cannot be changed');
+select test.login(:'lee');
+select from update_team_member(:'pat', 'Facilities', '{"calls":true,"equipment":true,"contractors":true,"team":true,"company":true}', true, null, true);
+select test.login(:'pat');
+select test.ok((select (update_company('M&L Market Inc', '701-555-0301', 'office@mlmarket.test')->>'ok')::boolean), 'with it ticked, they can');
+reset role;
