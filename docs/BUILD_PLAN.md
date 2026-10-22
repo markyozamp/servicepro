@@ -297,6 +297,12 @@ Proof of temperature for bad-product claims, and early warning before product is
 - Idea: the same verified-visit engine for builders/remodelers and small commercial (dental, clinics, franchise buildouts): each trade's arrival verified; when one trade misses or is late (excavator, insulation) the next trade is warned before he drives out; owner/homeowner sees the day; sub bid collection with plans in the portal; contractor's own estimate and proposal; permits, insurance, draws, sub payments in one project file; optional jobsite cameras (drones later — cost and FAA rules).
 - Assessment: need 8/10; head-on vs Buildertrend/JobTread 4/10; as "verified trades + next-trade warning" 7/10. Same engine could also serve landscaping and other service trades later.
 
+### 25. Website with a hands-on demo (Mark, 2026-10-22) — planned, with the marketing website
+- The sales site (servicecallproof.com) has a **try-it-yourself demo** right on the page, since there is no free trial: the visitor plays the store.
+- Flow: set up a pretend contractor → place a service call → the contractor "accepts" and replies → "Tony is on the way" → arrival alert → the visitor gives the check-in code → parts run → Leaving → invoice checked against the verified time (with one flag to see).
+- How: each visitor gets a private throw-away demo store (no sign-up), the contractor side is played automatically on a short timer (seconds, not hours), alerts show on screen (and as a real phone alert if they allow it). Demo data is wiped after a day. Ends with "Buy for $295 per location per year."
+- Same engine as the real product, so the demo stays accurate as features change.
+
 ### Order of work (proposed)
 Database v2 + portals v2 + technician app (done 2026-10-16) → Time Verify (done 2026-10-20) → Mark's Time Verify shakedown (acting as store and contractor, real tags) → **facility management package (§23)** → finish Base/Pro/Enterprise (email + texting, Stripe, QuickBooks, estimating, job costing) → construction (§24, later) (accounts needed) → AI nameplate reading → QuickBooks (version set by the pilot contractor) → pilot.
 The generalization changes (trades, equipment type table, work order kinds, customer teams and permissions) are done first, before real data exists, because they are cheapest now.
