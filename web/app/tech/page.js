@@ -12,6 +12,7 @@ import HeaderMenu from '@/components/HeaderMenu';
 import PasswordButton from '@/components/PasswordButton';
 import InstallButton from '@/components/InstallButton';
 import UpgradeButton from '@/components/UpgradeButton';
+import AppFooter from '@/components/AppFooter';
 
 const useTech = () => useSyncExternalStore(T.subscribe, T.getState, T.getState);
 
@@ -133,6 +134,7 @@ function JobList({ v, onOpen }) {
       <OpenCalls calls={v.open_calls || []} />
       {done.length > 0 && <h3 className="muted" style={{ marginTop: 8 }}>Finished today</h3>}
       {done.map((j) => <JobCard key={j.visit.id} j={j} onOpen={onOpen} />)}
+    <AppFooter kind="tech" />
     </main>
   );
 }

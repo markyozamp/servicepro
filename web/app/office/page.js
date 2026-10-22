@@ -9,6 +9,7 @@ import CallDetail from '@/components/CallDetail';
 import NewCallForm from '@/components/NewCallForm';
 import TeamPanel from '@/components/TeamPanel';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox } from '@/components/bits';
+import AppFooter from '@/components/AppFooter';
 
 const LIST = `id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, invoiced_at, due_on,
   total_cost, invoice_ready, qbo_invoice_id, store_po_number, sites(name), customers(name),
@@ -284,6 +285,7 @@ export default function OfficePortal() {
           </div>
         )}
       </main>
+      <AppFooter kind="office" />
 
       {open && <CallDetail id={open} side="office" profile={profile} techs={techs} onClose={() => setOpen(null)} onChanged={load} />}
     </>

@@ -9,6 +9,8 @@ import CallDetail from '@/components/CallDetail';
 import NewCallForm from '@/components/NewCallForm';
 import StoreSettings, { SETTINGS_TABS, storePerms } from '@/components/StoreSettings';
 import Info from '@/components/Info';
+import AppFooter from '@/components/AppFooter';
+import GettingStarted from '@/components/GettingStarted';
 import PoLog from '@/components/PoLog';
 import Presence from '@/components/Presence';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox, Notice } from '@/components/bits';
@@ -17,6 +19,8 @@ const LIST = `id, number, kind, status, priority, issue_description, created_at,
   mode, source, store_confirmed_at, store_disputed, accepted_at, accept_due_at, declined_at, nte, contact_name, contractors(name),
   sites(name), visits(id, visit_no, status, eta_at, arrived_at, received_at, checkin_required, checkin_at, profiles(full_name)),
   parts_orders(status, expected_on)`;
+
+const ICONS = { locations: '📍', team: '👥', equipment: '🧰', contractors: '🔧', company: '💳' };
 
 const latest = (w) => (w.visits || []).filter((v) => v.status !== 'cancelled').sort((a, b) => b.visit_no - a.visit_no)[0];
 
@@ -129,13 +133,29 @@ export default function StorePortal() {
             <div className="muted small">{profile.title || ''}{profile.approval_limit != null ? ` · approves up to ${money(profile.approval_limit)}` : profile.can_approve ? ' · approves any amount' : ''}</div>
           </div>
           <div className="row">
-            {[...SETTINGS_TABS.slice(1), SETTINGS_TABS[0]].filter(([k]) => storePerms(profile)[k]).map(([k, label]) => (
-              <button key={k} className={settings === k ? 'on' : ''} onClick={() => setSettings(settings === k ? null : k)}>{label}</button>
-            ))}
             {(profile.can_open_calls || profile.is_org_admin) && !project && <button onClick={() => setProject(true)}>Install / project quote</button>}
             {!creating && (profile.can_open_calls || profile.is_org_admin) && <button className="primary big" onClick={() => setCreating(true)}>+ New service call</button>}
           </div>
         </div>
+
+        {SETTINGS_TABS.some(([k]) => storePerms(profile)[k]) && (
+          <nav className="navstrip" aria-label="Manage">
+            {[...SETTINGS_TABS.slice(1), SETTINGS_TABS[0]].filter(([k]) => storePerms(profile)[k]).map(([k, label]) => (
+              <button key={k} className={settings === k ? 'on' : ''} aria-pressed={settings === k} onClick={() => setSettings(settings === k ? null : k)}>
+                <span aria-hidden="true">{ICONS[k]}</span>{label}
+              </button>
+            ))}
+          </nav>
+        )}
+
+        <div className="tiles">
+          <button className="tile" onClick={() => setTab('open')}><span className="tile-n">{counts.open}</span><span>Open calls</span></button>
+          <button className={`tile${pending.length ? ' warn' : ''}`} onClick={() => document.getElementById('approvals')?.scrollIntoView({ behavior: 'smooth' })}><span className="tile-n">{pending.length}</span><span>Waiting for approval</span></button>
+          <button className="tile" onClick={() => setTab('billing')}><span className="tile-n">{counts.billing}</span><span>Done, bill pending</span></button>
+          <button className={`tile${late.length ? ' bad' : ''}`} onClick={() => setTab('billing')}><span className="tile-n">{late.length}</span><span>Bills overdue</span></button>
+        </div>
+
+        <GettingStarted me={profile} onGo={(k) => setSettings(k)} onNewCall={() => setCreating(true)} />
 
         <ErrorBox error={err} />
         <Notice>{msg}</Notice>
@@ -156,7 +176,7 @@ export default function StorePortal() {
         <Presence onOpen={setOpen} refreshKey={calls} />
         {door.length > 0 && !sound && <button className="danger" onClick={enableAlerts}>🔔 Turn on sound and pop-up alerts for this screen</button>}
 
-        {settings && <StoreSettings key={org?.id || 'org'} tab={settings} setTab={setSettings} onClose={() => setSettings(null)} me={profile} org={org} />}
+        {settings && <StoreSettings key={org?.id || 'org'} tab={settings} setTab={setSettings} onClose={() => setSettings(null)} me={profile} org={org} hideTabs />}
         {project && (
           <div className="panel panel-pad stack">
             <div className="spread"><h2>Install or project quote <span className="soon">Coming soon</span> <Info title="Installs and projects">For bigger work: a new condensing unit, a walk-in freezer, a remodel. You describe the job, pick one or more contractors to quote it, and they send their quotes back on their own letterhead with photos. You compare, approve one, and it runs like any other call: scheduled, verified on arrival, the new equipment added to your list with its warranty.</Info></h2><button onClick={() => setProject(false)}>Close</button></div>
@@ -199,6 +219,7 @@ export default function StorePortal() {
         )}
 
         {/* Approvals */}
+        <span id="approvals" />
         {pending.map((a) => (
           <div key={a.id} className="panel panel-pad spread" style={{ borderColor: '#e6b3ab', background: '#fffaf9' }}>
             <div className="stack" style={{ gap: 4 }}>
@@ -274,7 +295,9 @@ export default function StorePortal() {
               <tr><th>Call</th><th>Problem</th><th className="hide-sm">Technician</th><th>Status</th><th className="num">Cost</th></tr>
             </thead>
             <tbody>
-              {shown.length === 0 && <tr><td colSpan={5} className="muted">Nothing here.</td></tr>}
+              {shown.length === 0 && <tr><td colSpan={5} className="empty-cell">
+                {tab === 'open' ? <>No open calls right now. When something breaks, tap <strong>+ New service call</strong>, or have an employee scan the unit's QR sticker.</>
+                  : tab === 'billing' ? 'No finished calls waiting on a bill.' : 'No invoiced calls yet.'}</td></tr>}
               {shown.map((c) => {
                 const v = latest(c);
                 const parts = (c.parts_orders || []).filter((o) => ['needed', 'ordered'].includes(o.status));
@@ -303,6 +326,7 @@ export default function StorePortal() {
           )}
         </div>
       </main>
+      <AppFooter kind="store" />
 
       {open && <CallDetail id={open} side="store" profile={profile} onClose={() => setOpen(null)} onChanged={load} />}
     </>

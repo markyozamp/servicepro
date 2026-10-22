@@ -232,3 +232,34 @@ button.linkish { background: none; border: none; color: var(--brand); padding: 4
 .soon { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; background: #fff4d6; color: #8a5a00; border: 1px solid #f0d58a; border-radius: 999px; padding: 1px 8px; }
 a.callbtn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); text-decoration: none; font-weight: 600; }
 a.callbtn.small { padding: 4px 8px; font-weight: 500; }
+
+/* ---------- Store dashboard: icon strip, tiles, getting started, footer ---------- */
+.navstrip { display: flex; gap: 6px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px; box-shadow: var(--shadow); }
+.navstrip button { border: 0; background: transparent; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px; font-weight: 600; color: var(--ink-2); }
+.navstrip button:hover { background: var(--brand-soft); color: var(--brand); }
+.navstrip button.on { background: var(--ink); color: #fff; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.tile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 14px 16px; border-radius: 12px; background: var(--panel);
+  border: 1px solid var(--line); box-shadow: var(--shadow); border-left: 4px solid var(--brand); color: var(--ink-2); font-weight: 500; }
+.tile-n { font-size: 26px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.tile.warn { border-left-color: #d98e04; }
+.tile.bad { border-left-color: #c0392b; }
+.tile.bad .tile-n { color: #c0392b; }
+@media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .navstrip button { padding: 8px 10px; } }
+.gs { border-left: 4px solid var(--brand); }
+.gs-bar { height: 6px; background: var(--brand-soft); border-radius: 999px; overflow: hidden; }
+.gs-bar span { display: block; height: 100%; background: var(--brand); border-radius: 999px; }
+.gs-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.gs-step { display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+.gs-step > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.gs-step.ok { opacity: .6; }
+.gs-tick { flex: 0 0 22px; height: 22px; border-radius: 50%; border: 2px solid #c3ccd5; display: grid; place-items: center; font-size: 13px; color: #fff; }
+.gs-step.ok .gs-tick { background: #2e8b57; border-color: #2e8b57; }
+td.empty-cell { padding: 28px 16px; color: var(--ink-2); text-align: center; }
+.app-footer { margin-top: 32px; border-top: 1px solid var(--line); background: var(--panel); }
+.app-footer-in { max-width: 1280px; margin: 0 auto; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--ink-3); }
+.app-tip { background: var(--brand-soft); color: var(--ink-2); border-radius: 8px; padding: 8px 12px; }
+.app-tip strong { color: var(--brand); margin-right: 6px; }
+.app-footer-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.app-footer-links { display: flex; gap: 14px; flex-wrap: wrap; }
+.tech .app-footer { margin: 16px -12px 0; }
