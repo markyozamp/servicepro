@@ -17,7 +17,7 @@ export default function Stickers() {
   useEffect(() => {
     if (!profile) return;
     (async () => {
-      const eq = await q(supabase.from('equipment').select('id, qr_token, location_description, manufacturer, model, site_id, sites(name), equipment_types(name)').order('site_id'));
+      const eq = await q(supabase.from('equipment').select('id, qr_token, location_description, manufacturer, model, site_id, sites(name), equipment_types(name)').is('retired_at', null).order('site_id'));
       const withQr = await Promise.all(eq.map(async (e) => ({ ...e, img: await QRCode.toDataURL(`${window.location.origin}/r/${e.qr_token}`, { margin: 1, width: 240 }) })));
       setRows(withQr);
     })().catch((e) => setErr(e.message));

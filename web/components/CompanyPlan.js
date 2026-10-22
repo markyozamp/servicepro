@@ -9,6 +9,16 @@ import Info from './Info';
 
 export const PRICE_PER_LOCATION = 295;
 export const PRICE_PER_LOGIN = 25;
+export const RESTORE_FEE = 75;
+
+function downloadCsv(name, cols, rows) {
+  const esc = (v) => { const t = String(v ?? ''); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  const csv = [cols.map(([h]) => h).join(','), ...rows.map((r) => cols.map(([, f]) => esc(f(r))).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = `${name}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+}
 
 export default function CompanyPlan({ org, onSaved }) {
   const [f, setF] = useState({ name: org?.name || '', phone: org?.phone || '', email: org?.email || '' });
@@ -28,6 +38,26 @@ export default function CompanyPlan({ org, onSaved }) {
     setBusy(true); setErr(''); setMsg('');
     try { await act('update_company', { p_name: f.name, p_phone: f.phone, p_email: f.email }); setMsg('Company profile saved.'); onSaved?.(); }
     catch (x) { setErr(x.message); } finally { setBusy(false); }
+  }
+
+  async function exportData(kind) {
+    setErr(''); setMsg('');
+    try {
+      if (kind === 'equipment') {
+        const r = await q(supabase.from('equipment').select('manufacturer, model, serial, refrigerant, location_description, install_date, retired_at, retired_reason, sites(name), equipment_types(name)').order('site_id'));
+        downloadCsv('equipment', [['Location', (x) => x.sites?.name], ['Type', (x) => x.equipment_types?.name], ['Where', (x) => x.location_description], ['Make', (x) => x.manufacturer],
+          ['Model', (x) => x.model], ['Serial', (x) => x.serial], ['Refrigerant', (x) => x.refrigerant], ['Installed', (x) => x.install_date], ['Removed', (x) => x.retired_at ? `${x.retired_at.slice(0, 10)} ${x.retired_reason || ''}` : '']], r);
+      } else if (kind === 'team') {
+        const r = await q(supabase.from('profiles').select('full_name, title, email, phone, is_org_admin, can_approve, approval_limit, all_sites, active').eq('customer_id', org.id).order('full_name'));
+        downloadCsv('team', [['Name', (x) => x.full_name], ['Title', (x) => x.title], ['Email', (x) => x.email], ['Phone', (x) => x.phone], ['Admin', (x) => (x.is_org_admin ? 'yes' : '')],
+          ['Approves up to', (x) => (x.can_approve ? (x.approval_limit ?? 'any') : '')], ['All locations', (x) => (x.all_sites ? 'yes' : '')], ['Active', (x) => (x.active ? 'yes' : 'no')]], r);
+      } else {
+        const r = await q(supabase.from('work_orders').select('number, store_po_number, kind, status, issue_description, created_at, completed_at, total_cost, sites(name), contractors(name)').order('created_at', { ascending: false }).limit(5000));
+        downloadCsv('service-calls', [['Call #', (x) => x.number], ['PO', (x) => x.store_po_number], ['Location', (x) => x.sites?.name], ['Contractor', (x) => x.contractors?.name], ['Type', (x) => x.kind],
+          ['Status', (x) => x.status], ['Problem', (x) => x.issue_description], ['Opened', (x) => x.created_at], ['Completed', (x) => x.completed_at], ['Cost', (x) => x.total_cost]], r);
+      }
+      setMsg('Downloaded. Open it in Excel or Google Sheets.');
+    } catch (x) { setErr(x.message); }
   }
 
   const total = n.sites * PRICE_PER_LOCATION + (n.seats?.extra || 0) * PRICE_PER_LOGIN;
@@ -56,9 +86,20 @@ export default function CompanyPlan({ org, onSaved }) {
           <button type="button" onClick={() => setSoon('logins')}>Buy more logins <span className="soon">Coming soon</span></button>
           <button type="button" onClick={() => setSoon('billing')}>Payment method &amp; invoices <span className="soon">Coming soon</span></button>
         </div>
-        {soon && <div className="notice small">{soon === 'logins'
+        {soon === 'restore' && <div className="notice small">{`Restoring from a backup is done by our team, $${RESTORE_FEE} per request, quoted and confirmed with you first. Tell us what went wrong and the date and time to go back to: support@servicecallproof.com. Usually you won't need it: removed equipment and people can be brought back yourself, and calls are never erased.`}</div>}
+        {soon && soon !== 'restore' && <div className="notice small">{soon === 'logins'
           ? `Coming soon: buy extra logins here by card ($${PRICE_PER_LOGIN} per login per year, prorated to your renewal date). For now, contact support@servicecallproof.com.`
           : 'Coming soon: your card or bank account on file, your yearly invoice and renewal date. For now, contact support@servicecallproof.com.'}</div>}
+      </div>
+
+      <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+        <h3>Your data <Info title="Your data and backups">{`Your records are kept on our servers. Download a copy anytime for your own files (it opens in Excel). If something gets changed or removed by mistake, most things can be brought back right here: removed equipment and people have a Restore button, and calls are never erased. For anything else, our team can restore your account to an earlier point in time: $${RESTORE_FEE} per request.`}</Info></h3>
+        <div className="row">
+          <button type="button" onClick={() => exportData('calls')}>Download service calls</button>
+          <button type="button" onClick={() => exportData('equipment')}>Download equipment</button>
+          <button type="button" onClick={() => exportData('team')}>Download team</button>
+          <button type="button" onClick={() => setSoon('restore')}>Restore from a backup (${RESTORE_FEE})</button>
+        </div>
       </div>
     </div>
   );

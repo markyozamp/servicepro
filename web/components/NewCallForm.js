@@ -68,7 +68,7 @@ export default function NewCallForm({ side, profile, onCreated, onCancel }) {
   useEffect(() => {
     setEquipment([]); setWarranty([]);
     if (!f.site) return;
-    q(supabase.from('equipment').select('id, manufacturer, model, location_description, equipment_types(code, name)').eq('site_id', f.site))
+    q(supabase.from('equipment').select('id, manufacturer, model, location_description, equipment_types(code, name)').eq('site_id', f.site).is('retired_at', null))
       .then(setEquipment).catch(() => {});
   }, [f.site]);
 

@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, act, q } from '@/lib/supabase';
-import { date } from '@/lib/format';
+import { date, dateTime } from '@/lib/format';
 import { ErrorBox, Notice } from './bits';
 import Info from './Info';
 
@@ -18,6 +18,9 @@ export default function StoreEquipment() {
   const [site, setSite] = useState('');
   const [form, setForm] = useState(null);
   const [war, setWar] = useState(null);
+  const [hist, setHist] = useState(null);       // { id, rows }
+  const [rm, setRm] = useState(null);           // { id, reason }
+  const [showRemoved, setShowRemoved] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
@@ -25,7 +28,7 @@ export default function StoreEquipment() {
   async function load() {
     try {
       const [e, s, t] = await Promise.all([
-        q(supabase.from('equipment').select('id, site_id, manufacturer, model, serial, refrigerant, location_description, install_date, equipment_types(code, name), warranties(kind, ends_on, description)').order('created_at')),
+        q(supabase.from('equipment').select('id, site_id, manufacturer, model, serial, refrigerant, location_description, install_date, created_at, updated_at, retired_at, retired_reason, equipment_types(code, name), warranties(kind, ends_on, description), equipment_log(action, at, by_name)').order('created_at')),
         q(supabase.from('sites').select('id, name').order('name')),
         q(supabase.from('equipment_types').select('code, name').is('contractor_id', null).order('name')),
       ]);
@@ -54,7 +57,30 @@ export default function StoreEquipment() {
     } catch (x) { setErr(x.message); } finally { setBusy(false); }
   }
 
-  const shown = rows.filter((r) => !site || r.site_id === site);
+  async function openHistory(id) {
+    if (hist?.id === id) return setHist(null);
+    try { setHist({ id, rows: await q(supabase.from('equipment_log').select('action, at, by_name, detail').eq('equipment_id', id).order('at', { ascending: false })) }); }
+    catch (x) { setErr(x.message); }
+  }
+  async function remove(e) {
+    e.preventDefault();
+    setBusy(true); setErr(''); setMsg('');
+    try { await act('retire_equipment', { p_equipment: rm.id, p_reason: rm.reason, p_restore: false }); setMsg('Removed. It stays in the history and on past calls; "Show removed" brings it back.'); setRm(null); await load(); }
+    catch (x) { setErr(x.message); } finally { setBusy(false); }
+  }
+  async function restore(id) {
+    setBusy(true); setErr(''); setMsg('');
+    try { await act('retire_equipment', { p_equipment: id, p_reason: null, p_restore: true }); setMsg('Restored.'); await load(); }
+    catch (x) { setErr(x.message); } finally { setBusy(false); }
+  }
+  const stamp = (r) => {
+    const log = [...(r.equipment_log || [])].sort((a, b) => b.at.localeCompare(a.at));
+    const added = log.find((l) => l.action === 'added');
+    const last = log.find((l) => l.action !== 'added');
+    return [added ? `Added by ${added.by_name || 'someone'} ${date(added.at)}` : `Added ${date(r.created_at)}`, last ? `${last.action} by ${last.by_name || 'someone'} ${date(last.at)}` : null].filter(Boolean).join(' · ');
+  };
+
+  const shown = rows.filter((r) => (!site || r.site_id === site) && (showRemoved ? r.retired_at : !r.retired_at));
   const siteName = (id) => sites.find((s) => s.id === id)?.name || '';
   const today = new Date().toISOString().slice(0, 10);
   return (
@@ -63,6 +89,7 @@ export default function StoreEquipment() {
         <h3>Equipment <Info title="Equipment">List each unit at each location: refrigeration cases, walk-ins, rooftop units, ice machines, water heaters and so on. When you open a call you pick the unit, so the history, the warranty and the right contractor follow it. Each unit gets its own QR sticker employees can scan to report a problem. You don't have to list everything on day one: your contractors add units on their visits too.</Info></h3>
         <div className="row">
           {sites.length > 1 && <select value={site} onChange={(e) => setSite(e.target.value)}><option value="">All locations</option>{sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>}
+          <label className="row small" style={{ gap: 4, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={showRemoved} onChange={(e) => setShowRemoved(e.target.checked)} />Show removed</label>
           <button onClick={() => router.push('/store/stickers')}>QR stickers</button>
         </div>
       </div>
@@ -78,17 +105,37 @@ export default function StoreEquipment() {
           {shown.length === 0 && <tr><td colSpan={4} className="muted">No equipment listed{site ? ' for this location' : ''} yet.</td></tr>}
           {shown.map((r) => {
             const w = (r.warranties || []).filter((x) => x.ends_on >= today).sort((a, b) => b.ends_on.localeCompare(a.ends_on))[0];
-            return (
+            return [
               <tr key={r.id}>
-                <td><strong>{r.equipment_types?.name || r.model || 'Unit'}</strong><div className="small muted">{r.location_description || ''}{sites.length > 1 ? ` · ${siteName(r.site_id)}` : ''}</div></td>
+                <td><strong>{r.equipment_types?.name || r.model || 'Unit'}</strong><div className="small muted">{r.location_description || ''}{sites.length > 1 ? ` · ${siteName(r.site_id)}` : ''}</div>
+                  <div className="small muted">{r.retired_at ? `Removed ${date(r.retired_at)}: ${r.retired_reason || ''}` : stamp(r)}</div></td>
                 <td className="hide-sm small">{[r.manufacturer, r.model].filter(Boolean).join(' ')}{r.serial ? <div className="muted">S/N {r.serial}</div> : null}</td>
                 <td className="small">{w ? <span className="chip tone-green">{w.kind} until {date(w.ends_on)}</span> : <span className="muted">none on file</span>}</td>
                 <td className="num"><div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
+                  <button onClick={() => openHistory(r.id)}>{hist?.id === r.id ? 'Hide history' : 'History'}</button>
+                  {r.retired_at ? <button disabled={busy} onClick={() => restore(r.id)}>Restore</button> : <>
                   <button onClick={() => { setWar(null); setForm({ id: r.id, site: r.site_id, type: r.equipment_types?.code || '', make: r.manufacturer || '', model: r.model || '', serial: r.serial || '', refrigerant: r.refrigerant || '', where: r.location_description || '', installed: r.install_date || '' }); }}>Edit</button>
                   <button onClick={() => { setForm(null); setWar({ id: r.id, kind: 'manufacturer', starts: r.install_date || '', ends: '', desc: '' }); }}>+ Warranty</button>
+                  <button onClick={() => { setForm(null); setWar(null); setRm({ id: r.id, reason: '' }); }}>Remove</button></>}
                 </div></td>
-              </tr>
-            );
+              </tr>,
+              hist?.id === r.id && (
+                <tr key={`${r.id}-h`}><td colSpan={4}>
+                  <div className="small stack" style={{ gap: 2 }}>
+                    {hist.rows.length === 0 && <span className="muted">No history recorded yet (added before history was kept).</span>}
+                    {hist.rows.map((h, i) => <span key={i}><strong>{h.action}</strong> by {h.by_name || 'someone'}, {dateTime(h.at)}{h.detail ? ` — ${h.detail}` : ''}</span>)}
+                  </div>
+                </td></tr>
+              ),
+              rm?.id === r.id && (
+                <tr key={`${r.id}-r`}><td colSpan={4}>
+                  <form className="row" onSubmit={remove}>
+                    <input className="grow" value={rm.reason} onChange={(e) => setRm({ ...rm, reason: e.target.value })} placeholder="Why? e.g. replaced with new unit, scrapped, moved to another store" required />
+                    <button className="danger" disabled={busy}>Remove unit</button><button type="button" onClick={() => setRm(null)}>Cancel</button>
+                  </form>
+                </td></tr>
+              ),
+            ];
           })}
         </tbody>
       </table>

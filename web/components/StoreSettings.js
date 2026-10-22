@@ -12,14 +12,30 @@ export const SETTINGS_TABS = [
   ['company', 'Company & plan'], ['locations', 'Locations'], ['team', 'Team'], ['equipment', 'Equipment'], ['contractors', 'Contractors & QR'],
 ];
 
+// What this person may open (admin sees everything).
+export function storePerms(me) {
+  const a = !!me?.is_org_admin;
+  return {
+    company: a,
+    locations: a || !!me?.can_manage_locations,
+    team: a || !!me?.can_manage_team,
+    equipment: a || !!me?.can_manage_equipment || !!me?.can_manage_pm,
+    contractors: a || !!me?.can_manage_contractors,
+  };
+}
+
 export default function StoreSettings({ tab, setTab, onClose, me, org, onOrgChanged }) {
-  const [t, setT] = useState(tab || 'company');
-  const go = (x) => { setT(x); setTab?.(x); };
+  const can = storePerms(me);
+  const allowed = SETTINGS_TABS.filter(([k]) => can[k]);
+  const [own, setOwn] = useState(null);
+  const want = tab || own;
+  const t = can[want] ? want : allowed[0]?.[0];
+  const go = (x) => { setOwn(x); setTab?.(x); };
   return (
     <div className="panel panel-pad stack">
-      <div className="spread"><h2>Settings</h2><button onClick={onClose}>Close</button></div>
+      <div className="spread"><h2>{SETTINGS_TABS.find(([k]) => k === t)?.[1] || 'Settings'}</h2><button onClick={onClose}>Close</button></div>
       <div className="tabs-row">
-        {SETTINGS_TABS.map(([k, label]) => <button key={k} className={t === k ? 'on' : ''} onClick={() => go(k)}>{label}</button>)}
+        {allowed.map(([k, label]) => <button key={k} className={t === k ? 'on' : ''} onClick={() => go(k)}>{label}</button>)}
       </div>
       {t === 'company' && <CompanyPlan org={org} onSaved={onOrgChanged} />}
       {t === 'locations' && <LocationSettings />}

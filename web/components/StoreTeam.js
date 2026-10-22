@@ -8,7 +8,17 @@ import { ErrorBox, Notice } from './bits';
 import Info from './Info';
 import { PRICE_PER_LOGIN } from './CompanyPlan';
 
-const blank = { name: '', email: '', phone: '', title: '', admin: false, approve: true, limit: '', all: false, sites: [] };
+const blank = { name: '', email: '', phone: '', title: '', admin: false, calls: true, approve: true, limit: '', equipment: false, contractors: false, locations: false, team: false, all: false, sites: [] };
+const PERMS = [
+  ['calls', 'Open service calls'],
+  ['equipment', 'Add and change equipment'],
+  ['contractors', 'Contractors & QR (invite contractors, set rules, store PIN)'],
+  ['locations', 'Locations (add and edit locations, backup code, Wi-Fi)'],
+  ['team', 'Team (add and change people)'],
+];
+const permsOf = (p) => ({ calls: p.can_open_calls, approve: p.can_approve, equipment: p.can_manage_equipment || p.can_manage_pm,
+  contractors: p.can_manage_contractors, locations: p.can_manage_locations, team: p.can_manage_team });
+const summary = (p) => (p.is_org_admin ? 'Admin: everything' : PERMS.filter(([k]) => permsOf(p)[k]).map(([, l]) => l.split(' (')[0]).join(', ') || 'View only');
 
 export default function StoreTeam({ me }) {
   const [people, setPeople] = useState([]);
@@ -24,7 +34,7 @@ export default function StoreTeam({ me }) {
   async function load() {
     try {
       const [p, s, si, l] = await Promise.all([
-        q(supabase.from('profiles').select('id, full_name, title, email, phone, is_org_admin, can_approve, approval_limit, all_sites, site_ids, active').eq('customer_id', me.customer_id).order('full_name')),
+        q(supabase.from('profiles').select('id, full_name, title, email, phone, is_org_admin, can_open_calls, can_approve, approval_limit, can_manage_pm, can_manage_equipment, can_manage_contractors, can_manage_locations, can_manage_team, all_sites, site_ids, active').eq('customer_id', me.customer_id).order('full_name')),
         q(supabase.from('sites').select('id, name').order('name')),
         act('seat_info', {}),
         q(supabase.from('join_links').select('token, full_name, email, expires_at, used_at').eq('kind', 'customer_member').is('used_at', null).order('created_at', { ascending: false })),
@@ -38,18 +48,19 @@ export default function StoreTeam({ me }) {
   const siteNames = (p) => (p.all_sites || p.is_org_admin ? 'All locations' : sites.filter((s) => (p.site_ids || []).includes(s.id)).map((s) => s.name).join(', ') || 'No locations');
   const full = seats && seats.used >= seats.included + seats.extra;
 
+  const permsJson = (f) => ({ admin: f.admin, calls: f.calls, approve: f.approve, limit: f.approve && f.limit !== '' ? String(f.limit) : '',
+    equipment: f.equipment, contractors: f.contractors, locations: f.locations, team: f.team });
+
   async function save(e) {
     e.preventDefault();
     setBusy(true); setErr(''); setMsg('');
-    const limit = form.approve && form.limit !== '' ? Number(form.limit) : null;
     try {
       if (form.id) {
-        await act('update_store_user', { p_profile: form.id, p_title: form.title, p_admin: form.admin, p_can_approve: form.approve, p_approval_limit: limit,
-          p_all_sites: form.all, p_site_ids: form.all ? [] : form.sites, p_active: true });
+        await act('update_team_member', { p_profile: form.id, p_title: form.title, p_perms: permsJson(form), p_all_sites: form.all, p_site_ids: form.all ? [] : form.sites, p_active: true });
         setMsg(`Saved ${form.name}.`);
       } else {
-        const r = await act('invite_store_user', { p_name: form.name, p_email: form.email, p_phone: form.phone, p_title: form.title, p_admin: form.admin,
-          p_can_approve: form.approve, p_approval_limit: limit, p_all_sites: form.all, p_site_ids: form.all ? [] : form.sites });
+        const r = await act('invite_team_member', { p_name: form.name, p_email: form.email, p_phone: form.phone, p_title: form.title,
+          p_perms: permsJson(form), p_all_sites: form.all, p_site_ids: form.all ? [] : form.sites });
         setSent({ token: r.token, name: form.name, email: form.email, phone: form.phone });
       }
       setForm(null);
@@ -60,8 +71,8 @@ export default function StoreTeam({ me }) {
   async function deactivate(p) {
     setBusy(true); setErr(''); setMsg('');
     try {
-      await act('update_store_user', { p_profile: p.id, p_title: p.title, p_admin: p.is_org_admin, p_can_approve: p.can_approve, p_approval_limit: p.approval_limit,
-        p_all_sites: p.all_sites, p_site_ids: p.site_ids || [], p_active: !p.active });
+      const f = { admin: p.is_org_admin, ...permsOf(p), limit: p.approval_limit ?? '' };
+      await act('update_team_member', { p_profile: p.id, p_title: p.title, p_perms: permsJson(f), p_all_sites: p.all_sites, p_site_ids: p.site_ids || [], p_active: !p.active });
       setMsg(p.active ? `${p.full_name} can no longer sign in. Their login is free for someone else.` : `${p.full_name} can sign in again.`);
       await load();
     } catch (x) { setErr(x.message); } finally { setBusy(false); }
@@ -89,18 +100,18 @@ export default function StoreTeam({ me }) {
       )}
 
       <table>
-        <thead><tr><th>Person</th><th className="hide-sm">Sees</th><th>Approves</th><th /></tr></thead>
+        <thead><tr><th>Person</th><th className="hide-sm">Sees</th><th>Can</th><th /></tr></thead>
         <tbody>
           {people.map((p) => (
             <tr key={p.id} style={p.active ? undefined : { opacity: 0.55 }}>
               <td><strong>{p.full_name}</strong>{p.id === me.id ? ' (you)' : ''}<div className="small muted">{p.title || ''}{p.is_org_admin ? ' · Admin' : ''}{!p.active ? ' · signed out' : ''}</div><div className="small muted">{p.email}</div></td>
               <td className="hide-sm small">{siteNames(p)}</td>
-              <td className="small">{p.can_approve ? (p.approval_limit != null ? `up to ${money(p.approval_limit)}` : 'any amount') : 'no'}</td>
+              <td className="small">{summary(p)}{!p.is_org_admin && <div className="muted">{p.can_approve ? `Approves ${p.approval_limit != null ? `up to ${money(p.approval_limit)}` : 'any amount'}` : 'Does not approve spending'}</div>}</td>
               <td className="num">{p.id !== me.id && (
                 <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
-                  {p.active && <button disabled={busy} onClick={() => setForm({ id: p.id, name: p.full_name, email: p.email, phone: p.phone || '', title: p.title || '', admin: p.is_org_admin,
-                    approve: p.can_approve, limit: p.approval_limit ?? '', all: p.all_sites, sites: p.site_ids || [] })}>Edit</button>}
-                  <button disabled={busy} onClick={() => deactivate(p)}>{p.active ? 'Remove' : 'Restore'}</button>
+                  {p.active && (me.is_org_admin || !p.is_org_admin) && <button disabled={busy} onClick={() => setForm({ id: p.id, name: p.full_name, email: p.email, phone: p.phone || '', title: p.title || '', admin: p.is_org_admin,
+                    ...permsOf(p), limit: p.approval_limit ?? '', all: p.all_sites, sites: p.site_ids || [] })}>Edit</button>}
+                  {(me.is_org_admin || !p.is_org_admin) && <button disabled={busy} onClick={() => deactivate(p)}>{p.active ? 'Remove' : 'Restore'}</button>}
                 </div>
               )}</td>
             </tr>
@@ -127,10 +138,18 @@ export default function StoreTeam({ me }) {
             </>
           )}
           {form.id && <label>Job title<input id="tm-title-e" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>}
-          <label className="row small" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={form.admin} onChange={(e) => setForm({ ...form, admin: e.target.checked, all: e.target.checked || form.all })} />
-            Admin (sees every location; can change settings, add people and invite contractors)</label>
+          {me.is_org_admin && <label className="row small" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={form.admin} onChange={(e) => setForm({ ...form, admin: e.target.checked, all: e.target.checked || form.all })} />
+            <strong>Admin</strong>: can do everything below, sees every location, manages your plan</label>}
+          {!form.admin && (
+            <div className="stack" style={{ gap: 4 }}>
+              <div className="small"><strong>What can they do?</strong> <span className="muted">Everyone can see calls at their locations.</span></div>
+              {PERMS.map(([k, label]) => (
+                <label key={k} className="row small" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={!!form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.checked })} />{label}</label>
+              ))}
+            </div>
+          )}
           <label className="row small" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={form.approve} onChange={(e) => setForm({ ...form, approve: e.target.checked })} />
-            Can approve spending</label>
+            Approve spending (quotes and PO increases)</label>
           {form.approve && <label>Approves up to ($) <span className="muted" style={{ fontWeight: 400 }}>— leave blank for any amount; above it goes up to the next person</span>
             <input id="tm-limit" type="number" min="0" step="50" value={form.limit} onChange={(e) => setForm({ ...form, limit: e.target.value })} placeholder="e.g. 500" /></label>}
           {!form.admin && (

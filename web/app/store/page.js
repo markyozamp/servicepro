@@ -7,7 +7,7 @@ import { money, ago, dateTime, date, poLabel, PO_KIND } from '@/lib/format';
 import TopBar from '@/components/TopBar';
 import CallDetail from '@/components/CallDetail';
 import NewCallForm from '@/components/NewCallForm';
-import StoreSettings from '@/components/StoreSettings';
+import StoreSettings, { SETTINGS_TABS, storePerms } from '@/components/StoreSettings';
 import Info from '@/components/Info';
 import PoLog from '@/components/PoLog';
 import Presence from '@/components/Presence';
@@ -61,7 +61,7 @@ export default function StorePortal() {
     const sp = new URLSearchParams(window.location.search);
     const c = sp.get('call');
     if (c) setOpen(c);
-    if (sp.get('settings') && profile.is_org_admin) setSettings(sp.get('settings'));
+    if (sp.get('settings')) setSettings(sp.get('settings'));
     if (sp.get('welcome') && profile.is_org_admin) setSettings('locations');
   }, [profile]);
 
@@ -129,7 +129,9 @@ export default function StorePortal() {
             <div className="muted small">{profile.title || ''}{profile.approval_limit != null ? ` · approves up to ${money(profile.approval_limit)}` : profile.can_approve ? ' · approves any amount' : ''}</div>
           </div>
           <div className="row">
-            {profile.is_org_admin && !settings && <button onClick={() => setSettings('company')}>⚙ Settings</button>}
+            {[...SETTINGS_TABS.slice(1), SETTINGS_TABS[0]].filter(([k]) => storePerms(profile)[k]).map(([k, label]) => (
+              <button key={k} className={settings === k ? 'on' : ''} onClick={() => setSettings(settings === k ? null : k)}>{label}</button>
+            ))}
             {(profile.can_open_calls || profile.is_org_admin) && !project && <button onClick={() => setProject(true)}>Install / project quote</button>}
             {!creating && (profile.can_open_calls || profile.is_org_admin) && <button className="primary big" onClick={() => setCreating(true)}>+ New service call</button>}
           </div>

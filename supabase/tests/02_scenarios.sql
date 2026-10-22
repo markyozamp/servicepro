@@ -557,7 +557,7 @@ select from clock('out');
 \echo '=== 24. Location settings: guest Wi-Fi only for the store and the tech on the job'
 set role authenticated;
 select test.login(:SAM);
-select test.blocked($$select set_site_settings('30000000-0000-0000-0000-000000000001', 1500, 'Northside-Guest', 'cooler2024')$$, 'Only your company', 'a store manager who is not an admin cannot change settings');
+select test.blocked($$select set_site_settings('30000000-0000-0000-0000-000000000001', 1500, 'Northside-Guest', 'cooler2024')$$, 'permission', 'a store manager who is not an admin cannot change settings');
 select test.login(:DOUG);
 select from set_site_settings('30000000-0000-0000-0000-000000000001', 1500, 'Northside-Guest', 'cooler2024');
 select test.ok((select ssid = 'Northside-Guest' from site_wifi where site_id = :S114), 'director (admin) sets the guest Wi-Fi and emergency limit');
@@ -618,7 +618,7 @@ set role authenticated;
 set role authenticated;
 select test.login(:SAM);
 select test.blocked($$select invite_contractor('Prairie Plumbing', 'Pete Prairie', 'pete@prairie.test', null, '{3}')$$,
-  'admin', 'a store manager (not admin) cannot invite contractors');
+  'permission', 'a store manager (not admin) cannot invite contractors');
 select test.login(:DOUG);
 create temp table tv as select (invite_contractor('Prairie Plumbing', 'Pete Prairie', 'pete@prairie.test', '701-555-0100', '{3}')->>'token')::uuid as tok;
 reset role;
@@ -954,7 +954,7 @@ select test.login(test.v('PETE'));
 select from submit_invoice(test.v('tp2'), 'PP-9', 210, 1.5);
 select test.login(:SAM);
 select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('tp2') and flag = 'no_recorded_visit'
-  and description like '%no visit was recorded%Store rule: time not verified in ServicePro is not paid.'), 'invoice with no recorded visit is flagged, with the store''s rule');
+  and description like '%no visit was recorded%Store rule: time not verified in Service Call Proof is not paid.'), 'invoice with no recorded visit is flagged, with the store''s rule');
 select test.login(:DOUG);
 select from set_unverified_rule(test.v('PRAIRIE'), 'review');
 
@@ -1005,9 +1005,9 @@ set role authenticated;
 select test.login(:DOUG);
 select test.ok((select (set_site_location(:S121, 47.8936, -97.0632)->>'ok')::boolean), 'store admin sets the location');
 select test.login(:SAM);
-select test.blocked($$select set_site_location('30000000-0000-0000-0000-000000000002', 47.0, -97.0)$$, 'Only your company', 'a store manager who is not admin cannot');
+select test.blocked($$select set_site_location('30000000-0000-0000-0000-000000000002', 47.0, -97.0)$$, 'permission', 'a store manager who is not admin cannot');
 select test.login(:PAT);
-select test.blocked($$select set_site_location('30000000-0000-0000-0000-000000000002', 47.0, -97.0)$$, 'Only your company', 'the contractor cannot move the store');
+select test.blocked($$select set_site_location('30000000-0000-0000-0000-000000000002', 47.0, -97.0)$$, 'permission', 'the contractor cannot move the store');
 reset role;
 
 \echo '=== 42. Forgot password: one-time reset link'
@@ -1043,7 +1043,7 @@ select test.ok((select count(*) = 2 from sites), 'owner sees exactly their two l
 select test.ok((select timezone = 'America/Los_Angeles' from sites where name = 'M&L Seattle'), 'Seattle runs on Pacific time');
 select test.ok((select (invite_contractor('Puget Refrigeration', 'Sam Puget', 'sam@puget.test', null, '{}', array[(select id from sites where name = 'M&L Seattle')])->>'token') is not null), 'invite a contractor for just the Seattle store');
 select test.login(:MARIA);
-select test.blocked($$select add_location('Sneaky', '1 C St, Fargo, ND', '', null, null, null)$$, 'admin', 'a non-admin cannot add locations');
+select test.blocked($$select add_location('Sneaky', '1 C St, Fargo, ND', '', null, null, null)$$, 'permission', 'a non-admin cannot add locations');
 reset role;
 
 \echo '=== 44. Store admin: company profile, locations, backup-code status, equipment, team logins'
@@ -1067,11 +1067,39 @@ select id as jo from profiles where email = 'jo@mlmarket.test' \gset
 set role authenticated;
 select test.login(:'jo');
 select test.ok((select count(*) = 1 from sites), 'the manager sees only the Seattle store');
-select test.blocked($$select add_location('Mine', '1 Z St, Seattle, WA', '', null, null, null)$$, 'admin', 'the manager cannot add locations');
+select test.blocked($$select add_location('Mine', '1 Z St, Seattle, WA', '', null, null, null)$$, 'permission', 'the manager cannot add locations');
 select test.login(:'lee');
 select test.ok((select (update_store_user(:'jo', 'Store manager', false, true, 750, false, array[(select id from sites where name = 'M&L Seattle'), (select id from sites where name = 'M&L Fargo Main')], true)->>'ok')::boolean), 'owner gives the manager a second store');
 select test.login(:'jo');
 select test.ok((select count(*) = 2 from sites), 'now the manager sees both');
 select test.login(:'lee');
 select test.blocked(format('select update_store_user(%L, null, false, true, null, true, null, false)', :'lee'), 'own admin', 'owner cannot lock themselves out');
+reset role;
+
+
+\echo '=== 45. Per-person permissions and equipment history'
+set role authenticated;
+select test.login(:'lee');
+select update_store_user(:'jo', 'Store manager', false, true, 750, false, array[(select id from sites where name = 'M&L Seattle')], false);
+select invite_team_member('Pat Facilities', 'pat@mlmarket.test', null, 'Facilities', '{"calls":true,"equipment":true,"approve":true,"limit":"300"}', true, null)->>'token' as pattok \gset
+reset role; set role anon;
+select from join_redeem(:'pattok');
+reset role;
+select id as pat from profiles where email = 'pat@mlmarket.test' \gset
+select test.ok((select can_manage_equipment and not can_manage_contractors and not is_org_admin and approval_limit = 300 from profiles where id = :'pat'), 'the link carries the permissions the admin ticked');
+set role authenticated;
+select test.login(:'pat');
+select test.ok((select (save_equipment(null, (select id from sites where name = 'M&L Seattle'), null, 'True', 'T-49', 'TS-77', 'Deli', null)->>'ok')::boolean), 'facilities person (equipment permission) adds a unit');
+select test.ok((select (save_equipment((select id from equipment where serial = 'TS-77'), (select id from sites where name = 'M&L Seattle'), null, 'True', 'T-49F', 'TS-77', 'Deli', null)->>'ok')::boolean), 'and changes it');
+select test.blocked($$select invite_contractor('Nope Co', 'No One', 'no@nope.test', null, '{}', null)$$, 'permission', 'but cannot invite contractors');
+select test.blocked($$select invite_team_member('X Y', 'xy@mlmarket.test', null, null, '{}', true, null)$$, 'permission', 'or add people');
+select test.ok((select string_agg(action || ':' || by_name, ',' order by at) = 'added:Pat Facilities,changed:Pat Facilities' from equipment_log where equipment_id = (select id from equipment where serial = 'TS-77')), 'history shows who added and who changed it');
+select test.ok((select detail like 'model T-49 → T-49F%' from equipment_log where equipment_id = (select id from equipment where serial = 'TS-77') and action = 'changed'), 'history says what changed');
+select test.blocked($$select retire_equipment((select id from equipment where serial = 'TS-77'), '', false)$$, 'why', 'removing a unit needs a reason');
+select test.ok((select (retire_equipment((select id from equipment where serial = 'TS-77'), 'Replaced with new unit', false)->>'ok')::boolean), 'a unit is removed with a reason (kept in history)');
+select test.login(:'lee');
+select test.ok((select (update_team_member(:'pat', 'Facilities', '{"calls":true,"equipment":true,"contractors":true,"team":true}', true, null, true)->>'ok')::boolean), 'admin adds the contractors and team permissions');
+select test.login(:'pat');
+select test.ok((select (invite_contractor('Yes Co', 'Some One', 'yes@yesco.test', null, '{}', null)->>'token') is not null), 'now they can invite contractors');
+select test.blocked(format('select update_team_member(%L, null, %L, true, null, true)', :'pat', '{"admin":true}'), 'Only an admin', 'nobody but an admin makes admins');
 reset role;
