@@ -327,6 +327,9 @@ Proof of temperature for bad-product claims, and early warning before product is
 22. New service call / install quote scroll to their form and back — **built**.
 23. Service call form: Type of problem (trade) → problem list filtered; "Send to" lists that trade's contractors first, then others. Receipt confirmation = contractor taps Accept within the store's window (email read receipts are unreliable; Accept is the proof) — **built**.
 24. Which unit → "+ It's not listed: add it now" saves the unit to Equipment with the call — **built**.
+25. Invite a contractor: Office phone field (used by "Call office") plus the contact's mobile (for texting the link) — **built** (2026-10-23).
+26. Money fields (not to exceed, approval limit, emergency limit) take any amount, e.g. $125 — no more "nearest valid value" popup — **built**.
+27. Search past calls: button on the dashboard opens "Past calls / PO log" with search, contractor, trade, location and date filters, and export — **built**.
 **Before the paid launch (Mark, 2026-10-22):** move Supabase to Pro (daily backups, no pausing) and Vercel to Pro (commercial use); then the "Your data" text can promise daily backups.
 Earlier from the remote test: arrival watched only after "I'm going"; owner-tech needs I'm going/I'm here on the office screen — open.
 

@@ -348,8 +348,11 @@ select from clock('in', now() - interval '9 hours');
 select from clock('break_start', now() - interval '5 hours');
 select from clock('break_end', now() - interval '4 hours 30 minutes');
 select from clock('out', now() - interval '30 minutes');
-select test.ok((select paid_minutes = 480 and jobs >= 1 from timesheet(:MIKE, date_trunc('week', now())::date)
-  where day = ((now() - interval '9 hours') at time zone 'America/Chicago')::date),
+-- (summed over the days the shift touches, so the test also passes when run just after midnight)
+select test.ok((select sum(paid_minutes) = 480 and sum(jobs) >= 1 from (
+    select * from timesheet(:MIKE, date_trunc('week', (now() - interval '9 hours') at time zone 'America/Chicago')::date)
+    union select * from timesheet(:MIKE, date_trunc('week', now() at time zone 'America/Chicago')::date)) t
+  where day between ((now() - interval '9 hours') at time zone 'America/Chicago')::date and (now() at time zone 'America/Chicago')::date),
   'day: 8.5 h shift − 30 min break = 8 h paid, with the day''s jobs filled in from the visits');
 select '      ' || day || ': paid ' || paid_minutes || ' min, on site ' || onsite_minutes || ', driving ' || drive_minutes || ', jobs ' || jobs
   from timesheet(:MIKE, date_trunc('week', now())::date) where paid_minutes > 0;
@@ -1138,3 +1141,12 @@ select test.login(:'pat');
 select test.ok((select (add_equipment_from_call((select id from sites where name = 'M&L Seattle'), null, 'Walk-in freezer, back room', 'Kolpak', null)->>'ok')::boolean), 'someone who opens calls adds the broken unit while opening the call');
 select test.blocked($$select add_equipment_from_call((select id from sites where name = 'M&L Seattle'), null, '', '', '')$$, 'kind of unit', 'needs at least a type or where it is');
 reset role;
+
+\echo '=== 49. Contractor office phone; PO log by trade'
+set role authenticated;
+select test.login(:'lee');
+select test.ok((select (invite_contractor('Dakota Electric', 'Dee Volt', 'dee@dakota.test', '701-555-0400', '{4}'::smallint[], null::uuid[], '701-555-0499')->>'token') is not null), 'invite takes an office phone and a mobile');
+select test.ok((select phone = '701-555-0499' from contractors where name = 'Dakota Electric'), 'the office phone is the one stores call');
+select test.ok((select phone = '701-555-0400' from join_links where full_name = 'Dee Volt'), 'the mobile stays with the sign-in link for texting');
+reset role;
+select test.ok((select count(*) > 0 and bool_and(trade_name is not null) from po_log where trade_id is not null), 'the PO log names the trade of each call');

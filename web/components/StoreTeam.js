@@ -152,7 +152,7 @@ export default function StoreTeam({ me }) {
           <label className="row small" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={form.approve} onChange={(e) => setForm({ ...form, approve: e.target.checked })} />
             Approve spending (quotes and PO increases)</label>
           {form.approve && <label>Approves up to ($) <span className="muted" style={{ fontWeight: 400 }}>— leave blank for any amount; above it goes up to the next person</span>
-            <input id="tm-limit" type="number" min="0" step="50" value={form.limit} onChange={(e) => setForm({ ...form, limit: e.target.value })} placeholder="e.g. 500" /></label>}
+            <input id="tm-limit" type="number" min="0" step="any" value={form.limit} onChange={(e) => setForm({ ...form, limit: e.target.value })} placeholder="e.g. 500" /></label>}
           {!form.admin && (
             <div className="stack" style={{ gap: 4 }}>
               <div className="small"><strong>Which locations do they see?</strong></div>

@@ -53,7 +53,7 @@ export default function ContractorSettings({ onClose }) {
       <h3>Your contractors <Info title="Your contractors">The service companies you send calls to. For each one you set your rules: whether you pay travel time, what happens to time that wasn't checked in, and how fast they must accept a call. Their record shows how they're doing: on-time acceptance, check-ins with the code, missed windows and unexplained hours.</Info></h3>
       {cc.map((r) => (
         <div key={r.contractor_id} className="stack" style={{ gap: 6, borderTop: '1px solid var(--line)', paddingTop: 10 }}>
-          <div><strong>{r.contractors?.name}</strong> <span className="small muted">{r.contractors?.phone || ''}</span></div>
+          <div><strong>{r.contractors?.name}</strong> <span className="small muted">{r.contractors?.phone ? `office ${r.contractors.phone}` : ''}</span></div>
           <div className="row">
             <label className="grow">How you work with them
               <select value={r.mode} onChange={(e) => setRow(r.contractor_id, 'mode', e.target.value)}>
@@ -116,7 +116,7 @@ export default function ContractorSettings({ onClose }) {
         <form className="stack" style={{ gap: 6 }} onSubmit={(e) => {
           e.preventDefault();
           run('invite_contractor', { p_company: inv.company, p_contact_name: inv.name, p_email: inv.email || null, p_phone: inv.phone || null,
-            p_trade_ids: inv.trades, p_site_ids: inv.sites.length && inv.sites.length < sites.length ? inv.sites : null }, (r) => { setSent({ token: r.token, name: inv.name, email: inv.email, phone: inv.phone }); setInv(null); });
+            p_office_phone: inv.office || null, p_trade_ids: inv.trades, p_site_ids: inv.sites.length && inv.sites.length < sites.length ? inv.sites : null }, (r) => { setSent({ token: r.token, name: inv.name, email: inv.email, phone: inv.phone }); setInv(null); });
         }}>
           <div className="row">
             <label className="grow">Company<input value={inv.company} onChange={(e) => setInv({ ...inv, company: e.target.value })} required /></label>
@@ -124,7 +124,10 @@ export default function ContractorSettings({ onClose }) {
           </div>
           <div className="row">
             <label className="grow">Email<input type="email" value={inv.email} onChange={(e) => setInv({ ...inv, email: e.target.value })} /></label>
-            <label className="grow">Mobile<input value={inv.phone} onChange={(e) => setInv({ ...inv, phone: e.target.value })} /></label>
+            <label className="grow">Contact's mobile<input type="tel" value={inv.phone} onChange={(e) => setInv({ ...inv, phone: e.target.value })} placeholder="for texting the sign-in link" /></label>
+          </div>
+          <div className="row">
+            <label className="grow">Office phone<input type="tel" value={inv.office} onChange={(e) => setInv({ ...inv, office: e.target.value })} placeholder="the number your staff call" /></label>
           </div>
           <div className="row" style={{ gap: 10 }}>
             {trades.map((t) => (
@@ -150,7 +153,7 @@ export default function ContractorSettings({ onClose }) {
           <div className="small muted">Each contractor needs their own email: one email is one sign-in.</div>
           <div className="row"><button className="primary" disabled={busy}>Create sign-in link</button><button type="button" onClick={() => setInv(null)}>Cancel</button></div>
         </form>
-      ) : <button onClick={() => setInv({ company: '', name: '', email: '', phone: '', trades: [], sites: [] })}>+ Invite a contractor</button>}
+      ) : <button onClick={() => setInv({ company: '', name: '', email: '', phone: '', office: '', trades: [], sites: [] })}>+ Invite a contractor</button>}
       {links.filter((l) => !l.used_at).length > 0 && (
         <div className="small muted">Waiting to sign in: {links.filter((l) => !l.used_at).map((l) => `${l.contractors?.name} (${l.full_name}${new Date(l.expires_at) < new Date() ? ', link expired' : ''})`).join(', ')}</div>
       )}

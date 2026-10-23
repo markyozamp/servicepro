@@ -282,8 +282,8 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
       )}
       {verify && side === 'store' && (
         <label>
-          Not to exceed ($) <span className="muted" style={{ fontWeight: 400 }}>(optional — the contractor sees it; the invoice is checked against it)</span>
-          <input type="number" min="0" step="50" value={f.nte} onChange={set('nte')} placeholder="e.g. 500" />
+          Not to exceed ($) <span className="muted" style={{ fontWeight: 400 }}>(optional, any amount — the contractor sees it; the invoice is checked against it)</span>
+          <input type="number" inputMode="decimal" min="0" step="any" value={f.nte} onChange={set('nte')} placeholder="e.g. 125" />
         </label>
       )}
       {!oneOff && (

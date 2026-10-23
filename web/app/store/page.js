@@ -227,6 +227,10 @@ export default function StorePortal() {
           <button className={`tile${late.length ? ' bad' : ''}`} onClick={() => setTab('billing')}><span className="tile-n">{late.length}</span><span>Bills overdue</span></button>
         </div>
 
+        <button className="searchbar" onClick={() => { setTab('po'); setTimeout(() => document.getElementById('calls')?.scrollIntoView({ behavior: 'smooth' }), 50); }}>
+          <span aria-hidden="true">🔎</span> Search past calls <span className="muted">— by contractor, trade, location or date</span>
+        </button>
+
         <GettingStarted me={profile} onGo={(k) => openArea(k)} onNewCall={() => openWork('call')} />
 
         <ErrorBox error={err} />
@@ -357,12 +361,13 @@ export default function StorePortal() {
         )}
 
         {/* Calls */}
+        <span id="calls" className="anchor" />
         <div className="panel">
           <div className="tabs" style={{ padding: '0 8px', marginBottom: 0 }}>
             <button className={tab === 'open' ? 'on' : ''} onClick={() => setTab('open')}>Open calls ({counts.open})</button>
             <button className={tab === 'billing' ? 'on' : ''} onClick={() => setTab('billing')}>Completed — bill pending ({counts.billing})</button>
             <button className={tab === 'closed' ? 'on' : ''} onClick={() => setTab('closed')}>Invoiced</button>
-            <button className={tab === 'po' ? 'on' : ''} onClick={() => setTab('po')}>PO log</button>
+            <button className={tab === 'po' ? 'on' : ''} onClick={() => setTab('po')}>Past calls / PO log</button>
           </div>
           {tab === 'po' ? <PoLog /> : (
           <table>

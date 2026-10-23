@@ -126,7 +126,7 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
             <Info title="Fine-tune map point">The address already puts this location on the map. If technicians park or enter somewhere else (a back lot, a loading dock, a big property), stand at that spot with your phone and tap this, so their arrival is noticed there. Use a phone at the store; a computer only knows roughly where it is.</Info>
           </div>
           <label>Emergency calls are approved up to ($) <span className="muted" style={{ fontWeight: 400 }}>— leave blank to approve every emergency request yourself</span>
-            <input type="number" min="0" step="50" value={r.em} onChange={set(r.id, 'em')} placeholder="e.g. 1500" /></label>
+            <input type="number" min="0" step="any" value={r.em} onChange={set(r.id, 'em')} placeholder="e.g. 1500" /></label>
           {r.em !== '' && <div className="small muted">On emergency calls the technician can go ahead up to {money(r.em)} total without waiting; you're told immediately.</div>}
           <div className="row">
             <label className="grow">Guest Wi-Fi name (for technicians)<input value={r.ssid} onChange={set(r.id, 'ssid')} placeholder="optional" /></label>
