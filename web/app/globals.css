@@ -299,3 +299,10 @@ label.button-like { display: inline-flex; align-items: center; padding: 8px 14px
 .searchbar:hover { border-color: #9aa7b6; }
 .searchbar .muted { font-weight: 400; }
 .linkbtn { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; }
+.custpick { max-height: 70vh; overflow-y: auto; }
+.custpick-group { border-top: 1px solid var(--line); padding-top: 2px; margin-top: 2px; }
+.custpick-group > button { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 10px; text-align: left; border: 0; background: transparent; padding: 9px 10px; border-radius: 8px; }
+.custpick-group > button > span:first-child { display: flex; flex-direction: column; gap: 2px; }
+.custpick-group > button:hover, .custpick-group > button.on { background: var(--brand-soft); }
+.custpick-group > button.sub { padding-left: 26px; font-weight: 400; }
+.custpick-group .sub-why { color: var(--red-fg); padding: 0 10px 6px; }

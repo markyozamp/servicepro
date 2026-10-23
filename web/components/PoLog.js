@@ -17,7 +17,7 @@ const COLS = [
   ['Invoice status', (r) => r.invoice_status || ''], ['Flags', (r) => (r.flags || []).map((f) => FLAG_LABEL[f] || f).join('; ')],
 ];
 
-export default function PoLog() {
+export default function PoLog({ customerId = null, siteId = null, onOpen = null } = {}) {
   const [rows, setRows] = useState([]);
   const [err, setErr] = useState('');
   const [find, setFind] = useState('');
@@ -32,12 +32,13 @@ export default function PoLog() {
     q(supabase.from('po_log').select('*').order('opened_at', { ascending: false }).limit(2000)).then(setRows).catch((e) => setErr(e.message));
   }, []);
 
-  const sites = useMemo(() => [...new Set(rows.map((r) => r.site_name))].sort(), [rows]);
-  const contractors = useMemo(() => [...new Set(rows.map((r) => r.contractor_name))].sort(), [rows]);
-  const trades = useMemo(() => [...new Set(rows.map((r) => r.trade_name).filter(Boolean))].sort(), [rows]);
+  const base = useMemo(() => rows.filter((r) => (!customerId || r.customer_id === customerId) && (!siteId || r.site_id === siteId)), [rows, customerId, siteId]);
+  const sites = useMemo(() => [...new Set(base.map((r) => r.site_name))].sort(), [base]);
+  const contractors = useMemo(() => [...new Set(base.map((r) => r.contractor_name))].sort(), [base]);
+  const trades = useMemo(() => [...new Set(base.map((r) => r.trade_name).filter(Boolean))].sort(), [base]);
   const day = (t) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const filtered = !!(find || site || who || trade || from || to || onlyFlags);
-  const shown = rows.filter((r) => (!site || r.site_name === site) && (!onlyFlags || (r.flags || []).length)
+  const shown = base.filter((r) => (!site || r.site_name === site) && (!onlyFlags || (r.flags || []).length)
     && (!who || r.contractor_name === who) && (!trade || r.trade_name === trade)
     && (!from || day(r.opened_at) >= from) && (!to || day(r.opened_at) <= to)
     && (!find || COLS.some(([, f]) => String(f(r)).toLowerCase().includes(find.toLowerCase()))));
@@ -56,15 +57,17 @@ export default function PoLog() {
       <div className="stack" style={{ padding: 12, gap: 8 }}>
         <input value={find} onChange={(e) => setFind(e.target.value)} placeholder="Search past calls: PO, problem, unit, invoice #…" aria-label="Search past calls" />
         <div className="row" style={{ gap: 8 }}>
-          <select value={who} onChange={(e) => setWho(e.target.value)} aria-label="Contractor">
-            <option value="">All contractors</option>
-            {contractors.map((s) => <option key={s}>{s}</option>)}
-          </select>
+          {contractors.length > 1 && (
+            <select value={who} onChange={(e) => setWho(e.target.value)} aria-label="Contractor">
+              <option value="">All contractors</option>
+              {contractors.map((s) => <option key={s}>{s}</option>)}
+            </select>
+          )}
           <select value={trade} onChange={(e) => setTrade(e.target.value)} aria-label="Trade">
             <option value="">All trades</option>
             {trades.map((s) => <option key={s}>{s}</option>)}
           </select>
-          {sites.length > 1 && (
+          {sites.length > 1 && !siteId && (
             <select value={site} onChange={(e) => setSite(e.target.value)} aria-label="Location">
               <option value="">All locations</option>
               {sites.map((s) => <option key={s}>{s}</option>)}
@@ -75,7 +78,7 @@ export default function PoLog() {
           <label className="row small" style={{ gap: 4, fontWeight: 400 }}><input type="checkbox" checked={onlyFlags} onChange={(e) => setOnlyFlags(e.target.checked)} style={{ width: 'auto' }} /> Flagged only</label>
         </div>
         <div className="row spread small muted">
-          <span>{shown.length} of {rows.length} call{rows.length === 1 ? '' : 's'}{filtered && <> · <button className="linkbtn" onClick={() => { setFind(''); setSite(''); setWho(''); setTrade(''); setFrom(''); setTo(''); setOnlyFlags(false); }}>Clear</button></>}</span>
+          <span>{shown.length} of {base.length} call{base.length === 1 ? '' : 's'}{filtered && <> · <button className="linkbtn" onClick={() => { setFind(''); setSite(''); setWho(''); setTrade(''); setFrom(''); setTo(''); setOnlyFlags(false); }}>Clear</button></>}</span>
           <button onClick={exportCsv} disabled={!shown.length}>Export to spreadsheet ({shown.length})</button>
         </div>
       </div>
@@ -83,9 +86,9 @@ export default function PoLog() {
       <table>
         <thead><tr><th>PO</th><th>Problem</th><th className="hide-sm">Opened / accepted</th><th className="num">On site</th><th className="num">Invoice</th></tr></thead>
         <tbody>
-          {shown.length === 0 && <tr><td colSpan={5} className="muted">{rows.length ? 'No calls match. Try fewer filters.' : 'No calls yet.'}</td></tr>}
+          {shown.length === 0 && <tr><td colSpan={5} className="muted">{base.length ? 'No calls match. Try fewer filters.' : 'No calls yet.'}</td></tr>}
           {shown.map((r) => (
-            <tr key={r.id}>
+            <tr key={r.id} className={onOpen ? 'click' : undefined} onClick={onOpen ? () => onOpen(r.id) : undefined}>
               <td><strong>{r.po_number}</strong><div className="small muted">#{r.number} · {r.site_name}</div><div className="small muted">{r.contractor_name}</div></td>
               <td>{r.trade_name && <div className="small muted">{r.trade_name}</div>}{r.problem_type && r.problem_type !== r.problem ? <strong>{r.problem_type}. </strong> : null}{r.problem}
                 <div className="row" style={{ gap: 4, marginTop: 4 }}>

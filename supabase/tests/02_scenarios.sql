@@ -1150,3 +1150,17 @@ select test.ok((select phone = '701-555-0499' from contractors where name = 'Dak
 select test.ok((select phone = '701-555-0400' from join_links where full_name = 'Dee Volt'), 'the mobile stays with the sign-in link for texting');
 reset role;
 select test.ok((select count(*) > 0 and bool_and(trade_name is not null) from po_log where trade_id is not null), 'the PO log names the trade of each call');
+
+\echo '=== 50. Contractor customer book'
+set role authenticated;
+select test.login(:DANA);
+select test.ok((select jsonb_array_length(contractor_book()) >= 1), 'the contractor sees the customers they serve');
+select test.ok((select bool_or(x->>'name' like 'Northside%') from jsonb_array_elements(contractor_book()) x), 'Northside is on Arctic''s list');
+select test.ok((select bool_and(jsonb_typeof(s->'reasons') = 'array') from jsonb_array_elements(contractor_book()) x, jsonb_array_elements(x->'sites') s), 'each store carries its attention reasons');
+select test.ok((select jsonb_typeof(contractor_customer_equipment((select (x->>'customer_id')::uuid from jsonb_array_elements(contractor_book()) x where x->>'name' like 'Northside%'))) = 'array'), 'the contractor sees that customer''s equipment');
+select test.blocked($$select contractor_customer_equipment((select id from customers where name = 'M&L Market Inc'))$$, 'your list', 'but not a customer they don''t serve');
+select test.login(:RIVAL);
+select test.ok((select not coalesce(bool_or(x->>'name' like 'Northside%'), false) from jsonb_array_elements(contractor_book()) x), 'another contractor doesn''t see Northside');
+select test.login(:SAM);
+select test.ok((select contractor_book() = '[]'::jsonb), 'a store user gets an empty book');
+reset role;

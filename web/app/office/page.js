@@ -11,8 +11,10 @@ import TeamPanel from '@/components/TeamPanel';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox } from '@/components/bits';
 import AppFooter from '@/components/AppFooter';
 import { useTabBadge } from '@/lib/tabBadge';
+import CustomerPicker, { pickMatch } from '@/components/CustomerPicker';
+import CustomerBook from '@/components/CustomerBook';
 
-const LIST = `id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, invoiced_at, due_on,
+const LIST = `id, customer_id, site_id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, invoiced_at, due_on,
   total_cost, invoice_ready, qbo_invoice_id, store_po_number, sites(name), customers(name),
   mode, source, accepted_at, accept_due_at, declined_at, scheduled_start, store_confirmed_at, nte,
   visits(id, visit_no, status, eta_at, arrived_at, received_at, checkin_required, checkin_at, scheduled_start, scheduled_end, missed_alert_at, profiles(full_name)),
@@ -39,16 +41,21 @@ export default function OfficePortal() {
   const [pick, setPick] = useState({});
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [book, setBook] = useState([]);
+  const [cpick, setCpickRaw] = useState('');
+  const setCpick = (v) => { setCpickRaw(v); try { localStorage.setItem('scp_cpick', v); } catch { /* fine */ } };
+  useEffect(() => { try { setCpickRaw(localStorage.getItem('scp_cpick') || ''); } catch { /* fine */ } }, []);
 
   const load = useCallback(async () => {
     try {
-      const [c, f, t] = await Promise.all([
+      const [c, f, t, b] = await Promise.all([
         q(supabase.from('work_orders').select(LIST).order('priority').order('created_at', { ascending: false }).limit(400)),
-        q(supabase.from('guardrail_flags').select('id, work_order_id, flag, description, blocking, triggered_at, work_orders(number, total_cost, sites(name))')
+        q(supabase.from('guardrail_flags').select('id, work_order_id, flag, description, blocking, triggered_at, work_orders(number, total_cost, customer_id, site_id, sites(name))')
           .is('resolved_at', null).order('triggered_at', { ascending: false })),
         q(supabase.from('profiles').select('id, full_name, phone').eq('is_technician', true).eq('active', true).order('full_name')),
+        act('contractor_book', {}),
       ]);
-      setCalls(c); setFlags(f); setTechs(t);
+      setCalls(c); setFlags(f); setTechs(t); setBook(b || []);
     } catch (e) {
       setErr(e.message);
     }
@@ -82,19 +89,25 @@ export default function OfficePortal() {
     }
   }
 
-  // Browser tab: new calls waiting to be accepted, plus open flags.
+  // Browser tab: everything that needs attention across all customers; flashes when a new call must be accepted.
   const toAccept = calls.filter((w) => w.status === 'created' && w.mode === 'verify' && !w.accepted_at && !w.declined_at);
-  useTabBadge(org?.name, toAccept.length + flags.length, toAccept.some((w) => w.accept_due_at && new Date(w.accept_due_at) < new Date(Date.now() + 10 * 60000)) ? 'New call: accept now' : null);
+  const issueCount = book.reduce((n, c) => n + c.sites.reduce((m, st) => m + st.reasons.length, 0), 0);
+  useTabBadge(org?.name, issueCount, toAccept.length ? 'New call: accept now' : null);
+  // A saved customer/store choice that no longer exists falls back to all customers.
+  const validPick = cpick && book.some((c) => cpick === `c:${c.customer_id}` || c.sites.some((st) => cpick === `s:${st.site_id}`)) ? cpick : '';
+  const hotCustomers = book.filter((c) => c.sites.some((st) => st.reasons.length)).length;
 
   if (!profile) return <div className="page muted">Loading…</div>;
 
+  const callsF = calls.filter((w) => pickMatch(validPick, w.customer_id, w.site_id));
+  const flagsF = flags.filter((f) => pickMatch(validPick, f.work_orders?.customer_id, f.work_orders?.site_id));
   const blockingByWo = flags.reduce((m, f) => (f.blocking ? { ...m, [f.work_order_id]: (m[f.work_order_id] || 0) + 1 } : m), {});
-  const reviewFlags = flags.filter((f) => f.blocking);
-  const pms = calls.filter((c) => c.kind === 'pm' && !['completed', 'invoiced', 'cancelled'].includes(c.status));
+  const reviewFlags = flagsF.filter((f) => f.blocking);
+  const pms = callsF.filter((c) => c.kind === 'pm' && !['completed', 'invoiced', 'cancelled'].includes(c.status));
   const overduePm = pms.filter((p) => p.due_on && daysUntil(p.due_on) < 0).length;
-  const toBill = calls.filter((c) => c.status === 'completed').sort((a, b) => new Date(a.invoice_due_at) - new Date(b.invoice_due_at));
+  const toBill = callsF.filter((c) => c.status === 'completed').sort((a, b) => new Date(a.invoice_due_at) - new Date(b.invoice_due_at));
   const lateBills = toBill.filter((c) => daysUntil(c.invoice_due_at) < 0).length;
-  const history = calls.filter((c) => ['invoiced', 'cancelled'].includes(c.status));
+  const history = callsF.filter((c) => ['invoiced', 'cancelled'].includes(c.status));
 
   const assignBox = (w) => (
     <div className="row" style={{ gap: 6 }} onClick={(e) => e.stopPropagation()}>
@@ -113,6 +126,7 @@ export default function OfficePortal() {
         <div className="spread" style={{ marginBottom: 12 }}>
           <div>
             <h1>{org?.name || 'Dispatch'}</h1>
+            <div style={{ margin: '6px 0 2px' }}><CustomerPicker book={book} value={validPick} onChange={setCpick} /></div>
             <div className="muted small">Updates every 20 seconds</div>
           </div>
           {!creating && (profile.is_org_admin || profile.can_dispatch) && <button className="primary big" onClick={() => setCreating(true)}>+ New call</button>}
@@ -130,6 +144,9 @@ export default function OfficePortal() {
 
         <div className="tabs">
           <button className={tab === 'board' ? 'on' : ''} onClick={() => setTab('board')}>Dispatch board</button>
+          <button className={tab === 'customers' ? 'on' : ''} onClick={() => setTab('customers')}>
+            Customers{hotCustomers > 0 && <span className="count">{hotCustomers}</span>}
+          </button>
           <button className={tab === 'pm' ? 'on' : ''} onClick={() => setTab('pm')}>
             PM{pms.length > 0 && <span className="count" style={{ background: overduePm ? 'var(--red-fg)' : 'var(--ink-3)' }}>{pms.length}</span>}
           </button>
@@ -146,7 +163,7 @@ export default function OfficePortal() {
         {tab === 'board' && (
           <div className="board">
             {COLUMNS.map((col) => {
-              const items = calls.filter(col.match);
+              const items = callsF.filter(col.match);
               return (
                 <section key={col.key} className="column">
                   <div className="column-head"><span>{col.title}</span><span>{items.length}</span></div>
@@ -202,6 +219,8 @@ export default function OfficePortal() {
         )}
 
         {tab === 'team' && <TeamPanel profile={profile} />}
+
+        {tab === 'customers' && <CustomerBook book={book} pick={validPick} onPick={setCpick} onOpenCall={setOpen} />}
 
         {tab === 'pm' && (
           <div className="panel">

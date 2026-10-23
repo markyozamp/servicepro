@@ -329,6 +329,8 @@ Proof of temperature for bad-product claims, and early warning before product is
 24. Which unit → "+ It's not listed: add it now" saves the unit to Equipment with the call — **built**.
 25. Invite a contractor: Office phone field (used by "Call office") plus the contact's mobile (for texting the link) — **built** (2026-10-23).
 26. Money fields (not to exceed, approval limit, emergency limit) take any amount, e.g. $125 — no more "nearest valid value" popup — **built**.
+28. Contractor side, many customers: customer/store picker top-left (filters the whole office screen; red dot + reasons; pin blinks), browser-tab count, and a Customers tab (each account's stores, terms, equipment, past calls, open/to-bill/this-year totals) — **built** (2026-10-23).
+29. Reaching the contractor fast (next): store "Call them now" + "I talked to them" note; then the step-up ladder — push + email (+ text) → automated phone call ("press 1 to accept", counts as Accept) → backup number → tell the store. Contractor "Who gets the calls": business-hours office number + hours, after-hours number or whoever is on call, one-tap "On call now" and optional weekly rotation. Needs Twilio (voice doesn't wait on 10DLC); consent box at signup.
 27. Search past calls: button on the dashboard opens "Past calls / PO log" with search, contractor, trade, location and date filters, and export — **built**.
 **Before the paid launch (Mark, 2026-10-22):** move Supabase to Pro (daily backups, no pausing) and Vercel to Pro (commercial use); then the "Your data" text can promise daily backups.
 Earlier from the remote test: arrival watched only after "I'm going"; owner-tech needs I'm going/I'm here on the office screen — open.
