@@ -490,3 +490,30 @@ a.button-like { display: inline-flex; align-items: center; padding: 8px 14px; bo
 @media (max-width: 760px) { .demo-hero h1 { font-size: 23px; } .demo-hero p { font-size: 15px; } }
 .try-demo { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px; border: 1px dashed var(--line); border-radius: 12px; text-align: center; color: var(--ink-2); }
 .try-demo a { font-weight: 700; color: var(--brand); text-decoration: none; }
+
+/* ---------- Printable quick start ---------- */
+.qs { max-width: 900px; margin: 0 auto; padding: 20px; background: #fff; color: #1b2733; }
+.qs-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.qs-actions { display: flex; gap: 12px; align-items: center; }
+.qs h1 { font-size: 24px; margin: 14px 0 6px; }
+.qs h2 { font-size: 16px; margin: 14px 0 6px; color: #1565c0; }
+.qs-lead { font-size: 16px; margin: 0 0 6px; }
+.qs-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.qs ol, .qs ul { padding-left: 20px; margin: 0; display: flex; flex-direction: column; gap: 6px; line-height: 1.4; font-size: 14px; }
+.qs-box { margin-top: 12px; border: 1px solid #d5dde5; border-radius: 10px; padding: 10px 12px; background: #f6f8fa; }
+.qs-box ul { margin-top: 6px; }
+.qs-foot { margin-top: 16px; font-size: 13px; color: #5b6b7a; border-top: 1px solid #e1e6eb; padding-top: 8px; }
+@media (max-width: 700px) { .qs-cols { grid-template-columns: 1fr; } }
+@media print {
+  .no-print { display: none !important; }
+  .qs { padding: 0; max-width: none; }
+  .qs-cols { grid-template-columns: 1fr 1fr; gap: 18px; }
+  .qs ol, .qs ul { font-size: 11.5px; gap: 3px; }
+  .qs h1 { font-size: 19px; } .qs h2 { font-size: 13.5px; margin-top: 10px; }
+  @page { margin: 12mm; }
+}
+.cwel { margin-bottom: 14px; border-color: #b9d3f5; background: #f4f8fe; }
+.cwel-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.cwel-steps > div { display: flex; flex-direction: column; gap: 3px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.cwel-ic { font-size: 26px; }
+@media (max-width: 760px) { .cwel-steps { grid-template-columns: 1fr; } }

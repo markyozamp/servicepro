@@ -108,6 +108,24 @@ const STORE = [
 ];
 
 const CONTRACTOR = [
+  ['First-day setup (about 5 minutes)', [
+    'Open the sign-in link your customer sent you (text or email). No password needed. Read their terms and tap I agree — sign in.',
+    'A Getting started list appears on your Today screen. It ticks itself off as you go.',
+    'Add your office phone: Team → Who gets the calls → Office phone → Save.',
+    'Add each technician: Team → add the person with their mobile number → Text it from this phone. Just you? Tick "It\'s just me".',
+    'Put the app on your phone: menu → Install on this phone (iPhone: Share → Add to Home Screen).',
+    'Print the one-page quick start for your techs: servicecallproof.com/quickstart.',
+  ]],
+  ['Your customer\'s rules (terms)', [
+    'Each customer sets how fast you must accept calls, whether travel time is paid, and what happens to time not checked in.',
+    'See them anytime: Customers → open the customer → Their terms with you.',
+    'Time is verified by the check-in code and the phone\'s arrival, so bill the hours on the call to get paid fastest.',
+  ]],
+  ['My sign-in link doesn\'t work', [
+    'Links work once and expire after 7 days. If it says used or expired, ask the store that invited you to send a new one.',
+    'For a technician\'s link, the office sends a new one: Team → New sign-in link next to the person.',
+    'Already have a password? Sign in at servicecallproof.com, or tap Forgot password?.',
+  ]],
   ['See what needs you today', [
     'On a phone, open Service Call Proof: Today is your home screen. On a computer, click the Today tab.',
     'It lists, most urgent first: calls to accept, trips to schedule, missed windows, bills to send, and more. Tap anything to open it.',
@@ -145,6 +163,24 @@ const CONTRACTOR = [
 ];
 
 const TECH = [
+  ['Sign in on your phone the first time', [
+    'Open the sign-in link your office texted you, on your own phone. It works once; no password.',
+    'Tap the menu (☰) → Install on this phone, so the app is on your home screen (iPhone: Share → Add to Home Screen).',
+    'Allow location when asked. It is only saved when you tap a button or arrive at a job.',
+  ]],
+  ['The store can\'t find the check-in code', [
+    'Every call has its own code. It shows on the store\'s screen when you arrive.',
+    'If nobody can find it, tap Use store backup code and ask for the store\'s backup code.',
+    'Still nothing? Tap No code available and say why. The store sees the reason on the call.',
+  ]],
+  ['Ask the store to approve more money', [
+    'On the job, tap Request approval for more, describe the work and the amount, and send.',
+    'Wait for the answer on your phone. Don\'t do the extra work until it says approved.',
+  ]],
+  ['Going for parts', [
+    'Tap 🚚 Parts run before you leave. Tap at the supplier when you get there, and again when you\'re back.',
+    'The store sees it as a parts run, so the time away is explained on the bill.',
+  ]],
   ['Go on a call', [
     'Tap the job, then I\'m going when you leave. The store sees you\'re on the way.',
     'When you arrive, the app notices (or tap I\'m here). Ask someone at the store for the check-in code and enter it.',
@@ -194,7 +230,7 @@ export default function Help() {
         <h1>How-to guide</h1>
         <Link href="/" className="small">← Back to Service Call Proof</Link>
       </div>
-      <p className="muted">Short steps for everything you do in Service Call Proof. Tap a topic to open it.</p>
+      <p className="muted">Short steps for everything you do in Service Call Proof. Tap a topic to open it. Contractors and technicians: <a href="/quickstart">print the one-page quick start</a>.</p>
       <input value={find} onChange={(e) => setFind(e.target.value)} placeholder="Search: PO, admin, add a person, logo…" aria-label="Search the guide" style={{ marginBottom: 10 }} />
       {!find && (
         <div className="colchips" style={{ flexWrap: 'wrap' }}>

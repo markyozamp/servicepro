@@ -8,7 +8,33 @@ import { ErrorBox, Notice } from './bits';
 import Info from './Info';
 import OrderStickers from './OrderStickers';
 
+function contractorInviteEmail(name, store, url) {
+  const first = (name || '').split(' ')[0];
+  return `Hi ${first || 'there'},
+
+${store || 'We'} will send our service calls to you through Service Call Proof. It's free for you, and setup takes about 5 minutes.
+
+1. Tap this link on your phone or computer (no password needed; it works once, for 7 days):
+${url}
+
+2. Read our terms and tap "I agree — sign in".
+
+3. Add your office phone and your technicians. Each tech gets their own sign-in link by text.
+
+When we send a call, you'll get an alert. Tap Accept, send a tech, and enter your bill against our PO when the job's done. Your techs tap "I'm going", "I'm here" (with our check-in code) and "Leaving" on their phones.
+
+One-page quick start (print it for your techs): ${typeof window !== 'undefined' ? window.location.origin : 'https://servicecallproof.com'}/quickstart
+
+Questions about our calls? Reply to this email. Questions about the app: support@servicecallproof.com
+
+Thanks`;
+}
+
 export default function ContractorSettings({ onClose }) {
+  const [org, setOrg] = useState(null);
+  useEffect(() => {
+    supabase.rpc('me').then(({ data: m }) => m?.customer_id && supabase.from('customers').select('name').eq('id', m.customer_id).single().then(({ data }) => setOrg(data)));
+  }, []);
   const [cc, setCc] = useState([]);
   const [trades, setTrades] = useState([]);
   const [tc, setTc] = useState([]);
@@ -129,8 +155,8 @@ export default function ContractorSettings({ onClose }) {
           <input readOnly value={link(sent.token)} onFocus={(e) => e.target.select()} />
           <div className="row">
             <button onClick={() => navigator.clipboard?.writeText(link(sent.token)).then(() => setMsg('Link copied.'))}>Copy link</button>
-            {sent.email && <a className="button" href={`mailto:${sent.email}?subject=${encodeURIComponent('Service calls from us — your sign-in link')}&body=${encodeURIComponent(`Hi ${sent.name},\n\nWe'll send our service calls through Service Call Proof. It's free for you. Tap to sign in (no password):\n${link(sent.token)}\n\nThanks`)}`}><button type="button">Email it</button></a>}
-            {sent.phone && <a href={`sms:${sent.phone}?&body=${encodeURIComponent(`Our service calls now come through Service Call Proof (free for you). Sign in: ${link(sent.token)}`)}`}><button type="button">Text it</button></a>}
+            {sent.email && <a className="button" href={`mailto:${sent.email}?subject=${encodeURIComponent(`${org?.name || 'We'} will send service calls through Service Call Proof (free for you)`)}&body=${encodeURIComponent(contractorInviteEmail(sent.name, org?.name, link(sent.token)))}`}><button type="button">Email it</button></a>}
+            {sent.phone && <a href={`sms:${sent.phone}?&body=${encodeURIComponent(`${org?.name || 'We'} now send service calls through Service Call Proof. It's free for you and takes about 5 minutes. Tap to sign in (no password): ${link(sent.token)}  How it works: ${window.location.origin}/quickstart`)}`}><button type="button">Text it</button></a>}
             <button onClick={() => setSent(null)}>Done</button>
           </div>
         </div>

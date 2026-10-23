@@ -5,6 +5,12 @@ import { useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { ErrorBox, Notice } from './bits';
 
+function techInvite(name, link) {
+  const first = (name || '').split(' ')[0];
+  return `Hi ${first || 'there'}, here's your Service Call Proof sign-in. Open it on YOUR phone (it works once, no password): ${link}
+Then tap Install (in the menu) to put the app on your home screen. On jobs: tap "I'm going" when you leave, "I'm here" when you arrive, enter the store's check-in code, and "Leaving" when you're done. 1-page guide: ${typeof window !== 'undefined' ? window.location.origin : 'https://servicecallproof.com'}/quickstart`;
+}
+
 export default function TeamPanel({ profile }) {
   const [people, setPeople] = useState([]);
   const [links, setLinks] = useState([]);
@@ -60,8 +66,8 @@ export default function TeamPanel({ profile }) {
             <input readOnly value={url(sent.token)} onFocus={(e) => e.target.select()} />
             <div className="row">
               <button onClick={() => navigator.clipboard?.writeText(url(sent.token)).then(() => setMsg('Link copied.'))}>Copy link</button>
-              {sent.phone && <a href={`sms:${sent.phone}?&body=${encodeURIComponent(`Your Service Call Proof sign-in link: ${url(sent.token)}`)}`}><button type="button">Text it from this phone</button></a>}
-              {sent.email && !sent.email.endsWith('servicepro.app') && <a href={`mailto:${sent.email}?subject=Service Call Proof sign-in&body=${encodeURIComponent(url(sent.token))}`}><button type="button">Email it</button></a>}
+              {sent.phone && <a href={`sms:${sent.phone}?&body=${encodeURIComponent(techInvite(sent.name, url(sent.token)))}`}><button type="button">Text it from this phone</button></a>}
+              {sent.email && !sent.email.endsWith('servicepro.app') && <a href={`mailto:${sent.email}?subject=Your Service Call Proof sign-in&body=${encodeURIComponent(techInvite(sent.name, url(sent.token)))}`}><button type="button">Email it</button></a>}
               <button onClick={() => setSent(null)}>Done</button>
             </div>
           </div>

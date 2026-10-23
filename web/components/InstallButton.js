@@ -72,11 +72,11 @@ export default function InstallButton() {
   const [help, setHelp] = useState(false);
   const [d, setD] = useState({ ios: false, phone: false });
   useEffect(() => {
-    if (window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone) setInstalled(true);
+    if (window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone) { setInstalled(true); try { localStorage.setItem('scp_installed', '1'); } catch { /* fine */ } }
     setD(detect());
     const h = (e) => { e.preventDefault(); setPrompt(e); };
     window.addEventListener('beforeinstallprompt', h);
-    window.addEventListener('appinstalled', () => setInstalled(true));
+    window.addEventListener('appinstalled', () => { setInstalled(true); try { localStorage.setItem('scp_installed', '1'); } catch { /* fine */ } });
     return () => window.removeEventListener('beforeinstallprompt', h);
   }, []);
   // The tip bubble closes when you click or tap anywhere else, or after 20 seconds.

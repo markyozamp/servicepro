@@ -16,6 +16,7 @@ import CustomerBook from '@/components/CustomerBook';
 import CallRouting from '@/components/CallRouting';
 import OfficeToday from '@/components/OfficeToday';
 import ScrollRow from '@/components/ScrollRow';
+import ContractorStart from '@/components/ContractorStart';
 
 const LIST = `id, customer_id, site_id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, invoiced_at, due_on,
   total_cost, invoice_ready, qbo_invoice_id, store_po_number, sites(name), customers(name),
@@ -163,6 +164,8 @@ export default function OfficePortal() {
             }} />
           </div>
         )}
+
+        {!creating && <ContractorStart me={profile} org={org} book={book} onGo={go} />}
 
         <div className="desk-only">
         <ScrollRow className="tabs" style={{ marginBottom: 16 }}>

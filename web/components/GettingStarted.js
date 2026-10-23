@@ -32,7 +32,7 @@ export default function GettingStarted({ me, onGo, onNewCall }) {
     ['Invite your contractors', 'One for each trade. It\'s free for them.', st.cc > 0, () => onGo('contractors')],
     ['Set your store PIN for QR stickers', 'So employees can report problems by scanning a unit.', st.pin, () => onGo('contractors')],
     ['List your equipment', 'Start with the units that break most. Contractors add the rest on visits.', st.eq > 0, () => onGo('equipment')],
-    ['Add your team', 'Store managers, maintenance, a director. One login per location is included.', st.team > 1, () => onGo('team')],
+    ['Add your team', 'Store managers, maintenance, a director. Logins are free and unlimited.', st.team > 1, () => onGo('team')],
     ['Open your first service call', 'See it go to your contractor and track it to the invoice.', st.calls > 0, onNewCall],
   ];
   const done = steps.filter((s) => s[2]).length;
