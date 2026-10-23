@@ -55,6 +55,14 @@ const STORE = [
     'Tick Admin (it can do everything, sees every location and manages your plan) and Save.',
     'To take admin away from someone else, Edit them and untick Admin. You can\'t remove your own admin access, so the new admin removes yours if needed.',
   ]],
+  ['When someone leaves the company', [
+    'Each person has their own login and password. Nobody can change anyone else\'s password.',
+    'Team → Remove next to the person who left. They can no longer sign in; their past work stays on the calls.',
+    'The company owner (marked Owner on Team) can\'t be removed or have admin taken away by anyone else, and is told by email and phone alert whenever someone\'s admin access or sign-in changes.',
+    'Owner forgot their password? Use Forgot password? on the sign-in page with the owner\'s own email.',
+    'Owner locked out and that email is gone? Email support@servicecallproof.com from your company\'s email; we confirm who you are before restoring access.',
+    'Owner handing over the business? Make the new person an admin, then tap Make owner next to them.',
+  ]],
   ['Add a location', [
     'Settings & plan → Locations → + Add a location (or the location menu at the top → + Add location).',
     'Type the name and address, tap Find, then Add location.',

@@ -1220,3 +1220,19 @@ reset role;
 \echo '=== 54. Demo refresh slides dates forward'
 select test.ok((select (refresh_demo_dates()->>'ok')::boolean), 'demo refresh runs');
 select test.ok((select max(created_at) > now() - interval '1 hour' from work_orders where customer_id in (select id from customers where name like '%(demo)')), 'latest demo activity is now recent');
+
+\echo '=== 55. Company owner is protected'
+reset role;
+select _allow_internal(true); update profiles set is_org_admin = true, all_sites = true where id = :'pat'; select _end_internal();
+set role authenticated;
+select test.ok((select owner_id = :'lee'::uuid from customers where id = (select customer_id from profiles where id = :'lee')), 'the person who started the account is its owner');
+select test.login(:'pat');
+select test.blocked($$select update_team_member((select id from profiles where email = 'lee@mlmarket.test'), 'Owner', '{"admin":false,"calls":true}', true, null, true)$$, 'owner', 'another admin can''t take the owner''s admin away');
+select test.blocked($$select update_team_member((select id from profiles where email = 'lee@mlmarket.test'), 'Owner', '{"admin":true}', true, null, false)$$, 'owner', 'or sign the owner out');
+select test.blocked($$select transfer_ownership((select id from profiles where email = 'pat@mlmarket.test'))$$, 'Only the company owner', 'only the owner hands over ownership');
+select test.login(:'lee');
+select test.ok((select (transfer_ownership(:'pat')->>'ok')::boolean), 'the owner hands ownership to another admin');
+select test.ok((select owner_id = :'pat'::uuid from customers where id = (select customer_id from profiles where id = :'lee')), 'Pat is now the owner');
+select test.ok((select (update_team_member(:'jo', 'Store manager', '{"calls":true}', false, array[(select id from sites where name = 'M&L Seattle')], false)->>'ok')::boolean), 'Lee signs Jo out');
+reset role;
+select test.ok((select count(*) >= 1 from notifications where user_id = :'pat' and message like 'Team change:%'), 'the owner is told about team access changes');

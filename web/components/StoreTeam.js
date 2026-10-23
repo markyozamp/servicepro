@@ -30,15 +30,18 @@ export default function StoreTeam({ me }) {
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const [ownerId, setOwnerId] = useState(null);
 
   async function load() {
     try {
-      const [p, s, si, l] = await Promise.all([
+      const [p, s, si, l, c] = await Promise.all([
         q(supabase.from('profiles').select('id, full_name, title, email, phone, is_org_admin, can_open_calls, can_approve, approval_limit, can_manage_pm, can_manage_equipment, can_manage_contractors, can_manage_locations, can_manage_team, can_manage_company, all_sites, site_ids, active').eq('customer_id', me.customer_id).order('full_name')),
         q(supabase.from('sites').select('id, name').order('name')),
         act('seat_info', {}),
         q(supabase.from('join_links').select('token, full_name, email, expires_at, used_at').eq('kind', 'customer_member').is('used_at', null).order('created_at', { ascending: false })),
+        q(supabase.from('customers').select('owner_id').eq('id', me.customer_id).single()),
       ]);
+      setOwnerId(c?.owner_id || null);
       setPeople(p); setSites(s); setSeats(si); setPending(l.filter((x) => new Date(x.expires_at) > new Date()));
     } catch (x) { setErr(x.message); }
   }
@@ -104,14 +107,18 @@ export default function StoreTeam({ me }) {
         <tbody>
           {people.map((p) => (
             <tr key={p.id} style={p.active ? undefined : { opacity: 0.55 }}>
-              <td><strong>{p.full_name}</strong>{p.id === me.id ? ' (you)' : ''}<div className="small muted">{p.title || ''}{p.is_org_admin ? ' · Admin' : ''}{!p.active ? ' · signed out' : ''}</div><div className="small muted">{p.email}</div></td>
+              <td><strong>{p.full_name}</strong>{p.id === me.id ? ' (you)' : ''}<div className="small muted">{p.title || ''}{p.id === ownerId ? ' · Owner' : p.is_org_admin ? ' · Admin' : ''}{!p.active ? ' · signed out' : ''}</div><div className="small muted">{p.email}</div></td>
               <td className="hide-sm small">{siteNames(p)}</td>
               <td className="small">{summary(p)}{!p.is_org_admin && <div className="muted">{p.can_approve ? `Approves ${p.approval_limit != null ? `up to ${money(p.approval_limit)}` : 'any amount'}` : 'Does not approve spending'}</div>}</td>
               <td className="num">{p.id !== me.id && (
                 <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
                   {p.active && (me.is_org_admin || !p.is_org_admin) && <button disabled={busy} onClick={() => setForm({ id: p.id, name: p.full_name, email: p.email, phone: p.phone || '', title: p.title || '', admin: p.is_org_admin,
                     ...permsOf(p), limit: p.approval_limit ?? '', all: p.all_sites, sites: p.site_ids || [] })}>Edit</button>}
-                  {(me.is_org_admin || !p.is_org_admin) && <button disabled={busy} onClick={() => deactivate(p)}>{p.active ? 'Remove' : 'Restore'}</button>}
+                  {(me.is_org_admin || !p.is_org_admin) && p.id !== ownerId && <button disabled={busy} onClick={() => deactivate(p)}>{p.active ? 'Remove' : 'Restore'}</button>}
+                  {me.id === ownerId && p.active && p.is_org_admin && <button disabled={busy} onClick={async () => {
+                    if (!window.confirm(`Make ${p.full_name} the owner of your account? Only the owner can change their own access, and you'd no longer be protected as owner.`)) return;
+                    setBusy(true); setErr(''); try { await act('transfer_ownership', { p_profile: p.id }); setMsg(`${p.full_name} is now the owner.`); await load(); } catch (x) { setErr(x.message); } finally { setBusy(false); }
+                  }}>Make owner</button>}
                 </div>
               )}</td>
             </tr>
