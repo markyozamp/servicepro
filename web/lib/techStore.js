@@ -103,6 +103,7 @@ function applyLocal(s, a) {
       if (j && !x.p_checkout) { j.visit.checkin_at = j.visit.checkin_at || at; j.visit.checkin_local = x.p_method; }
       break;
     case 'tech_depart': if (j) j.visit.departed_at = at; break;
+    case 'tech_set_crew': if (j) { j.visit.crew_helpers = x.p_helpers; j.visit.crew_set_at = j.visit.crew_set_at || at; if (x.p_names) j.visit.crew_names = x.p_names; j.visit.crew_confirmed = null; } break;
     case 'confirm_equipment': {
       if (!j) break;
       const t = s.catalog.equipment_types.find((e) => e.code === x.p_type_code);

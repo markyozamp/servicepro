@@ -53,8 +53,9 @@ export default function OfficeToday({ calls, flags, onOpen }) {
         {toAccept.map((w) => {
           const due = w.accept_due_at ? new Date(w.accept_due_at).getTime() : null;
           const mins = due ? Math.round((due - now) / 60000) : null;
-          return <Item key={w.id} w={w} onOpen={onOpen} urgent={mins == null || mins < 15}
-            sub={mins == null ? `opened ${ago(w.created_at)}` : mins < 0 ? `Accept deadline passed ${dateTime(w.accept_due_at)}` : `Accept within ${mins < 120 ? `${mins} min` : `by ${dateTime(w.accept_due_at)}`}`}
+          const held = w.hold_until && !w.hold_released_at && new Date(w.hold_until).getTime() > now;
+          return <Item key={w.id} w={w} onOpen={onOpen} urgent={!held && (mins == null || mins < 15)}
+            sub={held ? `Customer chose to wait for regular hours: comes due ${dateTime(w.hold_until)}` : mins == null ? `opened ${ago(w.created_at)}` : mins < 0 ? `Accept deadline passed ${dateTime(w.accept_due_at)}` : `Accept within ${mins < 120 ? `${mins} min` : `by ${dateTime(w.accept_due_at)}`}`}
             right={<span className="chip tone-red">Accept</span>} />;
         })}
         {toAssign.map((w) => <Item key={w.id} w={w} onOpen={onOpen} urgent={w.priority === 1} sub={`opened ${ago(w.created_at)}`} right={<span className="chip tone-amber">Assign a tech</span>} />)}

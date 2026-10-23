@@ -17,7 +17,7 @@ async function shrink(file) {
 }
 const telOf = (p) => (p || '').replace(/[^0-9+]/g, '');
 
-const SEL = `id, status, arrived_at, scheduled_start, scheduled_end, missed_alert_at, visit_no, checkin_at, checkin_verified,
+const SEL = `id, status, arrived_at, scheduled_start, scheduled_end, missed_alert_at, visit_no, checkin_at, checkin_verified, crew_helpers,
   profiles(full_name), work_orders(id, site_id, number, unit, issue_description, store_po_number, sites(id, name), contractors(name),
   equipment(location_description, equipment_types(name)))`;
 
@@ -100,7 +100,7 @@ export default function Presence({ onOpen, refreshKey, siteId }) {
       {inside.length === 0 && <div className="small muted">No contractor technicians checked in right now.</div>}
       {inside.map((v) => (
         <div key={v.id} className="spread small click" style={{ cursor: 'pointer' }} onClick={() => onOpen(v.work_orders?.id)}>
-          <span><strong>{v.profiles?.full_name}</strong> ({v.work_orders?.contractors?.name}) — {label(v)}</span>
+          <span><strong>{v.profiles?.full_name}</strong>{v.crew_helpers > 0 ? ` + ${v.crew_helpers === 1 ? '1 helper' : `${v.crew_helpers} helpers`}` : ''} ({v.work_orders?.contractors?.name}) — {label(v)}</span>
           <span className="muted">since {time(v.arrived_at)}{v.checkin_at ? (v.checkin_verified ? ' · checked in' : ' · check-in NOT verified') : ' · waiting for code'}</span>
         </div>
       ))}

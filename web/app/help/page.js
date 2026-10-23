@@ -105,6 +105,16 @@ const STORE = [
     'Tap ⚖ Compare contractors\' rates to see everyone side by side (pick a trade). Got a quote from a company that wants your account? Add it and it shows next to your contractors.',
     'Rates are for reference; they don\'t change how bills are checked.',
   ]],
+  ['Set a contractor\'s regular hours (when after hours starts)', [
+    'Contractors & QR → the contractor → Regular hours. Pick a preset (Mon–Fri 8 to 5, a day-and-night crew, around the clock) or set each day.',
+    'Days left unticked are after hours all day. Tick "Maintenance (PM) calls are never after hours" if your maintenance program has no overtime.',
+    'New calls, the verified time on the call (regular vs after hours) and the bill check all follow these hours.',
+  ]],
+  ['After hours: send now, or wait until morning', [
+    'Open a call outside the contractor\'s regular hours and the app asks: emergency, or can it wait until morning? It shows both rates when they\'re on file.',
+    'Wait until morning saves the call and sends it to the contractor at their next regular hour, with no after-hours charge.',
+    'Emergencies always go right away. On after-hours calls, "Call them now" dials the contractor\'s after-hours number.',
+  ]],
   ['Stop using a contractor', [
     'Contractors & QR → find the contractor → Remove this contractor.',
     'Their past calls stay in your records; no new calls can go to them. Finish or cancel any open calls first.',
@@ -114,6 +124,15 @@ const STORE = [
     'Equipment → add each unit (what it is, where it is, make, model, serial) and its warranty dates.',
     'Contractors & QR → order or print QR stickers and put one on each unit.',
     'Set a location PIN there too. Any employee can scan a sticker, enter the PIN and report a problem.',
+  ]],
+  ['Leased equipment (full coverage)', [
+    'Settings → Equipment → "+ Leased" on the unit → tick Leased / rental with 100% coverage → the lease company, contact, phone or email → Save.',
+    'Opening a call on that unit shows the lease company first, with a Call button. You can still open a call with your contractor; it\'s flagged so the bill gets a second look and is never approved automatically.',
+    'Employees scanning the unit\'s QR sticker see who leases it too.',
+  ]],
+  ['Confirm the crew size', [
+    'When a technician arrives, he says how many helpers are with him. A yellow box asks you: "Tony says he has 1 helper with him. Is that right?" Tap Yes or No.',
+    'No flags the call and tells their office. Helper hours on the bill are checked against the confirmed crew and the time on site.',
   ]],
   ['Find a past call or export your calls', [
     'Tap 🔎 Search past calls on your dashboard.',
@@ -209,6 +228,11 @@ const CONTRACTOR = [
     'Team → Who gets the calls → Office phone → Save. This is the number customers reach when they tap Call them now.',
     'Your logo (company admin): Team → Your logo → Upload logo.',
   ]],
+  ['After hours and who\'s on call', [
+    'Team → Who gets the calls → After-hours number (your answering service or on-call cell) → Save. Customers dial it on after-hours calls.',
+    'On call: pick a tech and the days → Add. He gets new after-hours calls first, on his phone, along with your office.',
+    'Each customer sets your regular hours with them; outside those hours a call is after hours. A customer can choose to hold a non-emergency call until your regular hours; it shows as "Held until …".',
+  ]],
   ['Stop serving a customer', [
     'Customers → open the customer → Remove this customer (company admin only).',
     'Finish, invoice or cancel open calls first. Your past records stay; you can restore them later.',
@@ -229,6 +253,11 @@ const TECH = [
   ['Ask the customer to approve more money', [
     'On the job, tap Request approval for more, describe the work and the amount, and send.',
     'Wait for the answer on your phone. Don\'t do the extra work until it says approved.',
+  ]],
+  ['Helpers on the job', [
+    'After "I\'m here", the app asks: Who\'s with you? Tap Just me, +1, +2, +3 or More. Add names if you like.',
+    'The person who gives you the code confirms the count. Helper time is counted from when you arrived.',
+    'A helper leaves early, or another shows up? Tap "Crew changed" and pick the new number. The time is recorded.',
   ]],
   ['Going for parts', [
     'Tap 🚚 Parts run before you leave. Tap at the supplier when you get there, and again when you\'re back.',

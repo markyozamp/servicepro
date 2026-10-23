@@ -10,6 +10,9 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
   const [issues, setIssues] = useState([]);
   const [equipment, setEquipment] = useState([]);
   const [warranty, setWarranty] = useState([]);
+  const [ahInfo, setAhInfo] = useState(null);     // after hours for this contractor right now?
+  const [wait, setWait] = useState(null);         // 'now' | 'morning'
+  const [leaseOk, setLeaseOk] = useState(false);
   const [amount, setAmount] = useState(null);
   const [trades, setTrades] = useState([]);
   const [types, setTypes] = useState([]);
@@ -61,8 +64,11 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
 
   async function addHome(e) {
     e.preventDefault();
+    if (askWait && !wait) { setErr('It\'s after hours: choose "Send it now" or "Wait until morning".'); return; }
+    if (leased && !leaseOk) { setErr(`This unit is leased from ${leased.lease_company}. Call them, or tick the box to open a call with your contractor anyway.`); return; }
     setBusy(true); setErr('');
     try {
+      if (askWait && wait === 'morning') await act('store_hold_next_call', {});
       const s = await act('quick_customer', { p_name: home.name, p_address: home.address, p_zip: home.zip || null, p_phone: home.phone || null });
       setSites(await loadSites());
       setF((x) => ({ ...x, site: s.id, issue: '', equipment: '', contact: home.name, phone: home.phone || '' }));
@@ -77,7 +83,7 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
   useEffect(() => {
     setEquipment([]); setWarranty([]);
     if (!f.site) return;
-    q(supabase.from('equipment').select('id, manufacturer, model, location_description, equipment_types(code, name)').eq('site_id', f.site).is('retired_at', null))
+    q(supabase.from('equipment').select('id, manufacturer, model, location_description, lease_full, lease_company, lease_contact, lease_phone, lease_email, lease_note, equipment_types(code, name)').eq('site_id', f.site).is('retired_at', null))
       .then(setEquipment).catch(() => {});
   }, [f.site]);
 
@@ -94,6 +100,17 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
     })().catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [f.site, f.issue, verify]);
+
+  // After hours for this contractor? Offer to hold a non-emergency call until their regular hours.
+  useEffect(() => {
+    setAhInfo(null); setWait(null);
+    if (side !== 'store' || !verify || !f.site || !route?.contractor_id) return;
+    act('after_hours_info', { p_site: f.site, p_contractor: route.contractor_id }).then(setAhInfo).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.site, route?.contractor_id, verify, side]);
+  const askWait = ahInfo?.after && issue?.priority !== 1;
+  const leased = equipment.find((x) => x.id === f.equipment && x.lease_full);
+  useEffect(() => { setLeaseOk(false); }, [f.equipment]);
 
   useEffect(() => {
     setWarranty([]);
@@ -242,6 +259,18 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
           <div className="small muted">It's saved to your Equipment list with this call. The technician fills in the nameplate details on the visit.</div>
         </div>
       )}
+      {leased && (
+        <div className="notice stack" style={{ gap: 6, borderColor: '#d98e04' }}>
+          <div><strong>This unit is leased from {leased.lease_company}, with full maintenance and repair coverage.</strong> Repairs should go to them, so you aren&apos;t billed for work that&apos;s covered.</div>
+          <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+            {leased.lease_phone && <a className="callbtn" href={`tel:${leased.lease_phone.replace(/[^\d+]/g, '')}`}>📞 Call {leased.lease_company}{leased.lease_contact ? ` (${leased.lease_contact})` : ''} · {leased.lease_phone}</a>}
+            {leased.lease_email && <a href={`mailto:${leased.lease_email}`}>{leased.lease_email}</a>}
+          </div>
+          {leased.lease_note && <div className="small muted">{leased.lease_note}</div>}
+          <label className="row small" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={leaseOk} onChange={(e) => setLeaseOk(e.target.checked)} />
+            Open a call with my contractor anyway (it&apos;s flagged so the bill gets a second look)</label>
+        </div>
+      )}
       {warranty.length > 0 && (
         <div className="notice"><strong>This unit is under warranty:</strong> {warranty.map((w) => `${w.kind} until ${w.ends_on}`).join(', ')}. The contractor will see this too.</div>
       )}
@@ -300,7 +329,14 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
           ? 'The homeowner will approve anything above the diagnosis from a link (or tell you by phone, and you record it).'
           : "The technician cannot go past the authorized amount. If more is needed, you'll be asked to approve it (PO A, B…), with photos and a price."}
       </div>
-      <button className="primary big" disabled={busy}>{busy ? 'Sending…' : 'Send service call'}</button>
+      {askWait && (
+        <div className="notice stack" style={{ gap: 6 }}>
+          <div><strong>It&apos;s after hours for {route?.contractors?.name}.</strong>{ahInfo.regular_rate != null && ahInfo.after_rate != null ? ` Their rate now is ${money(ahInfo.after_rate)}/hr instead of ${money(ahInfo.regular_rate)}/hr.` : ' After-hours rates apply.'} Is it an emergency, or can it wait until morning?</div>
+          <label className="row" style={{ gap: 6, fontWeight: 400 }}><input type="radio" name="ahwait" style={{ width: 'auto' }} checked={wait === 'now'} onChange={() => setWait('now')} /> Send it now (after-hours rates)</label>
+          <label className="row" style={{ gap: 6, fontWeight: 400 }}><input type="radio" name="ahwait" style={{ width: 'auto' }} checked={wait === 'morning'} onChange={() => setWait('morning')} /> Wait until morning: it goes to them at <strong>{ahInfo.next_regular_local}</strong>, their regular hours</label>
+        </div>
+      )}
+      <button className="primary big" disabled={busy}>{busy ? 'Sending…' : askWait && wait === 'morning' ? 'Save the call for the morning' : 'Send service call'}</button>
     </form>
   );
 }

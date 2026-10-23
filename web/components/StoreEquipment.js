@@ -26,11 +26,12 @@ export default function StoreEquipment() {
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const [lease, setLease] = useState(null);
 
   async function load() {
     try {
       const [e, s, t] = await Promise.all([
-        q(supabase.from('equipment').select('id, site_id, manufacturer, model, serial, refrigerant, location_description, install_date, created_at, updated_at, retired_at, retired_reason, equipment_types(code, name), warranties(kind, ends_on, description), equipment_log(action, at, by_name)').order('created_at')),
+        q(supabase.from('equipment').select('id, site_id, manufacturer, model, serial, refrigerant, location_description, install_date, created_at, updated_at, retired_at, retired_reason, lease_full, lease_company, lease_contact, lease_phone, lease_email, lease_note, equipment_types(code, name), warranties(kind, ends_on, description), equipment_log(action, at, by_name)').order('created_at')),
         q(supabase.from('sites').select('id, name').order('name')),
         q(supabase.from('equipment_types').select('code, name').is('contractor_id', null).order('name')),
       ]);
@@ -56,6 +57,16 @@ export default function StoreEquipment() {
     try {
       await act('add_equipment_warranty', { p_equipment: war.id, p_kind: war.kind, p_starts: war.starts || null, p_ends: war.ends || null, p_description: war.desc });
       setMsg('Warranty saved. You\'ll be warned when you open a call on this unit while it\'s covered.'); setWar(null); await load();
+    } catch (x) { setErr(x.message); } finally { setBusy(false); }
+  }
+
+  async function saveLease(e) {
+    e.preventDefault();
+    setBusy(true); setErr(''); setMsg('');
+    try {
+      await act('set_equipment_lease', { p_equipment: lease.id, p_full: lease.full, p_company: lease.company, p_contact: lease.contact, p_phone: lease.phone, p_email: lease.email, p_note: lease.note });
+      setMsg(lease.full ? `Saved. Opening a call on this unit now shows ${lease.company}'s contact first, and any bill for it is flagged.` : 'Saved. The unit is no longer marked as leased.');
+      setLease(null); await load();
     } catch (x) { setErr(x.message); } finally { setBusy(false); }
   }
 
@@ -112,12 +123,14 @@ export default function StoreEquipment() {
                 <td><strong>{r.equipment_types?.name || r.model || 'Unit'}</strong><div className="small muted">{r.location_description || ''}{sites.length > 1 ? ` · ${siteName(r.site_id)}` : ''}</div>
                   <div className="small muted">{r.retired_at ? `Removed ${date(r.retired_at)}: ${r.retired_reason || ''}` : stamp(r)}</div></td>
                 <td className="hide-sm small">{[r.manufacturer, r.model].filter(Boolean).join(' ')}{r.serial ? <div className="muted">S/N {r.serial}</div> : null}</td>
-                <td className="small">{w ? <span className="chip tone-green">{w.kind} until {date(w.ends_on)}</span> : <span className="muted">none on file</span>}</td>
+                <td className="small">{w ? <span className="chip tone-green">{w.kind} until {date(w.ends_on)}</span> : !r.lease_full && <span className="muted">none on file</span>}
+                  {r.lease_full && <div><span className="chip tone-amber">Leased · {r.lease_company}</span><div className="muted">full coverage{r.lease_phone ? ` · ${r.lease_phone}` : ''}</div></div>}</td>
                 <td className="num"><div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}>
                   <button onClick={() => openHistory(r.id)}>{hist?.id === r.id ? 'Hide history' : 'History'}</button>
                   {r.retired_at ? <button disabled={busy} onClick={() => restore(r.id)}>Restore</button> : <>
                   <button onClick={() => { setWar(null); setForm({ id: r.id, site: r.site_id, type: r.equipment_types?.code || '', make: r.manufacturer || '', model: r.model || '', serial: r.serial || '', refrigerant: r.refrigerant || '', where: r.location_description || '', installed: r.install_date || '' }); }}>Edit</button>
                   <button onClick={() => { setForm(null); setWar({ id: r.id, kind: 'manufacturer', starts: r.install_date || '', ends: '', desc: '' }); }}>+ Warranty</button>
+                  <button onClick={() => { setForm(null); setWar(null); setLease({ id: r.id, full: r.lease_full || true, company: r.lease_company || '', contact: r.lease_contact || '', phone: r.lease_phone || '', email: r.lease_email || '', note: r.lease_note || '', name: r.equipment_types?.name || r.model || 'this unit' }); }}>{r.lease_full ? 'Lease' : '+ Leased'}</button>
                   <button onClick={() => { setForm(null); setWar(null); setRm({ id: r.id, reason: '' }); }}>Remove</button></>}
                 </div></td>
               </tr>,
@@ -141,6 +154,29 @@ export default function StoreEquipment() {
           })}
         </tbody>
       </table>
+
+      {lease && (
+        <form className="stack" style={{ gap: 8, border: '1px solid var(--line)', borderRadius: 10, padding: 12 }} onSubmit={saveLease}>
+          <h3>Leased or rented with full coverage</h3>
+          <div className="small muted">For a unit you lease or rent (for example an ice machine from an ice company) where the lease covers all maintenance and repairs. When someone opens a call on {lease.name}, they see the lease company&apos;s contact first, and a bill from your contractor on it is flagged so you don&apos;t pay for covered work.</div>
+          <label className="row" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={lease.full} onChange={(e) => setLease({ ...lease, full: e.target.checked })} />
+            Leased / rental with 100% maintenance and repair coverage</label>
+          {lease.full && (
+            <>
+              <div className="row">
+                <label className="grow">Leased from (company)<input value={lease.company} onChange={(e) => setLease({ ...lease, company: e.target.value })} placeholder="e.g. Acme Ice Company" required /></label>
+                <label className="grow">Contact name<input value={lease.contact} onChange={(e) => setLease({ ...lease, contact: e.target.value })} /></label>
+              </div>
+              <div className="row">
+                <label className="grow">Service phone<input type="tel" value={lease.phone} onChange={(e) => setLease({ ...lease, phone: e.target.value })} /></label>
+                <label className="grow">Email<input type="email" value={lease.email} onChange={(e) => setLease({ ...lease, email: e.target.value })} /></label>
+              </div>
+              <label>Note <span className="muted" style={{ fontWeight: 400 }}>(optional)</span><input value={lease.note} onChange={(e) => setLease({ ...lease, note: e.target.value })} placeholder="e.g. Account #4411, lease ends 2028" /></label>
+            </>
+          )}
+          <div className="row"><button className="primary" disabled={busy}>Save</button><button type="button" onClick={() => setLease(null)}>Cancel</button></div>
+        </form>
+      )}
 
       {war && (
         <form className="stack" style={{ gap: 8, border: '1px solid var(--line)', borderRadius: 10, padding: 12 }} onSubmit={saveWarranty}>

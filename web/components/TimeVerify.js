@@ -68,9 +68,13 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
       {side === 'store' && !closed && !wo.declined_at && (
         <div className={`reach${wo.priority === 1 && !wo.accepted_at ? ' urgent' : ''}`}>
           <div className="row" style={{ gap: 8 }}>
-            {wo.contractors?.phone
-              ? <a className="callbtn" href={`tel:${wo.contractors.phone.replace(/[^\d+]/g, '')}`}>📞 Call {wo.contractors?.name} now · {wo.contractors.phone}</a>
-              : <span className="small muted">No office phone on file for {wo.contractors?.name}.</span>}
+            {(() => {
+              const ah = wo.after_hours && wo.contractors?.after_hours_phone;
+              const ph = ah ? wo.contractors.after_hours_phone : wo.contractors?.phone;
+              return ph
+                ? <a className="callbtn" href={`tel:${ph.replace(/[^\d+]/g, '')}`}>📞 Call {wo.contractors?.name}{ah ? ' after hours' : ''} now · {ph}</a>
+                : <span className="small muted">No office phone on file for {wo.contractors?.name}.</span>;
+            })()}
             <button disabled={busy} onClick={() => {
               const n = window.prompt('Who did you talk to, and when? (for example "Dana, 2:10 pm — on the way")');
               if (n && n.trim()) run('store_log_phone_contact', { p_wo: wo.id, p_note: n.trim() });
@@ -153,6 +157,13 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
                     <div className="small">On site {hm(v.onsite_min)}{v.travel_min ? ` · travel ${hm(v.travel_min)}${v.travel_counted_min ? '' : ' (not paid)'}` : ''}
                       {v.parts_run_min ? ` · parts run ${hm(v.parts_run_min)}${v.parts_run_unverified_min ? ' (supplier not confirmed by GPS)' : ''}` : ''}
                       {v.checkin_verified === false ? ' · check-in NOT verified' : ''}</div>
+                    {(v.helpers > 0 || v.helper_min > 0) && (
+                      <div className="small">👷 Crew: {v.tech} + {v.helpers === 1 ? '1 helper' : `${v.helpers} helpers`}{v.crew_names ? ` (${v.crew_names})` : ''} · helper time {hm(v.helper_min)}
+                        {v.crew_confirmed === true ? <span style={{ color: 'var(--green-fg)' }}> · confirmed on site</span>
+                          : v.crew_confirmed === false ? <span style={{ color: 'var(--red-fg)' }}> · the location said the count isn&apos;t right</span>
+                          : <span className="muted"> · crew size not confirmed</span>}</div>
+                    )}
+                    {v.after_hours_min > 0 && <div className="small muted">🌙 After hours: {hm(v.after_hours_min)} of the time on site</div>}
                     {v.trip && (
                       <div className="small muted">📍 {v.trip.known
                         ? <>Trip started near <strong>{v.trip.town || 'an unknown town'}</strong>, about {v.trip.miles} mi away{v.trip.expected_min ? ` (usually ~${v.trip.expected_min} min)` : ''}{v.trip.in_area ? ' · already in the area' : ''}{v.trip.slow ? <span style={{ color: 'var(--red-fg)' }}> · drive took {v.trip.drive_min} min</span> : ''}</>
@@ -162,13 +173,18 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
                       <div key={r.id} className="small muted">🚚 {time(r.left_at)} → {r.supplier || 'supplier'}{r.at_supplier_at ? ` (GPS ${time(r.at_supplier_at)})` : ''} → back {r.returned_at ? time(r.returned_at) : '—'}</div>
                     ))}
                   </td>
-                  <td className="num">{hm(v.billable_min)}<div className="small muted">billable</div></td>
+                  <td className="num">{hm(v.billable_min + (v.helper_billable_min || 0))}<div className="small muted">billable{v.helper_billable_min ? ` (tech ${hm(v.billable_min)} + helpers ${hm(v.helper_billable_min)})` : ''}</div></td>
                 </tr>
               ))}
               <tr>
                 <td><strong>Verified total</strong>
                   <div className="small muted">{chk.pays_travel === 'no' ? 'Travel not paid (your setting)' : chk.pays_travel === 'after_hours' ? 'Travel paid after hours only' : 'Travel included'}
-                    {' · '}contractor minimum {Number(chk.min_hours)} h per visit, billed in {chk.increment_min}-minute steps</div></td>
+                    {' · '}contractor minimum {Number(chk.min_hours)} h per visit, billed in {chk.increment_min}-minute steps</div>
+                  {(Number(chk.helper_billable_h) > 0 || Number(chk.after_hours_h) > 0) && (
+                    <div className="small">{Number(chk.helper_billable_h) > 0 ? `Tech ${h(chk.tech_billable_h)} + helpers ${h(chk.helper_billable_h)}` : ''}
+                      {Number(chk.helper_billable_h) > 0 && Number(chk.after_hours_h) > 0 ? ' · ' : ''}
+                      {Number(chk.after_hours_h) > 0 ? `On site: ${h(chk.regular_h)} regular hours, ${h(chk.after_hours_h)} after hours` : ''}</div>
+                  )}</td>
                 <td className="num"><strong>{h(chk.billable_h)}</strong></td>
               </tr>
             </tbody>
@@ -182,6 +198,12 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
         </>
       )}
 
+      {chk?.leased_unit && (
+        <div className="notice small" style={{ borderColor: '#d98e04' }}>
+          <strong>Leased unit:</strong> this equipment is leased from {chk.leased_unit.company} with full maintenance and repair coverage{chk.leased_unit.phone ? ` (${chk.leased_unit.phone})` : ''}. Repairs should be covered by them, so check before approving a bill for this call.{chk.leased_unit.note ? ` ${chk.leased_unit.note}` : ''}
+        </div>
+      )}
+
       {/* Invoice check */}
       {inv && (
         <div className="stack" style={{ gap: 6, borderTop: '1px solid var(--line)', paddingTop: 8 }}>
@@ -192,7 +214,7 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
           <table>
             <tbody>
               <tr><td>Hours billed</td><td className="num"><strong>{h(chk.billed_h)}</strong></td></tr>
-              <tr><td>Verified (GPS + on-site check-in)</td><td className="num">{h(chk.billable_h)}</td></tr>
+              <tr><td>Verified (GPS + on-site check-in){Number(chk.helper_billable_h) > 0 ? <div className="small muted">tech {h(chk.tech_billable_h)} + helpers {h(chk.helper_billable_h)}</div> : null}</td><td className="num">{h(chk.billable_h)}</td></tr>
               {Number(chk.other_h) > 0 && <tr><td>Explained by the contractor<div className="small muted">{chk.other_reason}</div></td><td className="num">{h(chk.other_h)}</td></tr>}
               <tr><td><strong>Not explained</strong></td>
                 <td className="num"><strong style={{ color: Number(chk.unexplained_h) > 0 ? 'var(--red-fg)' : 'var(--green-fg)' }}>{Number(chk.unexplained_h) > 0 ? h(chk.unexplained_h) : 'none ✓'}</strong></td></tr>
@@ -271,10 +293,10 @@ function LightBill({ wo, chk, busy, run }) {
       {!f.differ ? (
         <label className="lb-check"><input type="checkbox" checked={f.agreeHours} onChange={set('agreeHours')} />
           <span>Labor: <strong>{h(chk.billable_h)}</strong> over <strong>{chk.trips} trip{chk.trips === 1 ? '' : 's'}</strong>
-            <span className="small muted"> ({h(chk.onsite_h)} on site + {h(chk.travel_counted_h)} travel{parts}, with your minimum and rounding)</span></span></label>
+            <span className="small muted"> ({h(chk.onsite_h)} on site + {h(chk.travel_counted_h)} travel{parts}{Number(chk.helper_billable_h) > 0 ? ` + helpers ${h(chk.helper_billable_h)}` : ''}, with your minimum and rounding)</span></span></label>
       ) : (
         <div className="row">
-          <label style={{ flex: '0 0 130px' }}>Hours on your bill<input type="number" step="0.25" min="0" value={f.hours} onChange={set('hours')} required /></label>
+          <label style={{ flex: '0 0 130px' }}>Hours on your bill{Number(chk.helper_billable_h) > 0 ? ' (tech + helpers)' : ''}<input type="number" step="0.25" min="0" value={f.hours} onChange={set('hours')} required /></label>
           {extraH > 0.009 && <label className="grow">What were the other {extraH.toFixed(2)} h for?<input value={f.reason} onChange={set('reason')} placeholder="e.g. Shop: rebuilt valve; second tech" /></label>}
         </div>
       )}
@@ -324,7 +346,7 @@ function StoreInvoiceForm({ wo, chk, busy, run }) {
       <div className="row">
         <label className="grow">Invoice #<input value={f.number} onChange={set('number')} required /></label>
         <label className="grow">Total ($)<input type="number" step="0.01" min="0" value={f.total} onChange={set('total')} required /></label>
-        <label className="grow">Hours billed<input type="number" step="0.25" min="0" value={f.hours} onChange={set('hours')} required /></label>
+        <label className="grow">Hours billed{Number(chk?.helper_billable_h) > 0 ? ' (tech + helpers)' : ''}<input type="number" step="0.25" min="0" value={f.hours} onChange={set('hours')} required /></label>
       </div>
       <div className="row">
         <label style={{ flex: '0 0 120px' }}>Other hours<input type="number" step="0.25" min="0" value={f.other} onChange={set('other')} placeholder="0" /></label>

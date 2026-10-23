@@ -20,7 +20,7 @@ import ContractorStart from '@/components/ContractorStart';
 
 const LIST = `id, customer_id, site_id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, invoiced_at, due_on,
   total_cost, invoice_ready, qbo_invoice_id, store_po_number, sites(name), customers(name),
-  mode, source, accepted_at, accept_due_at, declined_at, scheduled_start, store_confirmed_at, nte,
+  mode, source, accepted_at, accept_due_at, hold_until, hold_released_at, after_hours, declined_at, scheduled_start, store_confirmed_at, nte,
   visits(id, visit_no, status, eta_at, arrived_at, received_at, checkin_required, checkin_at, scheduled_start, scheduled_end, missed_alert_at, profiles(full_name)),
   parts_orders(status, expected_on, description), po_lines(status)`;
 
@@ -230,6 +230,8 @@ export default function OfficePortal() {
                             {w.status === 'created' && w.accepted_at && <span className="chip tone-green">{w.scheduled_start ? `Scheduled ${dateTime(w.scheduled_start)}` : 'Accepted'}</span>}
                             {w.declined_at && <span className="chip tone-slate">Declined</span>}
                             {w.source === 'contractor' && !w.store_confirmed_at && <span className="chip tone-amber">Customer hasn't confirmed</span>}
+                            {w.hold_until && !w.hold_released_at && <span className="chip tone-slate">Held until {dateTime(w.hold_until)} (customer chose to wait)</span>}
+                            {w.after_hours && <span className="chip tone-slate">After hours</span>}
                           </div>
                         )}
                         {v && <div className="small">🔧 {v.profiles?.full_name}{v.visit_no > 1 ? ` · visit ${v.visit_no}` : ''}</div>}

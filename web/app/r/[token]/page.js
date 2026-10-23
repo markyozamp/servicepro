@@ -42,6 +42,9 @@ export default function Report() {
           {d?.ok && (
             <>
               <div><div className="small muted">{d.store} · {d.site}</div><h2>{d.unit || 'This unit'}</h2></div>
+              {d.lease && (
+                <div className="notice small"><strong>This unit is leased from {d.lease.company}</strong>, who handle its repairs. Tell your manager, or call them{d.lease.phone ? <>: <a href={`tel:${d.lease.phone.replace(/[^\d+]/g, '')}`}>{d.lease.phone}</a></> : ''}{d.lease.email ? ` (${d.lease.email})` : ''}. You can still report it below.</div>
+              )}
               {d.open_calls.length > 0 && (
                 <div className="notice small">Already reported: {d.open_calls.map((c) => `call #${c.number} (${c.problem}, ${c.opened})`).join('; ')}. A contractor is on it.</div>
               )}

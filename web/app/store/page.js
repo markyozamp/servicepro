@@ -46,6 +46,7 @@ export default function StorePortal() {
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [door, setDoor] = useState([]);       // technicians on site waiting for the check-in code
+  const [crewAsk, setCrewAsk] = useState([]); // crews on site the store hasn't confirmed yet
   const [sound, setSound] = useState(false);
   const [settings, setSettings] = useState(null);   // which Settings tab is open, or null
   const [project, setProject] = useState(false);
@@ -62,7 +63,7 @@ export default function StorePortal() {
 
   const load = useCallback(async () => {
     try {
-      const [c, p, pm, st, dv, codes] = await Promise.all([
+      const [c, p, pm, st, dv, codes, cw] = await Promise.all([
         q(supabase.from('work_orders').select(LIST).order('created_at', { ascending: false }).limit(300)),
         q(supabase.from('po_lines').select('id, seq, kind, amount, description, requested_at, owner_status, owner:property_owners(name), work_orders(id, site_id, number, store_po_number, unit, sites(name))').eq('status', 'pending')),
         q(supabase.from('pm_status').select('*').order('due_on')),
@@ -70,7 +71,10 @@ export default function StorePortal() {
         q(supabase.from('visits').select('id, arrived_at, profiles(full_name), work_orders(id, site_id, number, unit, sites(name))')
           .eq('status', 'on_site').eq('checkin_required', true).is('checkin_at', null)),
         q(supabase.from('visit_codes').select('visit_id, code')),
+        q(supabase.from('visits').select('id, crew_helpers, crew_names, profiles(full_name), work_orders(id, site_id, number, sites(name))')
+          .eq('status', 'on_site').not('crew_set_at', 'is', null).is('crew_confirmed', null).gt('crew_helpers', 0)).catch(() => []),
       ]);
+      setCrewAsk(cw || []);
       setDoor(dv.map((v) => ({ ...v, code: codes.find((x) => x.visit_id === v.id)?.code })));
       const siteName = Object.fromEntries(st.map((x) => [x.id, x.name]));
       const [att, ss] = await Promise.all([act('site_attention', {}).catch(() => []), q(supabase.from('sites').select('id, name').order('name')).catch(() => [])]);
@@ -256,6 +260,17 @@ export default function StorePortal() {
 
         <ErrorBox error={err} />
         <Notice>{msg}</Notice>
+
+        {/* The lead says how many helpers came with him: the person on site confirms */}
+        {crewAsk.filter((v) => !validSite || v.work_orders?.site_id === validSite).map((v) => (
+          <div key={`crew-${v.id}`} className="panel panel-pad spread" style={{ borderColor: '#e6c98a', background: '#fffcf3' }}>
+            <span><strong>{v.profiles?.full_name}</strong> says he has <strong>{v.crew_helpers === 1 ? '1 helper' : `${v.crew_helpers} helpers`}</strong>{v.crew_names ? ` (${v.crew_names})` : ''} with him at {v.work_orders?.sites?.name} (call #{v.work_orders?.number}). Is that right?</span>
+            <span className="row" style={{ gap: 6 }}>
+              <button className="primary" onClick={async () => { try { await act('store_confirm_crew', { p_visit: v.id, p_ok: true }); load(); } catch (x) { setErr(x.message); } }}>Yes</button>
+              <button onClick={async () => { try { await act('store_confirm_crew', { p_visit: v.id, p_ok: false }); setMsg('Noted. The call is flagged and their office is told.'); load(); } catch (x) { setErr(x.message); } }}>No</button>
+            </span>
+          </div>
+        ))}
 
         {/* Technician waiting at the door for the check-in code */}
         {fdoor.map((v) => {

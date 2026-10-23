@@ -136,6 +136,8 @@ function VerifyOnSite({ job }) {
       <div className="meter no_limit"><strong>On site since {time(v.arrived_at)}{v.arrival_source === 'store' ? ' (recorded by the customer)' : ''}</strong>
         <span className="small">{Math.floor(mins / 60)} h {mins % 60} m · time is recorded for you — nothing to type</span></div>
       {needsCheckin && <CheckIn job={job} />}
+      {!needsCheckin && <CrewLine job={job} />}
+      {!needsCheckin && !v.crew_set_at && <Crew job={job} />}
       {!needsCheckin && (run ? <PartsRunActive job={job} run={run} /> : (
         <>
           <PartsRunStart job={job} />
@@ -249,6 +251,7 @@ function OnSite({ job, cat, m, me }) {
         : <button onClick={() => setOverride(true)}>Can't check in or do the work? Close out with override</button>)}
       {!needsCheckin && (
         <>
+          <CrewLine job={job} />
           {(service || w.equipment_id) && <Equipment job={job} cat={cat} done={eqDone} />}
           {service && <Photos job={job} />}
           {w.kind === 'pm' && <Checklist job={job} />}
@@ -293,6 +296,42 @@ function Meter({ job, m, onMore }) {
   );
 }
 
+// ---------------- Crew: who came with the lead ----------------
+const crewText = (n) => (n === 0 ? 'Just you' : n === 1 ? 'You + 1 helper' : `You + ${n} helpers`);
+function Crew({ job, change, onDone }) {
+  const v = job.visit;
+  const [n, setN] = useState(v.crew_set_at ? v.crew_helpers : null);
+  const [more, setMore] = useState(false);
+  const [names, setNames] = useState(v.crew_names || '');
+  const save = (k) => { T.act('tech_set_crew', { p_visit: v.id, p_helpers: k, p_names: names.trim() || null }, { label: 'Crew' }); onDone?.(); };
+  return (
+    <div className="sec">
+      <h3>{change ? 'Crew changed?' : "Who's with you?"}</h3>
+      <div className="small muted">{change ? 'Say how many helpers are on site now (for example, a helper left). The time is recorded.' : 'Your helpers are billed from the time you arrived. The person giving you the code confirms the count.'}</div>
+      <div className="row" style={{ gap: 8 }}>
+        {[0, 1, 2, 3].map((k) => <button key={k} className={n === k ? 'primary' : ''} style={{ flex: '1 1 22%' }} onClick={() => { setN(k); setMore(false); }}>{k === 0 ? 'Just me' : `+${k}`}</button>)}
+        <button className={more ? 'primary' : ''} style={{ flex: '1 1 22%' }} onClick={() => setMore(true)}>More</button>
+      </div>
+      {more && <label>How many helpers?<input type="number" inputMode="numeric" min="4" max="20" value={n ?? ''} onChange={(e) => setN(e.target.value === '' ? null : Math.min(20, Math.max(0, Number(e.target.value))))} /></label>}
+      {n > 0 && <label>Helper names <span className="muted" style={{ fontWeight: 400 }}>(optional)</span><input value={names} onChange={(e) => setNames(e.target.value)} placeholder="e.g. Jake" /></label>}
+      <button className="primary big" disabled={n == null} onClick={() => save(n)}>{n == null ? 'Pick one' : `${crewText(n)} — continue`}</button>
+    </div>
+  );
+}
+
+function CrewLine({ job }) {
+  const v = job.visit;
+  const [open, setOpen] = useState(false);
+  if (!v.crew_set_at) return null;
+  if (open) return <Crew job={job} change onDone={() => setOpen(false)} />;
+  return (
+    <div className="small spread" style={{ padding: '4px 2px' }}>
+      <span>Crew: <strong>{crewText(v.crew_helpers || 0)}</strong>{v.crew_names ? ` (${v.crew_names})` : ''}{v.crew_confirmed === true ? ' · confirmed on site' : v.crew_confirmed === false ? ' · the customer says that isn\'t right' : ''}</span>
+      <button onClick={() => setOpen(true)}>Crew changed</button>
+    </div>
+  );
+}
+
 function CheckIn({ job }) {
   const [mode, setMode] = useState('code');
   const [code, setCode] = useState('');
@@ -300,6 +339,7 @@ function CheckIn({ job }) {
   const [reason, setReason] = useState('');
   const v = job.visit;
   const wrong = T.getState().problems.filter((p) => p.fn === 'tech_checkin' && p.visit === v.id).slice(-1)[0];
+  if (!v.crew_set_at) return <Crew job={job} />;
   const send = () => {
     T.getState().problems.filter((p) => p.fn === 'tech_checkin' && p.visit === v.id).forEach((p) => T.dismissProblem(p.id));
     if (mode === 'name') T.act('tech_checkin', { p_visit: v.id, p_method: 'name_only', p_person: person, p_reason: reason }, { label: 'Check-in (name only)' });

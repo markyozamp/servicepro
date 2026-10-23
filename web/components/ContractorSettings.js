@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { ErrorBox, Notice } from './bits';
+import RegularHours, { hoursSummary } from './RegularHours';
 import Info from './Info';
 import OrderStickers from './OrderStickers';
 import RateCard from './RateCard';
@@ -56,7 +57,7 @@ export default function ContractorSettings({ onClose }) {
   async function load() {
     try {
       const [a, b, c, d, e] = await Promise.all([
-        q(supabase.from('customer_contractors').select('contractor_id, store_removed_at, contractor_removed_at, mode, pays_travel, unverified_time, terms_accepted_at, accept_emergency_min, accept_normal_min, min_hours, increment_min, is_primary, billing_days, contractors(name, phone, email)').order('created_at')),
+        q(supabase.from('customer_contractors').select('contractor_id, store_removed_at, contractor_removed_at, mode, pays_travel, unverified_time, terms_accepted_at, accept_emergency_min, accept_normal_min, min_hours, increment_min, is_primary, billing_days, regular_hours, contractors(name, phone, email, after_hours_phone)').order('created_at')),
         q(supabase.from('trades').select('id, name').order('id')),
         q(supabase.from('trade_contractors').select('site_id, trade_id, contractor_id')),
         q(supabase.from('sites').select('id, name').order('name')),
@@ -128,6 +129,11 @@ export default function ContractorSettings({ onClose }) {
           <div className="small muted">Their terms: {Number(r.min_hours)} h minimum per visit, billed in {r.increment_min}-minute steps (they set this).
             {r.terms_accepted_at ? ` Accepted your terms ${new Date(r.terms_accepted_at).toLocaleDateString()}.` : ''}</div>
           {r.rec && <Record rec={r.rec} />}
+          <details>
+            <summary className="small" style={{ cursor: 'pointer' }}>Regular hours: <strong>{hoursSummary(r.regular_hours)}</strong> <span className="muted">(when after hours starts)</span></summary>
+            <div style={{ paddingTop: 6 }}><RegularHours contractorId={r.contractor_id} name={r.contractors?.name} initial={r.regular_hours} onSaved={load} /></div>
+          </details>
+          {r.contractors?.after_hours_phone && <div className="small muted">After-hours number: {r.contractors.after_hours_phone}</div>}
           {custId && (
             <details>
               <summary className="small" style={{ cursor: 'pointer' }}>Rates they charge you</summary>

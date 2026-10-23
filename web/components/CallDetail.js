@@ -7,7 +7,7 @@ import { money, dateTime, time, date, FLAG_LABEL, PRIORITY, KIND, PO_KIND, poLab
 import { StatusChip, PriorityChip, KindChip, ErrorBox, Notice } from './bits';
 import { VerifyPanel, TechHereButton } from './TimeVerify';
 
-const WO = `*, sites(name, address, access_notes, timezone, property_type), customers(name, kind, phone), contractors(name, phone),
+const WO = `*, sites(name, address, access_notes, timezone, property_type), customers(name, kind, phone), contractors(name, phone, after_hours_phone),
   equipment(id, manufacturer, model, serial, refrigerant, location_description, equipment_types(name)),
   repair_types(name), agreements(name, coverage, response_emergency_min, response_normal_min), issue_types(name)`;
 
@@ -538,7 +538,7 @@ function LateInvoice({ wo, side, busy, run }) {
         {quiet ? ` This alert is off until ${dateTime(remind)}; if the invoice still hasn't come by then, you'll both be reminded.` : ' Still nothing, so it\'s back on your list.'}</div>}
       <div className="row">
         <button className={quiet ? '' : 'primary'} disabled={busy} onClick={() => run('store_followup_bill', { p_wo: wo.id, p_how: 'email' })}>📧 {asked ? 'Ask again' : `Ask ${who} for the invoice`}</button>
-        {wo.contractors?.phone && <a className="callbtn" href={`tel:${wo.contractors.phone.replace(/[^\d+]/g, '')}`}>📞 Call {who}</a>}
+        {(wo.after_hours && wo.contractors?.after_hours_phone ? wo.contractors.after_hours_phone : wo.contractors?.phone) && <a className="callbtn" href={`tel:${(wo.after_hours && wo.contractors?.after_hours_phone ? wo.contractors.after_hours_phone : wo.contractors.phone).replace(/[^\d+]/g, '')}`}>📞 Call {who}{wo.after_hours && wo.contractors?.after_hours_phone ? ' (after hours)' : ''}</a>}
         <button disabled={busy} onClick={() => run('store_followup_bill', { p_wo: wo.id, p_how: 'call' })}>☎ I called them</button>
       </div>
     </div>

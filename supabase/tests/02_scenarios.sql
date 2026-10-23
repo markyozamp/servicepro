@@ -1479,3 +1479,71 @@ set role authenticated;
 select test.login(:RIVAL);
 select test.blocked($$select set_followthrough(true, 5, 3, null)$$, 'permission', 'a contractor cannot change it');
 reset role;
+
+\echo '=== 67. Regular hours per contractor, set by the store'
+set role authenticated;
+select test.login(:DOUG);
+select test.ok((select (set_regular_hours(test.v('PRAIRIE'), '{"mon":["00:00","24:00"],"tue":["00:00","24:00"],"wed":["00:00","24:00"],"thu":["00:00","24:00"],"fri":["00:00","24:00"],"sat":["00:00","24:00"],"sun":["00:00","24:00"],"holidays":"regular"}')->>'ok')::boolean),
+  'the store sets Prairie''s regular rate around the clock (day and night crew)');
+reset role;
+select test.ok((select not _after_hours_at(:S121, test.v('PRAIRIE'), now())), 'so nothing is after hours with Prairie');
+set role authenticated; select test.login(:DOUG);
+select test.blocked($$select set_regular_hours((select test.v('PRAIRIE')), '{"mon":["17:00","08:00"]}')$$, 'end after they start', 'hours must make sense');
+select from set_regular_hours(test.v('PRAIRIE'), '{"pm_regular":true}');
+reset role;
+select test.ok((select _after_hours_at(:S121, test.v('PRAIRIE'), now())), 'no regular window set: every hour counts as after hours');
+select test.ok((select not _call_after_hours(:S121, test.v('PRAIRIE'), 'pm')), 'maintenance calls are never after hours when the store says so');
+set role authenticated; select test.login(:MARIA);
+select test.ok((select after_hours_info(:S121, test.v('PRAIRIE')) ? 'next_regular'), 'the call form can ask "can it wait until morning?"');
+
+\echo '=== 68. On call after hours, and holding a call until morning'
+select test.login(test.v('PETE'));
+select test.ok((select (save_oncall(test.v('TONY'), current_date, current_date + 6)->>'ok')::boolean), 'the office puts Tony on call this week');
+select from set_after_hours_phone('701-555-0199');
+select test.login(:MARIA);
+select test.put('ah1', (open_po_call(:S121, (select id from issue_types where code='drain_backup'), 'Sink backing up after close', 'NS-9001')).id);
+select test.ok((select after_hours from work_orders where id = test.v('ah1')), 'the call is after hours');
+reset role;
+select test.ok((select count(*) = 1 from notifications where user_id = test.v('TONY') and work_order_id = test.v('ah1') and message like 'AFTER HOURS — you are on call%'), 'the on-call tech is alerted');
+set role authenticated; select test.login(:MARIA);
+select from store_hold_next_call();
+select test.put('ah2', (open_po_call(:S121, (select id from issue_types where code='drain_backup'), 'Slow drain, can wait', 'NS-9002')).id);
+reset role;
+select test.ok((select hold_until is not null and not after_hours from work_orders where id = test.v('ah2')), 'held until regular hours, no after-hours charge');
+select test.ok((select count(*) = 0 from notifications where work_order_id = test.v('ah2') and type = 'new_call' and user_id = test.v('PETE')), 'the contractor isn''t woken up');
+do $$ begin perform _allow_internal(); update work_orders set hold_until = now() - interval '1 minute' where id = test.v('ah2'); perform _end_internal(); end $$;
+select test.ok(release_held_calls() = 1, 'in the morning the call is released');
+select test.ok((select count(*) >= 1 from notifications where work_order_id = test.v('ah2') and message like '%Held overnight%'), 'and the office is alerted then');
+
+\echo '=== 69. Crew size: the lead reports helpers, the store confirms'
+set role authenticated; select test.login(test.v('TONY'));
+select test.put('cv', (tech_claim_call(test.v('ah1'), null, 47.92, -97.03)).id);
+select from tech_arrive(test.v('cv'), now() - interval '60 minutes', 47.8936, -97.0632);
+select test.ok((select (tech_set_crew(test.v('cv'), 1, 'Jake')->>'helpers')::int = 1), 'Tony says he has one helper');
+select test.ok((select (tech_jobs()->'jobs') @> '[]'), 'the tech app gets the crew');
+reset role;
+do $$ begin perform set_config('app.override', 'on', true); perform _allow_internal(true);
+  update visits set started_at = now() - interval '80 minutes', arrived_at = now() - interval '60 minutes',
+         crew_log = jsonb_build_array(jsonb_build_object('at', now() - interval '60 minutes', 'helpers', 1)) where id = test.v('cv');
+  perform _end_internal(); end $$;
+select test.ok((select (_verified(test.v('ah1'))->>'helper_billable_h')::numeric >= 1), 'an hour of helper time is verified');
+select test.ok((select (_verified(test.v('ah1'))->>'billable_h')::numeric = (_verified(test.v('ah1'))->>'tech_billable_h')::numeric + (_verified(test.v('ah1'))->>'helper_billable_h')::numeric), 'billable hours = tech + helper');
+set role authenticated; select test.login(:MARIA);
+select test.ok((select (store_confirm_crew(test.v('cv'), false)->>'ok')::boolean), 'the store says the count isn''t right');
+reset role;
+select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('ah1') and flag = 'crew_mismatch'), 'flagged for both sides');
+set role authenticated; select test.login(:RIVAL);
+select test.blocked($$select store_confirm_crew((select test.v('cv')), true)$$, 'Not allowed', 'only the location can confirm');
+
+\echo '=== 70. Leased equipment with full coverage'
+select test.login(:DOUG);
+select test.blocked($$select set_equipment_lease('80000000-0000-0000-0000-000000000001', true, null, null, null, null, null)$$, 'leased from', 'the lease company is required');
+select test.ok((select (set_equipment_lease(:FREEZER, true, 'Acme Ice', 'Rhonda', '701-555-0177', null, 'Full coverage, parts and labor')->>'ok')::boolean), 'the store marks the unit as leased with full coverage');
+select test.put('lw', (open_po_call(p_site => (select site_id from equipment where id = :FREEZER), p_issue_type => (select id from issue_types where code='wi_cooler_down'), p_details => 'Leased unit down', p_equipment => :FREEZER)).id);
+reset role;
+select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('lw') and flag = 'leased_unit' and description like '%Acme Ice%701-555-0177%'), 'the call is flagged: leased from Acme Ice, with their phone');
+select test.ok((select _invoice_check(test.v('lw'))->'leased_unit'->>'company' = 'Acme Ice'), 'the bill check knows it is a leased unit');
+create temp table lq as select qr_token t from equipment where id = :FREEZER; grant select on lq to anon;
+set role anon;
+select test.ok((select qr_info((select t from lq))->'lease'->>'company' = 'Acme Ice'), 'the QR page shows who to call');
+reset role;
