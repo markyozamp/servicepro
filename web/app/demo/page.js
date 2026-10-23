@@ -77,6 +77,7 @@ export default function Demo() {
       <section className="demo-sec demo-cta">
         <h2>Ready to start?</h2>
         <p>$395 per store per year. All trades, unlimited service calls, unlimited people. Your contractors use it free.</p>
+        <p className="small"><strong>Enhanced Time Verify, at no extra charge:</strong> when your contractor runs Service Call Proof Base or Pro, their bills come straight into your portal, already matched to the call and your PO. Download them, export them, or forward them to your accounting department. No mailed or emailed bills to chase.</p>
         <div className="demo-cta-row">
           <button type="button" className="primary big" disabled title="Coming soon">Get started now <span className="soon">Coming soon</span></button>
           <a className="button-like" href="mailto:sales@servicecallproof.com?subject=Service%20Call%20Proof%20questions">Questions? Talk to us</a>

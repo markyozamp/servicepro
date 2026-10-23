@@ -556,3 +556,4 @@ table.compare .prospect { background: var(--amber-bg); }
 .demo-call-ic { font-size: 40px; }
 .demo-call-num { font-size: 22px; font-weight: 800; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
 .demo-act { background: #1565c0; color: #fff; border: 0; border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 13px; white-space: nowrap; }
+.enhanced-note { background: var(--panel, #fff); border: 1px dashed var(--green-fg); border-radius: 10px; padding: 10px 12px; }
