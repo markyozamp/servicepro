@@ -309,4 +309,17 @@ label.button-like { display: inline-flex; align-items: center; padding: 8px 14px
 .reach { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--bg, #f6f8fa); border: 1px solid var(--line); }
 .reach.urgent { border-color: #d93025; background: #fdecea; }
 .reach.urgent a.callbtn { border-color: #d93025; }
-.soon { opacity: .55; }
+.soon-row { opacity: .55; }
+.usebar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.usebar-fill { height: 100%; border-radius: 999px; background: var(--brand); }
+.usebar-fill.warn { background: #d98e04; }
+.usebar-fill.bad { background: #c0392b; }
+.usage-chart { position: relative; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; height: 110px; border-bottom: 1px solid var(--line); margin-top: 16px; }
+.usage-col { display: flex; align-items: flex-end; justify-content: center; min-width: 0; height: 100%; cursor: default; }
+.usage-col:hover { background: var(--brand-soft); border-radius: 4px 4px 0 0; }
+.usage-bar { width: 70%; max-width: 22px; background: var(--brand); border-radius: 4px 4px 0 0; }
+.usage-bar.future { background: transparent; }
+.usage-lbls { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
+.usage-lbls div { text-align: center; font-size: 11px; color: var(--ink-3); padding-top: 3px; }
+.usage-pace { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed var(--ink-3); pointer-events: none; z-index: 1; }
+.usage-pace span { position: absolute; right: 0; top: -15px; font-size: 10px; color: var(--ink-3); background: var(--panel); padding: 0 3px; }

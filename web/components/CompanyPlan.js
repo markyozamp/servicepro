@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { money } from '@/lib/format';
 import { ErrorBox, Notice } from './bits';
+import UsageMeter from './UsageMeter';
 import Info from './Info';
 
 export const PRICE_PER_LOCATION = 395;
@@ -130,6 +131,8 @@ export default function CompanyPlan({ org, onSaved }) {
           ? `Coming soon: buy extra logins here by card ($${PRICE_PER_LOGIN} per login per year, prorated to your renewal date). For now, contact support@servicecallproof.com.`
           : 'Coming soon: your card or bank account on file, your yearly invoice and renewal date. For now, contact support@servicecallproof.com.'}</div>}
       </div>
+
+      <UsageMeter />
 
       <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
         <h3>Your data <Info title="Your data and backups">{`Your records are kept on our servers. Download a copy anytime for your own files (it opens in Excel). If something gets changed or removed by mistake, most things can be brought back right here: removed equipment and people have a Restore button, and calls are never erased. For anything else, our team can restore your account to an earlier point in time: $${RESTORE_FEE} per request.`}</Info></h3>

@@ -1183,3 +1183,24 @@ select test.blocked($$select remove_customer('20000000-0000-0000-0000-0000000000
 select test.login(:MIKE);
 select test.blocked($$select remove_customer('20000000-0000-0000-0000-000000000001')$$, 'admin', 'only the contractor admin can remove a customer');
 reset role;
+
+\echo '=== 52. Fair use meter'
+set role authenticated;
+select test.login(:'lee');
+select test.ok((select (fair_use()->>'allowance')::int = 600 * (fair_use()->>'locations')::int), 'the yearly allowance is 600 credits per location, pooled');
+select test.ok((select (fair_use()->>'used')::int = 0 and jsonb_array_length(fair_use()->'months') = 12), 'nothing used yet; twelve months on the chart');
+reset role;
+select _record_usage((select customer_id from profiles where id = :'lee'), null, null, 'text', false) from generate_series(1, 30);
+select _record_usage((select customer_id from profiles where id = :'lee'), null, null, 'voice', true) from generate_series(1, 5);
+set role authenticated;
+select test.login(:'lee');
+select test.ok((select (fair_use()->>'used')::int = 40), 'a text counts 1 and an automatic phone call counts 2');
+select test.ok((select (fair_use()->>'pack_credits')::int = (fair_use()->>'base')::int / 12), 'a top-up pack is one twelfth of the yearly allowance');
+reset role;
+select _record_usage((select customer_id from profiles where id = :'lee'), null, null, 'text', false) from generate_series(1, 400);
+set role authenticated;
+select test.login(:'lee');
+select test.ok((select (fair_use()->>'suggested_packs')::int > 0), 'running hot, it suggests how many packs to add to finish the year');
+select test.login(:DANA);
+select test.blocked($$select fair_use()$$, 'store account', 'contractors have no meter (they''re free)');
+reset role;

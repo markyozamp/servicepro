@@ -30,11 +30,11 @@ export default function CallRouting({ profile }) {
         <label className="grow">Office phone (business hours)<input type="tel" value={phone} disabled={!can} onChange={(e) => setPhone(e.target.value)} placeholder="701-555-0100" /></label>
         {can && <button className="primary" disabled={phone === saved} onClick={save}>Save</button>}
       </div>
-      <div className="row soon">
+      <div className="row soon-row">
         <label className="grow">After-hours number<input disabled placeholder="Coming soon" /></label>
         <label className="grow">On call now<select disabled><option>Coming soon</option></select></label>
       </div>
-      <label className="row small soon" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" disabled style={{ width: 'auto' }} />
+      <label className="row small soon-row" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" disabled style={{ width: 'auto' }} />
         Phone me automatically when a new call isn't accepted in time (press 1 to accept) — coming soon</label>
     </div>
   );
