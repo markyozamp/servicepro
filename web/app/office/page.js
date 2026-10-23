@@ -44,6 +44,7 @@ export default function OfficePortal() {
   const [pick, setPick] = useState({});
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [logoOverride, setLogoOverride] = useState(undefined);
   const [book, setBook] = useState([]);
   const [cpick, setCpickRaw] = useState('');
   const setCpick = (v) => { setCpickRaw(v); try { localStorage.setItem('scp_cpick', v); } catch { /* fine */ } };
@@ -114,6 +115,7 @@ export default function OfficePortal() {
   const hotCustomers = book.filter((c) => c.sites.some((st) => st.reasons.length)).length;
 
   if (!profile) return <div className="page muted">Loading…</div>;
+  const logo = logoOverride !== undefined ? logoOverride : org?.logo_data;
 
   const callsF = calls.filter((w) => pickMatch(validPick, w.customer_id, w.site_id));
   const flagsF = flags.filter((f) => pickMatch(validPick, f.work_orders?.customer_id, f.work_orders?.site_id));
@@ -145,7 +147,7 @@ export default function OfficePortal() {
       <main className="page has-bottomnav">
         <div className="spread" style={{ marginBottom: 12 }}>
           <div>
-            <h1>{org?.name || 'Dispatch'}</h1>
+            {logo ? <img className="org-logo" src={logo} alt={org?.name || 'Company logo'} /> : <h1>{org?.name || 'Dispatch'}</h1>}
             <div style={{ margin: '6px 0 2px' }}><CustomerPicker book={book} value={validPick} onChange={setCpick} /></div>
             <div className="muted small">Updates every 20 seconds</div>
           </div>
@@ -252,7 +254,7 @@ export default function OfficePortal() {
           </div>
         )}
 
-        {tab === 'team' && <><CallRouting profile={profile} /><TeamPanel profile={profile} /></>}
+        {tab === 'team' && <><CallRouting profile={profile} logo={logo} onLogo={setLogoOverride} /><TeamPanel profile={profile} /></>}
 
         {tab === 'customers' && <CustomerBook book={book} pick={validPick} onPick={setCpick} onOpenCall={setOpen} admin={!!profile.is_org_admin} onChanged={load} />}
 

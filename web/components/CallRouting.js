@@ -7,7 +7,23 @@ import { supabase, act, q } from '@/lib/supabase';
 import { ErrorBox, Notice } from './bits';
 import Info from './Info';
 
-export default function CallRouting({ profile }) {
+async function toDataUrl(file) {
+  if (file.type === 'image/svg+xml') {
+    if (file.size > 250000) throw new Error('That SVG is too large. Use one under 250 KB.');
+    const d = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+    return d.replace(/^data:image\/svg\+xml(;[^,]*)?,/, 'data:image/svg+xml;base64,');
+  }
+  const img = await createImageBitmap(file);
+  const k = Math.min(1, 600 / img.width, 160 / img.height);
+  const c = document.createElement('canvas');
+  c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  let d = c.toDataURL('image/png');
+  if (d.length > 380000) d = c.toDataURL('image/jpeg', 0.85);
+  return d;
+}
+
+export default function CallRouting({ profile, logo, onLogo }) {
   const [phone, setPhone] = useState('');
   const [saved, setSaved] = useState('');
   const [err, setErr] = useState('');
@@ -36,6 +52,18 @@ export default function CallRouting({ profile }) {
       </div>
       <label className="row small soon-row" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" disabled style={{ width: 'auto' }} />
         Phone me automatically when a new call isn't accepted in time (press 1 to accept) — coming soon</label>
+
+      {profile?.is_org_admin && (
+        <div className="stack" style={{ gap: 6, borderTop: '1px solid var(--line)', paddingTop: 10 }}>
+          <h3>Your logo <Info title="Your logo">Optional. Shows at the top of your office screen instead of your company name. A wide logo works best (about 4 times wider than tall). PNG, JPG or SVG.</Info></h3>
+          {logo && <img className="org-logo" src={logo} alt="Your logo" />}
+          <div className="row">
+            <label className="button-like">{logo ? 'Replace logo' : 'Upload logo'}<input type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style={{ display: 'none' }}
+              onChange={async (e) => { setErr(''); setMsg(''); try { const d = await toDataUrl(e.target.files[0]); await act('set_contractor_logo', { p_data: d }); onLogo?.(d); setMsg('Logo saved.'); } catch (x) { setErr(x.message); } e.target.value = ''; }} /></label>
+            {logo && <button onClick={async () => { try { await act('set_contractor_logo', { p_data: null }); onLogo?.(null); setMsg('Logo removed.'); } catch (x) { setErr(x.message); } }}>Remove</button>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
