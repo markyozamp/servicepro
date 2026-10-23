@@ -1,3 +1,4 @@
+import { sendEmail } from '@/lib/email';
 // "Forgot password?": issue a one-time reset link and email it. Always answers the same way,
 // so the form never reveals whether an email has a login.
 import { createClient } from '@supabase/supabase-js';
@@ -19,14 +20,10 @@ export async function POST(req) {
   if (!data?.ok || !data.token) return done;
   const origin = process.env.APP_URL || new URL(req.url).origin;
   const link = `${origin}/reset/${data.token}`;
-  const hi = data.name ? `Hi ${String(data.name).split(' ')[0]},\n\n` : '';
-  await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: process.env.ALERT_FROM, to: email, subject: 'Reset your Service Call Proof password',
-      text: `${hi}Someone asked to reset the password for this email on Service Call Proof.\n\nSet a new password here (the link works once, for 1 hour):\n${link}\n\nIf this wasn't you, ignore this email; your password stays the same.\n\nService Call Proof · ${origin.replace(/^https?:\/\//, '')}`,
-    }),
-  }).catch(() => null);
+  await sendEmail({ to: email, subject: 'Reset your Service Call Proof password',
+    greeting: data.name ? `Hi ${String(data.name).split(' ')[0]},` : null,
+    lines: ['Someone asked to reset the password for this email on Service Call Proof. The link works once, for 1 hour.'],
+    button: { label: 'Set a new password', url: link },
+    footerNote: "If this wasn't you, ignore this email; your password stays the same." });
   return done;
 }

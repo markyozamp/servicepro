@@ -6,7 +6,6 @@ import { supabase, act, q } from '@/lib/supabase';
 import { money } from '@/lib/format';
 import { ErrorBox, Notice } from './bits';
 import Info from './Info';
-import { PRICE_PER_LOGIN } from './CompanyPlan';
 
 const blank = { name: '', email: '', phone: '', title: '', admin: false, calls: true, approve: true, limit: '', equipment: false, contractors: false, locations: false, team: false, company: false, all: false, sites: [] };
 const PERMS = [
@@ -47,7 +46,7 @@ export default function StoreTeam({ me }) {
 
   const link = (t) => `${window.location.origin}/join/${t}`;
   const siteNames = (p) => (p.all_sites || p.is_org_admin ? 'All locations' : sites.filter((s) => (p.site_ids || []).includes(s.id)).map((s) => s.name).join(', ') || 'No locations');
-  const full = seats && seats.used >= seats.included + seats.extra;
+  const full = false; // logins are unlimited
 
   const permsJson = (f) => ({ admin: f.admin, calls: f.calls, approve: f.approve, limit: f.approve && f.limit !== '' ? String(f.limit) : '',
     equipment: f.equipment, contractors: f.contractors, locations: f.locations, team: f.team, company: f.company });
@@ -82,8 +81,8 @@ export default function StoreTeam({ me }) {
   return (
     <div className="stack">
       <div className="spread">
-        <h3>Your team <Info title="Your team">{`Add the people at your company who use Service Call Proof: store managers, a director of maintenance, a facilities person. Each location comes with one login and your whole company shares them (5 locations = 5 logins). You choose which locations each person sees and how much they can approve. Extra logins are $${PRICE_PER_LOGIN} per year. Your contractors and their technicians don't use these logins; they're free.`}</Info></h3>
-        {seats && <span className={`chip ${full ? 'tone-amber' : 'tone-green'}`}>{seats.used} of {seats.included + seats.extra} logins in use</span>}
+        <h3>Your team <Info title="Your team">{`Add the people at your company who use Service Call Proof: store managers, a director of maintenance, a facilities person. Add as many people as you need; logins are included in your plan. You choose which locations each person sees and how much they can approve. Your contractors and their technicians don't use these logins; they're free.`}</Info></h3>
+        {seats && <span className="chip tone-slate">{seats.used} {seats.used === 1 ? 'person' : 'people'}</span>}
       </div>
       <ErrorBox error={err} /><Notice>{msg}</Notice>
 
@@ -172,7 +171,6 @@ export default function StoreTeam({ me }) {
       ) : (
         <div className="row">
           <button disabled={full} onClick={() => { setForm({ ...blank }); setSent(null); }}>+ Add a person</button>
-          {full && <span className="small muted">All logins are in use. Add a location, remove someone, or buy another login under Company &amp; plan <span className="soon">Coming soon</span>.</span>}
         </div>
       )}
     </div>

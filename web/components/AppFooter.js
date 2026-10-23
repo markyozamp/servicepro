@@ -38,6 +38,7 @@ export default function AppFooter({ kind = 'store' }) {
         <div className="app-footer-row">
           <span><strong>Service Call Proof</strong> · Know who's in your building, and for how long.</span>
           <span className="app-footer-links">
+            <Link href={`/help?for=${kind === 'office' ? 'contractor' : kind}`}><strong>How-to guide</strong></Link>
             <span>Need help? <a href="mailto:support@servicecallproof.com">support@servicecallproof.com</a></span>
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>

@@ -79,16 +79,24 @@ export default function InstallButton() {
     window.addEventListener('appinstalled', () => setInstalled(true));
     return () => window.removeEventListener('beforeinstallprompt', h);
   }, []);
+  // The tip bubble closes when you click or tap anywhere else, or after 20 seconds.
+  useEffect(() => {
+    if (!help || d.ios) return undefined;
+    const close = (e) => { if (!e.target.closest('.install-wrap')) setHelp(false); };
+    const t = setTimeout(() => setHelp(false), 20000);
+    document.addEventListener('pointerdown', close, true);
+    return () => { clearTimeout(t); document.removeEventListener('pointerdown', close, true); };
+  }, [help, d.ios]);
   if (installed) return null;
   return (
     <>
-      <button data-keep={prompt ? undefined : '1'} onClick={async () => {
+      <button className="install-wrap" data-keep={prompt ? undefined : '1'} onClick={async () => {
         if (prompt) { prompt.prompt(); const r = await prompt.userChoice.catch(() => null); if (r?.outcome === 'accepted') setInstalled(true); setPrompt(null); }
         else setHelp(!help);
       }}>⬇ Install on this {d.phone ? 'phone' : 'computer'}</button>
       {help && d.ios && createPortal(<IosSheet d={d} onClose={() => setHelp(false)} />, document.body)}
       {help && !d.ios && (
-        <div className="hdr-help small">
+        <div className="hdr-help small install-wrap" onClick={() => setHelp(false)} title="Click to close">
           {d.phone
             ? 'In Chrome: tap the ⋮ menu at the top right, then "Install app" or "Add to Home screen".'
             : 'In Chrome or Edge: click the install icon at the right end of the address bar (a screen with a down arrow), or the ⋮ menu → "Install Service Call Proof". It then opens from your desktop or taskbar like a program, already signed in.'}

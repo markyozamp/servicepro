@@ -92,7 +92,7 @@ export default function SignIn() {
             <h2>Reset your password</h2>
             {err && <div className="error">{err}</div>}
             {sent ? (
-              <div className="notice">If <strong>{sent}</strong> has a login, a reset link is on its way. Check your inbox (and Junk). The link works once, for 1 hour.</div>
+              <div className="notice">If <strong>{sent}</strong> has a login, a reset link is on its way. The link works once, for 1 hour.<div className="small" style={{ marginTop: 6 }}><strong>Not in your inbox in a minute?</strong> Look in <strong>Spam</strong> or <strong>Junk</strong>. If it's there, open it and tap <strong>Not spam</strong> (or <strong>Move to Inbox</strong>) so the next one comes straight to you.</div></div>
             ) : (
               <>
                 <div className="small muted">Enter the email you sign in with. We'll email you a link to set a new password.</div>

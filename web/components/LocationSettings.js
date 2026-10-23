@@ -98,7 +98,7 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
   return (
     <div className="panel panel-pad stack">
       {onClose && <div className="spread"><h2>Location settings</h2><button onClick={onClose}>Close</button></div>}
-      <h3>Locations <Info title="Locations">Each store or building you have. Its address puts it on the map, so a technician's phone notices when they arrive, and sets its time zone for schedules and reminders. Each location includes one login for your team and costs $395 per year.</Info></h3>
+      <h3>Locations <Info title="Locations">Each store or building you have. Its address puts it on the map, so a technician's phone notices when they arrive, and sets its time zone for schedules and reminders. Each location costs $395 per year.</Info></h3>
       <ErrorBox error={err} /><Notice>{msg}</Notice>
       {adding ? (
         <form className="stack" style={{ gap: 8, border: '1px solid var(--line)', borderRadius: 10, padding: 12 }} onSubmit={addLocation}>

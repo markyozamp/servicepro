@@ -1,3 +1,4 @@
+import { sendEmail } from '@/lib/email';
 // Sends waiting alerts to phones (web push) and email. Called every minute by the database's scheduler
 // with the outbox key. Push works today; email turns on when RESEND_API_KEY and ALERT_FROM are set.
 import webpush from 'web-push';
@@ -40,12 +41,9 @@ export async function POST(req) {
       }
     }
     if (process.env.RESEND_API_KEY && process.env.ALERT_FROM && realEmail(n.email)) {
-      const r = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: process.env.ALERT_FROM, to: n.email, subject: n.number ? `Call #${n.number}: ${n.message.slice(0, 80)}` : n.message.slice(0, 90),
-          text: `${n.message}\n\nOpen Service Call Proof: ${link}\n\nYou get this because of your Service Call Proof alert settings.` }),
-      }).catch(() => null);
+      const r = await sendEmail({ to: n.email, subject: n.number ? `Call #${n.number}: ${n.message.slice(0, 80)}` : n.message.slice(0, 90),
+        lines: [n.message], button: { label: n.number ? `Open call #${n.number}` : 'Open Service Call Proof', url: link },
+        footerNote: 'You get this because of your Service Call Proof alert settings.' });
       if (r && r.ok) emailed++;
     }
   }
@@ -56,11 +54,7 @@ export async function POST(req) {
 async function testEmail(req) {  if (!process.env.RESEND_API_KEY || !process.env.ALERT_FROM) return Response.json({ error: 'Email is not set up' }, { status: 400 });
   const { to } = await req.json().catch(() => ({}));
   if (!to) return Response.json({ error: 'No address' }, { status: 400 });
-  const r = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: process.env.ALERT_FROM, to, subject: 'Service Call Proof: email alerts are working',
-      text: 'This is a test from Service Call Proof. Email alerts are set up and working.\n\nhttps://servicecallproof.com' }),
-  });
-  return Response.json({ ok: r.ok, status: r.status, detail: r.ok ? undefined : (await r.text()).slice(0, 300) });
+  const r = await sendEmail({ to, subject: 'Service Call Proof: email alerts are working',
+    lines: ['This is a test from Service Call Proof. Email alerts are set up and working.'], button: { label: 'Open Service Call Proof', url: 'https://servicecallproof.com' } });
+  return Response.json(r);
 }

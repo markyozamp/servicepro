@@ -1060,9 +1060,9 @@ select test.ok((select (save_equipment(null, (select id from sites where name = 
   'Hussmann', 'RL-12', 'SN-001', 'Back wall, dairy', '2024-05-01')->>'ok')::boolean), 'store adds its own equipment');
 select test.blocked($$select save_equipment(null, (select id from sites where name = 'M&L Fargo Main'), null, 'Hussmann', 'RL-12', 'SN-001', 'dup', null)$$, 'already has equipment', 'no duplicate serial at a location');
 select test.ok((select (add_equipment_warranty((select id from equipment where serial = 'SN-001'), 'manufacturer', '2024-05-01', '2029-05-01', 'Compressor 5 years')->>'ok')::boolean), 'store records the manufacturer warranty');
-select test.ok((select (seat_info()->>'included')::int = 2 and (seat_info()->>'used')::int = 1), 'two locations = two logins, one used');
+select test.ok((select (seat_info()->>'unlimited')::boolean and (seat_info()->>'used')::int = 1), 'logins are unlimited; one in use');
 select invite_store_user('Jo Manager', 'jo@mlmarket.test', null, 'Store manager', false, true, 500, false, array[(select id from sites where name = 'M&L Seattle')])->>'token' as jotok \gset
-select test.blocked($$select invite_store_user('Third Person', 'three@mlmarket.test', null, null, false, false, null, true, null)$$, 'logins are in use', 'cannot go past the included logins');
+select test.ok((select (invite_store_user('Third Person', 'three@mlmarket.test', null, null, false, false, null, true, null)->>'token') is not null), 'no login limit: a third person can be added');
 reset role; set role anon;
 select test.ok((select (join_redeem(:'jotok')->>'email') = 'jo@mlmarket.test'), 'the new store manager signs in from the link');
 reset role;

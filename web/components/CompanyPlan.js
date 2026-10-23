@@ -91,7 +91,7 @@ export default function CompanyPlan({ org, onSaved }) {
     } catch (x) { setErr(x.message); }
   }
 
-  const total = n.sites * PRICE_PER_LOCATION + (n.seats?.extra || 0) * PRICE_PER_LOGIN;
+  const total = n.sites * PRICE_PER_LOCATION;
   return (
     <div className="stack">
       <ErrorBox error={err} /><Notice>{msg}</Notice>
@@ -115,21 +115,17 @@ export default function CompanyPlan({ org, onSaved }) {
       </div>
 
       <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-        <h3>Your plan <Info title="Your plan">{`$${PRICE_PER_LOCATION} per location per year, paid once a year. Covers all trades (plumbing, electrical, heating, refrigeration), unlimited service calls and unlimited contractors. Phone alerts and email are included; texts and automatic phone calls are included up to a generous fair-use amount per location each year. Each location comes with one login; your whole company shares the logins. Extra logins are $${PRICE_PER_LOGIN} per year each. Your contractors use it free. No refunds; cancel anytime to stop the next renewal.`}</Info></h3>
+        <h3>Your plan <Info title="Your plan">{`$${PRICE_PER_LOCATION} per location per year, paid once a year. Covers all trades (plumbing, electrical, heating, refrigeration), unlimited service calls and unlimited contractors. Phone alerts and email are included; texts and automatic phone calls are included up to a generous fair-use amount per location each year. Add as many people from your company as you need; there's no charge per login. Your contractors use it free. No refunds; cancel anytime to stop the next renewal.`}</Info></h3>
         <table><tbody>
           <tr><td>Locations</td><td className="num">{n.sites} × {money(PRICE_PER_LOCATION)}</td><td className="num">{money(n.sites * PRICE_PER_LOCATION)}</td></tr>
-          <tr><td>Extra logins</td><td className="num">{n.seats?.extra || 0} × {money(PRICE_PER_LOGIN)}</td><td className="num">{money((n.seats?.extra || 0) * PRICE_PER_LOGIN)}</td></tr>
+          <tr><td>Team logins</td><td className="num">{n.seats ? n.seats.used : '…'} people</td><td className="num">Included</td></tr>
           <tr><td><strong>Per year</strong></td><td /><td className="num"><strong>{money(total)}</strong></td></tr>
         </tbody></table>
-        {n.seats && <div className="small muted">Logins: {n.seats.used} of {n.seats.included + n.seats.extra} in use ({n.seats.included} included with your locations{n.seats.extra ? `, ${n.seats.extra} extra` : ''}).</div>}
         <div className="row">
-          <button type="button" onClick={() => setSoon('logins')}>Buy more logins <span className="soon">Coming soon</span></button>
           <button type="button" onClick={() => setSoon('billing')}>Payment method &amp; invoices <span className="soon">Coming soon</span></button>
         </div>
         {soon === 'restore' && <div className="notice small">{`Restoring from a backup is done by our team, $${RESTORE_FEE} per request, quoted and confirmed with you first. Tell us what went wrong and the date and time to go back to: support@servicecallproof.com. Usually you won't need it: removed equipment and people can be brought back yourself, and calls are never erased.`}</div>}
-        {soon && soon !== 'restore' && <div className="notice small">{soon === 'logins'
-          ? `Coming soon: buy extra logins here by card ($${PRICE_PER_LOGIN} per login per year, prorated to your renewal date). For now, contact support@servicecallproof.com.`
-          : 'Coming soon: your card or bank account on file, your yearly invoice and renewal date. For now, contact support@servicecallproof.com.'}</div>}
+        {soon && soon !== 'restore' && <div className="notice small">{'Coming soon: your card or bank account on file, your yearly invoice and renewal date. For now, contact support@servicecallproof.com.'}</div>}
       </div>
 
       <UsageMeter />
@@ -142,6 +138,11 @@ export default function CompanyPlan({ org, onSaved }) {
           <button type="button" onClick={() => exportData('team')}>Download team</button>
           <button type="button" onClick={() => setSoon('restore')}>Restore from a backup</button>
         </div>
+      </div>
+      <div className="stack" style={{ gap: 6, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+        <h3>How-to guide</h3>
+        <div className="small muted">Step-by-step help for everything: making a service call, your PO number, adding people, choosing who sees which store, changing the admin, adding a location or contractor, and more.</div>
+        <div><a className="button-like" href="/help?for=store">Open the how-to guide</a></div>
       </div>
     </div>
   );
