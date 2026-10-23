@@ -93,13 +93,19 @@ export default function Demo() {
       <section className="demo-sec">
         <h2>Watch one call, start to finish</h2>
         <div className="sim-disclaimer"><strong>This is an animation, not the actual program.</strong> It's a small, simplified window into one service call: the store's screen on the left, the technician's phone on the right. Follow the steps; nothing here is real or saved.</div>
-        <DemoSim />
+        <DemoSim onDone={() => {
+          const el = document.getElementById('explore');
+          if (!el) return;
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          el.classList.add('demo-arrive'); setTimeout(() => el.classList.remove('demo-arrive'), 4000);
+        }} />
         <p className="small muted" style={{ marginTop: 10 }}>The real system does much more: approvals, equipment history, maintenance plans, contractor records and rates, bill checks, team permissions and reports. <strong>To see it all, sign in to any role below and click around.</strong></p>
       </section>
 
-      <section className="demo-sec">
-        <h2>Explore the whole system</h2>
-        <p className="muted">One tap opens a working account in our demo companies. Click anything. The demo goes back to its starting point every 10 minutes, with a countdown at the top so you know when. Use "← Back to demo menu" at the top to come back here and try another role.</p>
+      <section className="demo-sec" id="explore">
+        <h2>Now try the real program</h2>
+        <p className="demo-real-note"><strong>These are the real screens, not an animation.</strong> Each card below signs you in to the actual Service Call Proof as someone at one of our demo companies, with real calls, alerts and bills to work through.</p>
+        <p className="muted">Click anything. Nothing you do is permanent: the demo goes back to its starting point every 10 minutes, with a countdown at the top. Use "← Back to demo menu" to come back here and try another role.</p>
         {err && <div className="error">{err}</div>}
         <h3>Businesses</h3>
         <div className="demo-cards">{STORES.map((d) => <Card key={d.email} d={d} />)}</div>

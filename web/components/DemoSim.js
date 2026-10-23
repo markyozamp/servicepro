@@ -28,7 +28,7 @@ const Photo = () => (
   </svg>
 );
 
-export default function DemoSim() {
+export default function DemoSim({ onDone }) {
   const [step, setStep] = useState(0);
   const [code, setCode] = useState('');
   const [bad, setBad] = useState(false);
@@ -41,6 +41,8 @@ export default function DemoSim() {
   // Which side the next action happens on (phones: show a dot on the other tab)
   const actOn = step === 3 ? 'store' : step >= 5 ? 'store' : 'phone';
   useEffect(() => { if (left) { const t = setTimeout(() => { setBill(true); setStep(5); }, 1400); return () => clearTimeout(t); } return undefined; }, [left]);
+  // When the walkthrough is done, take the visitor to the real program below
+  useEffect(() => { if (bill && onDone) { const t = setTimeout(onDone, 3000); return () => clearTimeout(t); } return undefined; }, [bill]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function reset() { setStep(0); setCode(''); setBad(false); setPhoto(false); setDecision(null); setLeft(false); setBill(false); setView('phone'); }
   function checkIn(e) {
@@ -158,6 +160,7 @@ export default function DemoSim() {
       <div className="sim-hint">
         <span className="sim-stepno">{bill ? 'Done' : `Step ${Math.min(step, 4) + 1} of 5`}</span>
         <span>{bill ? 'That\'s Service Call Proof: who came, when, for how long, and a bill checked against it.' : STEPS[step]}</span>
+        {bill && onDone && <button className="sim-btn small" onClick={onDone}>Try the real program ↓</button>}
         <button className="sim-btn ghost small" onClick={reset}>Start over</button>
       </div>
       <div className="sim-toggle">

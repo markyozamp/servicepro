@@ -1,5 +1,6 @@
 'use client';
 
+import TripPick, { OFFER_SELECT } from '@/components/TripPick';
 import { usePlace } from '@/lib/terms';
 import { FollowThroughReport } from '@/components/FollowThrough';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -47,6 +48,7 @@ export default function StorePortal() {
   const [busy, setBusy] = useState(false);
   const [door, setDoor] = useState([]);       // technicians on site waiting for the check-in code
   const [crewAsk, setCrewAsk] = useState([]); // crews on site the store hasn't confirmed yet
+  const [offers, setOffers] = useState([]);   // return trips waiting for the store to pick a time
   const [sound, setSound] = useState(false);
   const [settings, setSettings] = useState(null);   // which Settings tab is open, or null
   const [project, setProject] = useState(false);
@@ -63,7 +65,7 @@ export default function StorePortal() {
 
   const load = useCallback(async () => {
     try {
-      const [c, p, pm, st, dv, codes, cw] = await Promise.all([
+      const [c, p, pm, st, dv, codes, cw, of] = await Promise.all([
         q(supabase.from('work_orders').select(LIST).order('created_at', { ascending: false }).limit(300)),
         q(supabase.from('po_lines').select('id, seq, kind, amount, description, requested_at, owner_status, owner:property_owners(name), work_orders(id, site_id, number, store_po_number, unit, sites(name))').eq('status', 'pending')),
         q(supabase.from('pm_status').select('*').order('due_on')),
@@ -73,8 +75,9 @@ export default function StorePortal() {
         q(supabase.from('visit_codes').select('visit_id, code')),
         q(supabase.from('visits').select('id, crew_helpers, crew_names, profiles(full_name), work_orders(id, site_id, number, sites(name))')
           .eq('status', 'on_site').not('crew_set_at', 'is', null).is('crew_confirmed', null).gt('crew_helpers', 0)).catch(() => []),
+        q(supabase.from('trip_offers').select(`${OFFER_SELECT}, work_orders(id, number, site_id, sites(name), contractors(name))`).eq('status', 'pending').order('created_at')).catch(() => []),
       ]);
-      setCrewAsk(cw || []);
+      setCrewAsk(cw || []); setOffers(of || []);
       setDoor(dv.map((v) => ({ ...v, code: codes.find((x) => x.visit_id === v.id)?.code })));
       const siteName = Object.fromEntries(st.map((x) => [x.id, x.name]));
       const [att, ss] = await Promise.all([act('site_attention', {}).catch(() => []), q(supabase.from('sites').select('id, name').order('name')).catch(() => [])]);
@@ -298,6 +301,13 @@ export default function StorePortal() {
               <button className="primary" onClick={async () => { try { await act('store_confirm_crew', { p_visit: v.id, p_ok: true }); load(); } catch (x) { setErr(x.message); } }}>Yes</button>
               <button onClick={async () => { try { await act('store_confirm_crew', { p_visit: v.id, p_ok: false }); setMsg('Noted. The call is flagged and their office is told.'); load(); } catch (x) { setErr(x.message); } }}>No</button>
             </span>
+          </div>
+        ))}
+
+        {/* A contractor wants to come back: pick the time that works */}
+        {offers.filter((o) => !validSite || o.work_orders?.site_id === validSite).map((o) => (
+          <div key={o.id} id={`trip-${o.id}`} className="panel panel-pad" style={{ borderColor: '#9cc3ea', background: '#f4f9ff' }}>
+            <TripPick offer={o} contractor={o.work_orders?.contractors?.name} callNo={o.work_orders?.number} site={o.work_orders?.sites?.name} onDone={() => { setMsg('Thanks. They\u2019ve been told.'); load(); }} />
           </div>
         ))}
 

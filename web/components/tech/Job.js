@@ -340,6 +340,31 @@ function CheckIn({ job }) {
   const v = job.visit;
   const wrong = T.getState().problems.filter((p) => p.fn === 'tech_checkin' && p.visit === v.id).slice(-1)[0];
   if (!v.crew_set_at) return <Crew job={job} />;
+  return <CheckInForm job={job} mode={mode} setMode={setMode} code={code} setCode={setCode} person={person} setPerson={setPerson} reason={reason} setReason={setReason} wrong={wrong} />;
+}
+
+// Demo only: show the code the store's screen has, so someone trying the phone app can keep going
+function DemoCode({ visitId, onUse }) {
+  const [c, setC] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!/\.demo$/.test(data?.session?.user?.email || '')) return;
+      supabase.rpc('demo_tech_code', { p_visit: visitId }).then(({ data: x }) => { if (alive && x) setC(x); });
+    });
+    return () => { alive = false; };
+  }, [visitId]);
+  if (!c) return null;
+  return (
+    <div className="demo-tech-code">
+      <span><strong>Demo:</strong> the store's screen shows the code <strong className="demo-tech-code-n">{c}</strong>. In real life, someone at the store reads it to you.</span>
+      <button type="button" onClick={() => onUse(c)}>Type it in for me</button>
+    </div>
+  );
+}
+
+function CheckInForm({ job, mode, setMode, code, setCode, person, setPerson, reason, setReason, wrong }) {
+  const v = job.visit;
   const send = () => {
     T.getState().problems.filter((p) => p.fn === 'tech_checkin' && p.visit === v.id).forEach((p) => T.dismissProblem(p.id));
     if (mode === 'name') T.act('tech_checkin', { p_visit: v.id, p_method: 'name_only', p_person: person, p_reason: reason }, { label: 'Check-in (name only)' });
@@ -358,6 +383,7 @@ function CheckIn({ job }) {
       {mode !== 'name' ? (
         <>
           <div className="small">{mode === 'code' ? 'Ask the person on site for the 4-digit code for this call.' : 'Enter the location\'s standing backup code.'}</div>
+          {mode === 'code' && <DemoCode visitId={v.id} onUse={setCode} />}
           {wrong && <div className="error"><strong>{wrong.message}</strong></div>}
           <input className="codebox" inputMode="numeric" maxLength={8} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••" />
           <button className="primary big" disabled={code.length < 4} onClick={send}>Check in</button>

@@ -125,6 +125,11 @@ const STORE = [
     'Contractors & QR → order or print QR stickers and put one on each unit.',
     'Set a location PIN there too. Any employee can scan a sticker, enter the PIN and report a problem.',
   ]],
+  ['A contractor wants to come back: pick a time', [
+    'When a contractor needs to come back (the part came in, a second visit), they send you up to 3 times. You get an alert, and a blue box on your dashboard and on the call.',
+    'Tap the time that fits your day. Only then is the trip scheduled, with a check-in code for it.',
+    'None work? Tap "None of these work" and say what would (for example "after 2 pm" or "Tuesday morning"). They send new times.',
+  ]],
   ['Leased equipment (full coverage)', [
     'Settings → Equipment → "+ Leased" on the unit → tick Leased / rental with 100% coverage → the lease company, contact, phone or email → Save.',
     'Opening a call on that unit shows the lease company first, with a Call button. You can still open a call with your contractor; it\'s flagged so the bill gets a second look and is never approved automatically.',
@@ -227,6 +232,11 @@ const CONTRACTOR = [
   ['Set your office phone and logo', [
     'Team → Who gets the calls → Office phone → Save. This is the number customers reach when they tap Call them now.',
     'Your logo (company admin): Team → Your logo → Upload logo.',
+  ]],
+  ['Schedule a return trip', [
+    'Open the call → Schedule the next trip → pick the technician → offer up to 3 times (+ Add another time) → Send times to the customer.',
+    'The customer taps the one that works, and the trip is scheduled: your tech gets it on his phone. If none work, you see their note ("after 2 pm") and offer new times.',
+    'Need to go right away? Tick "Going now" instead: the customer is told he\'s coming now.',
   ]],
   ['After hours and who\'s on call', [
     'Team → Who gets the calls → After-hours number (your answering service or on-call cell) → Save. Customers dial it on after-hours calls.',

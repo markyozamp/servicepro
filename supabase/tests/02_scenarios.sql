@@ -1553,3 +1553,26 @@ set role authenticated; select test.login(:MARIA);
 select test.ok((select bool_and(jsonb_typeof(x->'items') = 'array') from jsonb_array_elements(site_attention()) x), 'each location lists its alerts one by one');
 select test.ok((select bool_and(i ? 'target' and i ? 'label') from jsonb_array_elements(site_attention()) x, jsonb_array_elements(x->'items') i), 'each alert says what it is and where it is on the page');
 reset role;
+
+\echo '=== 72. Return trips the customer agrees to'
+set role authenticated; select test.login(:MARIA);
+select test.put('rt', (open_po_call(:S121, (select id from issue_types where code='drain_backup'), 'Comeback with the part', 'NS-9100')).id);
+select test.login(test.v('PETE'));
+select test.blocked($$select schedule_trip((select test.v('rt')), (select test.v('TONY')), now() + interval '1 day')$$, 'times to pick', 'a trip days out has to be offered to the customer');
+select test.put('of1', (offer_trip_times(test.v('rt'), test.v('TONY'), jsonb_build_array(jsonb_build_object('start', now() + interval '1 day'), jsonb_build_object('start', now() + interval '2 days', 'end', now() + interval '2 days 2 hours')), 'Part came in')->>'id')::uuid);
+select test.blocked($$select offer_trip_times((select test.v('rt')), (select test.v('TONY')), '[]'::jsonb)$$, '1 to 3', 'at least one time');
+select test.login(:MARIA);
+select test.ok((select count(*) = 1 from notifications where work_order_id = test.v('rt') and message like '%wants to come back%Pick a time%'), 'the store is asked to pick a time');
+select test.ok((select bool_or(i->>'kind' = 'trip') from jsonb_array_elements(site_attention()) x, jsonb_array_elements(x->'items') i), 'it shows in the location menu');
+select test.blocked($$select store_pick_trip_time((select test.v('of1')), null, null)$$, 'what would work', 'saying no needs a note on what would work');
+select test.ok((select (store_pick_trip_time(test.v('of1'), null, 'Not before 2 pm, we are busy at lunch')->>'declined')::boolean), 'none of those work: the store says so');
+select test.login(test.v('PETE'));
+select test.ok((select count(*) = 1 from notifications where work_order_id = test.v('rt') and message like '%none of those times work%busy at lunch%'), 'the office hears why');
+select test.put('of2', (offer_trip_times(test.v('rt'), test.v('TONY'), jsonb_build_array(jsonb_build_object('start', now() + interval '1 day 4 hours'), jsonb_build_object('start', now() + interval '2 days 4 hours')))->>'id')::uuid);
+select test.login(:RIVAL);
+select test.blocked($$select store_pick_trip_time((select test.v('of2')), 1)$$, 'Not allowed', 'nobody else can pick');
+select test.login(:MARIA);
+select test.ok((select (store_pick_trip_time(test.v('of2'), 2)->>'ok')::boolean), 'the store picks the second time');
+reset role;
+select test.ok((select status = 'assigned' and scheduled_start between now() + interval '2 days 3 hours' and now() + interval '2 days 5 hours' and scheduled_by = :MARIA
+  from visits where work_order_id = test.v('rt') and status <> 'cancelled'), 'the trip is scheduled at the time the store picked');

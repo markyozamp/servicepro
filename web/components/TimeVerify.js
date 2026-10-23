@@ -1,6 +1,7 @@
 'use client';
 
 // Time Verify on a call: acceptance, confirming contractor-entered calls, verified hours and the invoice check.
+import TripPick, { OFFER_SELECT, optText } from './TripPick';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { money, dateTime, time, date } from '@/lib/format';
@@ -109,7 +110,7 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
         )
       )}
       {/* Trips: every trip is announced to the store before it happens */}
-      <Trips wo={wo} visits={visits} techs={techs} office={office} closed={closed} busy={busy} run={run} />
+      <Trips wo={wo} visits={visits} techs={techs} office={office} closed={closed} busy={busy} run={run} reload={() => runOuter('invoice_check', { p_wo: wo.id }, () => setTimeout(load, 300))} />
 
       {/* Store: confirm a call the contractor entered from a phone call */}
       {side === 'store' && wo.source === 'contractor' && !wo.store_confirmed_at && (
@@ -380,12 +381,19 @@ export function TechHereButton({ wo, visits, busy, run }) {
 }
 
 // Every trip to the store, announced ahead: who, when. The office (or owner) schedules; the store sees it as Expected.
-function Trips({ wo, visits, techs, office, closed, busy, run }) {
+function Trips({ wo, visits, techs, office, closed, busy, run, reload }) {
   const [f, setF] = useState(null);
+  const [offers, setOffers] = useState([]);
+  const loadOffers = () => q(supabase.from('trip_offers').select(OFFER_SELECT).eq('work_order_id', wo.id).order('created_at', { ascending: false }).limit(5)).then(setOffers).catch(() => {});
+  useEffect(() => { loadOffers(); }, [wo.id, visits?.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const trips = (visits || []).filter((v) => v.status !== 'cancelled');
   const upcoming = trips.find((v) => ['assigned', 'en_route'].includes(v.status));
   const onSite = trips.some((v) => v.status === 'on_site');
+  const last = offers[0];
+  const pending = last?.status === 'pending' ? last : null;
+  const declined = last?.status === 'declined' ? last : null;
   const when = (v) => (v.scheduled_start ? `${dateTime(v.scheduled_start)}${v.scheduled_end ? `–${time(v.scheduled_end)}` : ''}` : 'no time set');
+  const setOpt = (i, k, val) => setF({ ...f, opts: f.opts.map((o, j) => (j === i ? { ...o, [k]: val } : o)) });
   return (
     <div className="stack" style={{ gap: 6 }}>
       {upcoming && (
@@ -394,12 +402,30 @@ function Trips({ wo, visits, techs, office, closed, busy, run }) {
           {upcoming.missed_alert_at && <span className="chip tone-red" style={{ marginLeft: 6 }}>missed the window</span>}
           {upcoming.outcome_note && <span className="muted"> · {upcoming.outcome_note}</span>}</div>
       )}
+
+      {/* The contractor offered times: the customer picks one */}
+      {pending && !office && !closed && (
+        <div className="notice"><TripPick offer={pending} contractor={wo.contractors?.name} compact onDone={() => { loadOffers(); reload?.(); }} /></div>
+      )}
+      {pending && office && (
+        <div className="small"><span className="chip tone-amber">Waiting for the customer to pick a time</span>{' '}
+          {pending.tech?.full_name} · {pending.options.map(optText).join(' · ')} <span className="muted">(sent {dateTime(pending.created_at)})</span></div>
+      )}
+      {declined && !upcoming && (
+        <div className="small"><span className="chip tone-red">None of those times work</span>{' '}
+          {office ? 'The customer says: ' : 'You said: '}<strong>“{declined.store_note}”</strong>{office ? ' Offer new times below.' : ' They\u2019ll send new times.'}</div>
+      )}
+
       {office && !closed && !onSite && !wo.declined_at && (upcoming?.status !== 'en_route') && (
         f ? (
           <form className="stack" style={{ gap: 6 }} onSubmit={(e) => {
             e.preventDefault();
-            run('schedule_trip', { p_wo: wo.id, p_tech: f.tech, p_start: f.now ? null : new Date(f.start).toISOString(),
-              p_end: !f.now && f.end ? new Date(f.end).toISOString() : null, p_note: f.note || null }, () => setF(null));
+            if (f.now) {
+              run('schedule_trip', { p_wo: wo.id, p_tech: f.tech, p_start: null, p_end: null, p_note: f.note || null }, () => setF(null));
+            } else {
+              const opts = f.opts.filter((o) => o.start).map((o) => ({ start: new Date(o.start).toISOString(), end: o.end ? new Date(o.end).toISOString() : null }));
+              run('offer_trip_times', { p_wo: wo.id, p_tech: f.tech, p_options: opts, p_note: f.note || null }, () => { setF(null); loadOffers(); });
+            }
           }}>
             <div className="row">
               <label className="grow">Technician
@@ -410,22 +436,28 @@ function Trips({ wo, visits, techs, office, closed, busy, run }) {
                 <input type="checkbox" style={{ width: 'auto' }} checked={f.now} onChange={(e) => setF({ ...f, now: e.target.checked })} /> Going now</label>
             </div>
             {!f.now && (
-              <div className="row">
-                <label className="grow">From<input type="datetime-local" value={f.start} onChange={(e) => setF({ ...f, start: e.target.value })} required /></label>
-                <label className="grow">To<input type="datetime-local" value={f.end} onChange={(e) => setF({ ...f, end: e.target.value })} /></label>
-              </div>
+              <>
+                <div className="small"><strong>Times you can come</strong> <span className="muted">— offer up to 3; the customer picks the one that fits their day</span></div>
+                {f.opts.map((o, i) => (
+                  <div key={i} className="row">
+                    <label className="grow">Option {i + 1}: from<input type="datetime-local" value={o.start} onChange={(e) => setOpt(i, 'start', e.target.value)} required={i === 0} /></label>
+                    <label className="grow">to<input type="datetime-local" value={o.end} onChange={(e) => setOpt(i, 'end', e.target.value)} /></label>
+                  </div>
+                ))}
+                {f.opts.length < 3 && <button type="button" className="linkbtn small" style={{ alignSelf: 'flex-start' }} onClick={() => setF({ ...f, opts: [...f.opts, { start: '', end: '' }] })}>+ Add another time</button>}
+              </>
             )}
             <input value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Note for the customer (optional), e.g. Coming back with the part" />
-            <div className="row"><button className="primary" disabled={busy}>{upcoming ? 'Reschedule — tell the customer' : 'Schedule — tell the customer'}</button>
+            <div className="row"><button className="primary" disabled={busy}>{f.now ? 'Send him now — tell the customer' : 'Send times to the customer'}</button>
               <button type="button" onClick={() => setF(null)}>Cancel</button></div>
-            <div className="small muted">The customer sees who is coming and when, with a check-in code for this trip. The technician gets it on his phone, with a reminder that morning.</div>
+            <div className="small muted">{f.now ? 'The customer is told he\u2019s coming now, with a check-in code for this trip.' : 'The customer taps the time that works. Only then is the trip scheduled: the tech gets it on his phone, with a reminder that morning, and the customer gets a check-in code.'}</div>
           </form>
         ) : (
-          <button className={upcoming ? '' : 'primary'} onClick={() => setF({ tech: upcoming?.technician_id || '', now: false, start: '', end: '', note: '' })}>
-            {upcoming ? 'Reschedule this trip' : trips.some((v) => v.arrived_at) ? 'Schedule the next trip' : 'Schedule a trip'}</button>
+          <button className={upcoming || pending ? '' : 'primary'} onClick={() => setF({ tech: upcoming?.technician_id || pending?.tech_id || '', now: false, opts: [{ start: '', end: '' }], note: '' })}>
+            {pending ? 'Change the times offered' : declined ? 'Offer new times' : upcoming ? 'Reschedule this trip' : trips.some((v) => v.arrived_at) ? 'Schedule the next trip' : 'Schedule a trip'}</button>
         )
       )}
-      {office && !closed && !upcoming && !onSite && <div className="small muted">Every trip is announced to the customer before it happens. A tech can also tap "I'm going" on his phone — the customer is told he's coming now.</div>}
+      {office && !closed && !upcoming && !onSite && !pending && <div className="small muted">Trips are set with the customer: you offer times, they pick one. A tech can also tap "I'm going" on his phone when it's urgent — the customer is told he's coming now.</div>}
     </div>
   );
 }
