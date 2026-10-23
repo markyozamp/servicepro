@@ -382,3 +382,13 @@ label.button-like { display: inline-flex; align-items: center; padding: 8px 14px
 .phone-show { display: none; }
 @media (max-width: 900px) { .phone-show { display: block; } }
 .tablewrap { overflow-x: auto; }
+/* iPhone "add to home screen" guide */
+.ios-sheet { position: fixed; z-index: 61; top: calc(12px + env(safe-area-inset-top)); left: 12px; right: 12px; max-width: 440px; margin: 0 auto; max-height: calc(100vh - 110px); overflow-y: auto;
+  background: var(--panel); color: var(--ink); border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,.25); padding: 16px; display: flex; flex-direction: column; gap: 10px; text-align: left; font-size: 15px; font-weight: 400; }
+.ios-steps { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 12px; }
+.ios-steps li { line-height: 1.4; }
+.ios-steps .small { color: var(--ink-2); margin-top: 3px; }
+.ios-copy { margin-top: 6px; }
+.ios-arrow { position: fixed; z-index: 61; left: 50%; bottom: calc(6px + env(safe-area-inset-bottom)); transform: translateX(-50%); font-size: 40px; color: #0a84ff; text-shadow: 0 2px 8px rgba(0,0,0,.25); animation: iosbounce 1s ease-in-out infinite; pointer-events: none; }
+@keyframes iosbounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }
+@media (prefers-reduced-motion: reduce) { .ios-arrow { animation: none; } }
