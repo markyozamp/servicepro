@@ -367,6 +367,7 @@ Proof of temperature for bad-product claims, and early warning before product is
    - **Founding pilot:** 2 years free, then 50% off for as long as they're a customer.
    - **Enterprise may include its stores** (later): the store owns its account and data, keeps it if the contractor stops paying, contractor can't hide flags or see other contractors; Enterprise priced to cover it.
    - Shown on the Upgrade screen and demo page (2026-10-23).
+57. **Pilot stores (Mark, 2026-10-23):** 4 store companies; free for the first year for up to 5 locations; then $295 per location (instead of $395), locked for as long as they're a customer; extra locations $295 each from day one; contractors free as always. Ask: real calls with at least one contractor + a monthly check-in call. "Pilot stores wanted" box + application on the demo page (link in the hero); saved to pilot_interest (plan = store) and emailed to support@. Mark picks the 4.
 **Reminder for Mark:** open a Twilio account (voice) for the automatic phone-call ladder.
 27. Search past calls: button on the dashboard opens "Past calls / PO log" with search, contractor, trade, location and date filters, and export — **built**.
 **Before the paid launch (Mark, 2026-10-22):** move Supabase to Pro (daily backups, no pausing) and Vercel to Pro (commercial use); then the "Your data" text can promise daily backups.

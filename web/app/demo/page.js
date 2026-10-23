@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { portalFor, signOutLocal } from '@/lib/useProfile';
 import PilotOffer from '@/components/PilotOffer';
+import StorePilot from '@/components/StorePilot';
 import DemoSim from '@/components/DemoSim';
 import { LegalFooter } from '@/components/Legal';
 
@@ -55,6 +56,7 @@ export default function Demo() {
       <section className="demo-hero">
         <h1>Know who's in your building, for how long, and what it should cost.</h1>
         <p>Service Call Proof sits between your stores and your service contractors: every visit checked in with your code, every bill checked against the time actually spent.</p>
+        <p className="small"><a href="#pilot-stores"><strong>Pilot stores wanted:</strong> 4 store companies, free for the first year →</a></p>
       </section>
 
       <section className="demo-sec">
@@ -77,6 +79,7 @@ export default function Demo() {
       <section className="demo-sec demo-cta">
         <h2>Ready to start?</h2>
         <p>$395 per store per year. All trades, unlimited service calls, unlimited people. Your contractors use it free.</p>
+        <StorePilot />
         <p className="small"><strong>Enhanced Time Verify, at no extra charge:</strong> when your contractor runs Service Call Proof Base or Pro, their bills come straight into your portal, already matched to the call and your PO. Download them, export them, or forward them to your accounting department. No mailed or emailed bills to chase.</p>
         <div className="demo-cta-row">
           <button type="button" className="primary big" disabled title="Coming soon">Get started now <span className="soon">Coming soon</span></button>
