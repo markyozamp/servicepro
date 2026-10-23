@@ -202,6 +202,9 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                         {side === 'office' && !f.blocking && <span className="small muted">info only</span>}
                       </div>
                       <div className="small">{f.description}</div>
+                      {side === 'store' && (f.store_ack_at
+                        ? <div className="small" style={{ color: 'var(--green-fg)' }}>✓ You've seen this ({dateTime(f.store_ack_at)})</div>
+                        : <div><button className="small" disabled={busy} onClick={() => run('store_ack_flag', { p_flag: f.id })}>✓ Got it</button></div>)}
                       {side === 'office' && f.blocking && f.flag !== 'billing_late' && (
                         <div className="row">
                           <input className="grow" placeholder="Note: why this is OK / what you changed"

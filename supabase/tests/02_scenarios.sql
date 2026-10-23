@@ -1418,3 +1418,13 @@ set role authenticated;
 select test.login(:DOUG);
 select test.ok((select (store_followup_bill(test.v('lateb'), 'call')->>'how') = 'call'), 'the store can log that it called them instead');
 reset role;
+
+\echo '=== 63. The store clears its own alerts: visitor taken care of, flag seen'
+set role authenticated;
+select test.login(:DOUG);
+select test.ok((select (store_resolve_visitor((select id from site_visitors order by recorded_at desc limit 1))->>'ok')::boolean), 'an unscheduled visitor is marked taken care of');
+select test.ok((select (store_ack_flag((select g.id from guardrail_flags g join work_orders w on w.id = g.work_order_id where g.visible_to_customer and g.resolved_at is null and w.customer_id = (select customer_id from profiles where id = :DOUG) limit 1))->>'ok')::boolean),
+  'the store marks a flag as seen');
+select test.login(:RIVAL);
+select test.blocked($$select store_resolve_visitor((select id from site_visitors order by recorded_at desc limit 1))$$, 'Not allowed', 'nobody else can clear a store''s visitor alert');
+reset role;

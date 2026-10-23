@@ -39,7 +39,7 @@ export default function Presence({ onOpen, refreshKey, siteId }) {
       const [a, b, c] = await Promise.all([
         q(supabase.from('visits').select(SEL).eq('status', 'on_site').order('arrived_at')),
         q(supabase.from('visits').select(SEL).in('status', ['assigned', 'en_route']).lt('scheduled_start', day1.toISOString()).order('scheduled_start')),
-        q(supabase.from('site_visitors').select('id, site_id, visitor_name, company, note, recorded_at, vehicle_plate, photo_path, sites(name), contractors(name, phone)').gte('recorded_at', day0.toISOString()).order('recorded_at', { ascending: false })),
+        q(supabase.from('site_visitors').select('id, site_id, visitor_name, company, note, recorded_at, vehicle_plate, photo_path, resolved_at, resolved_note, sites(name), contractors(name, phone)').gte('recorded_at', day0.toISOString()).order('recorded_at', { ascending: false })),
       ]);
       const keep = (x) => !siteId || x.work_orders?.site_id === siteId;
       setInside(a.filter(keep)); setExpected(b.filter(keep)); setVisitors(c.filter((x) => !siteId || x.site_id === siteId));
@@ -146,13 +146,19 @@ export default function Presence({ onOpen, refreshKey, siteId }) {
       ))}
       {visitors.length > 0 && (
         <div className="stack" style={{ gap: 4 }}>
-          <div className="small" style={{ color: 'var(--red-fg)', fontWeight: 700 }}>Unscheduled today</div>
+          <div className="small" style={{ color: visitors.some((x) => !x.resolved_at) ? 'var(--red-fg)' : 'var(--muted, #777)', fontWeight: 700 }}>Unscheduled today</div>
           {visitors.map((x) => (
-            <div key={x.id} className="spread small">
-              <span>{x.visitor_name} ({x.company}) at {x.sites?.name}, {dateTime(x.recorded_at)}{x.vehicle_plate ? ` · plate ${x.vehicle_plate}` : ''}{x.note ? ` · ${x.note}` : ''}</span>
+            <div key={x.id} className={`spread small${x.resolved_at ? ' muted' : ''}`} style={{ gap: 8 }}>
+              <span>{x.visitor_name} ({x.company}) at {x.sites?.name}, {dateTime(x.recorded_at)}{x.vehicle_plate ? ` · plate ${x.vehicle_plate}` : ''}{x.note ? ` · ${x.note}` : ''}
+                {x.resolved_at && <> · <strong style={{ color: 'var(--green-fg)' }}>✓ taken care of {dateTime(x.resolved_at)}</strong></>}</span>
               <span className="row" style={{ gap: 6 }}>
                 {x.photo_path && <button onClick={() => showPhoto(x.photo_path)}>Photo</button>}
-                {x.contractors?.phone && <a className="callbtn small" href={`tel:${telOf(x.contractors.phone)}`}>📞 Call office</a>}
+                {!x.resolved_at && x.contractors?.phone && <a className="callbtn small" href={`tel:${telOf(x.contractors.phone)}`}>📞 Call office</a>}
+                {!x.resolved_at && (
+                  <button className="small" onClick={async () => {
+                    try { await act('store_resolve_visitor', { p_id: x.id }); load(); } catch (e) { setErr(e.message); }
+                  }}>✓ Taken care of</button>
+                )}
               </span>
             </div>
           ))}

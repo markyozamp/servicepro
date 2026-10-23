@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { useProfile, isDemoEmail } from '@/lib/useProfile';
 import PmPlans from '@/components/PmPlans';
-import { money, ago, dateTime, date, poLabel, PO_KIND } from '@/lib/format';
+import { money, ago, dateTime, date, poLabel, PO_KIND, FLAG_LABEL } from '@/lib/format';
 import TopBar from '@/components/TopBar';
 import CallDetail from '@/components/CallDetail';
 import NewCallForm from '@/components/NewCallForm';
@@ -34,6 +34,7 @@ export default function StorePortal() {
   const [pending, setPending] = useState([]);
   const [pms, setPms] = useState([]);
   const [showPlans, setShowPlans] = useState(false);
+  const [flags, setFlags] = useState([]);
   const [tab, setTab] = useState('open');
   const [open, setOpen] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -70,6 +71,9 @@ export default function StorePortal() {
       const siteName = Object.fromEntries(st.map((x) => [x.id, x.name]));
       const [att, ss] = await Promise.all([act('site_attention', {}).catch(() => []), q(supabase.from('sites').select('id, name').order('name')).catch(() => [])]);
       setAttention(att || []); setAllSites(ss || []);
+      const fl = await q(supabase.from('guardrail_flags').select('id, flag, description, work_order_id, work_orders(number, site_id, sites(name))')
+        .is('resolved_at', null).is('store_ack_at', null).eq('visible_to_customer', true).neq('flag', 'billing_late').order('triggered_at', { ascending: false })).catch(() => []);
+      setFlags(fl || []);
       setCalls(c); setPending(p); setPms(pm.map((x) => ({ ...x, site_name: siteName[x.site_id] })));
     } catch (e) {
       setErr(e.message);
@@ -336,6 +340,25 @@ export default function StorePortal() {
             </div>
           </div>
         ))}
+
+        {/* Calls flagged for the store's review */}
+        {(() => {
+          const shownFlags = flags.filter((f) => !validSite || f.work_orders?.site_id === validSite);
+          const byCall = Object.values(shownFlags.reduce((m, f) => { (m[f.work_order_id] ||= { id: f.work_order_id, wo: f.work_orders, items: [] }).items.push(f); return m; }, {}));
+          if (!byCall.length) return null;
+          return (
+            <div className="panel panel-pad" style={{ borderColor: '#e6c37a' }}>
+              <h3 style={{ color: 'var(--amber-fg)' }}>Flagged for your review</h3>
+              <div className="small muted" style={{ marginBottom: 4 }}>Open a call to see why. Tap "Got it" on each item once you've looked at it.</div>
+              {byCall.map((c) => (
+                <div key={c.id} className="spread small click" style={{ padding: '6px 0', cursor: 'pointer', gap: 10 }} onClick={() => setOpen(c.id)}>
+                  <span>Call #{c.wo?.number} · {c.wo?.sites?.name}: {[...new Set(c.items.map((f) => FLAG_LABEL[f.flag] || f.flag))].join(', ')}</span>
+                  <strong style={{ whiteSpace: 'nowrap' }}>Review →</strong>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Late bills */}
         {waitingBills.length > 0 && (
