@@ -8,7 +8,7 @@ export const LEGAL = {
   site: 'servicecallproof.com',
   state: 'Idaho',
   county: 'Kootenai County',
-  effective: 'October 20, 2026',
+  effective: 'October 23, 2026',
 };
 
 export function LegalFooter() {

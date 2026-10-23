@@ -95,14 +95,14 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
   return (
     <div className="panel panel-pad stack">
       {onClose && <div className="spread"><h2>Location settings</h2><button onClick={onClose}>Close</button></div>}
-      <h3>Locations <Info title="Locations">Each store or building you have. Its address puts it on the map, so a technician's phone notices when they arrive, and sets its time zone for schedules and reminders. Each location includes one login for your team and costs $295 per year.</Info></h3>
+      <h3>Locations <Info title="Locations">Each store or building you have. Its address puts it on the map, so a technician's phone notices when they arrive, and sets its time zone for schedules and reminders. Each location includes one login for your team and costs $395 per year.</Info></h3>
       <ErrorBox error={err} /><Notice>{msg}</Notice>
       {adding ? (
         <form className="stack" style={{ gap: 8, border: '1px solid var(--line)', borderRadius: 10, padding: 12 }} onSubmit={addLocation}>
           <h3>Add a location</h3>
           <label>Location name<input id="add-loc-name" value={adding.name} onChange={(e) => setAdding({ ...adding, name: e.target.value })} placeholder="e.g. M&L Market — Seattle" required /></label>
           <AddressFinder id="add-loc-addr" value={adding.addr} onChange={(v) => setAdding({ ...adding, addr: v })} onFound={setFound} found={found} />
-          <div className="small muted">$295 per year for this location, prorated to your renewal date. All trades, unlimited service calls.</div>
+          <div className="small muted">$395 per year for this location, prorated to your renewal date. All trades, unlimited service calls.</div>
           <div className="row"><button className="primary" disabled={busy || !found}>Add location</button><button type="button" onClick={() => { setAdding(null); setFound(null); }}>Cancel</button></div>
         </form>
       ) : <div><button onClick={() => { setAdding({ name: '', addr: '' }); setFound(null); }}>+ Add a location</button> <span className="small muted">{rows.length} location{rows.length === 1 ? '' : 's'}</span></div>}

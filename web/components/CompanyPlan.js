@@ -7,7 +7,7 @@ import { money } from '@/lib/format';
 import { ErrorBox, Notice } from './bits';
 import Info from './Info';
 
-export const PRICE_PER_LOCATION = 295;
+export const PRICE_PER_LOCATION = 395;
 export const PRICE_PER_LOGIN = 25;
 export const RESTORE_FEE = 75;
 
@@ -114,7 +114,7 @@ export default function CompanyPlan({ org, onSaved }) {
       </div>
 
       <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-        <h3>Your plan <Info title="Your plan">{`$${PRICE_PER_LOCATION} per location per year, paid once a year. Covers all trades (plumbing, electrical, heating, refrigeration) and unlimited service calls. Each location comes with one login; your whole company shares the logins. Extra logins are $${PRICE_PER_LOGIN} per year each. Your contractors use it free. No refunds; cancel anytime to stop the next renewal.`}</Info></h3>
+        <h3>Your plan <Info title="Your plan">{`$${PRICE_PER_LOCATION} per location per year, paid once a year. Covers all trades (plumbing, electrical, heating, refrigeration), unlimited service calls and unlimited contractors. Phone alerts and email are included; texts and automatic phone calls are included up to a generous fair-use amount per location each year. Each location comes with one login; your whole company shares the logins. Extra logins are $${PRICE_PER_LOGIN} per year each. Your contractors use it free. No refunds; cancel anytime to stop the next renewal.`}</Info></h3>
         <table><tbody>
           <tr><td>Locations</td><td className="num">{n.sites} × {money(PRICE_PER_LOCATION)}</td><td className="num">{money(n.sites * PRICE_PER_LOCATION)}</td></tr>
           <tr><td>Extra logins</td><td className="num">{n.seats?.extra || 0} × {money(PRICE_PER_LOGIN)}</td><td className="num">{money((n.seats?.extra || 0) * PRICE_PER_LOGIN)}</td></tr>

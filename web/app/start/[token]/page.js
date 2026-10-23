@@ -69,7 +69,7 @@ export default function Start() {
             <h3 style={{ marginTop: 6 }}>Your first location</h3>
             <label>Location name<input id="st-site" value={f.site} onChange={set('site')} placeholder="e.g. M&L Market — Main St" /></label>
             <AddressFinder id="st-addr" value={f.addr} onChange={(v) => setF({ ...f, addr: v })} onFound={setFound} found={found} />
-            <div className="small muted">$295 per location per year, all trades, unlimited service calls. Your contractors use it free.</div>
+            <div className="small muted">$395 per location per year, all trades, unlimited service calls. Your contractors use it free.</div>
             <label className="row small" style={{ gap: 6, fontWeight: 400, flexWrap: 'nowrap', alignItems: 'flex-start' }}>
               <input id="st-agree" type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ width: 'auto', marginTop: 3 }} />
               <span>I agree to the <a href="/terms" target="_blank" rel="noreferrer">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</span>
