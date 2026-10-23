@@ -83,7 +83,23 @@ export default function PoLog({ customerId = null, siteId = null, onOpen = null 
         </div>
       </div>
       <ErrorBox error={err} />
-      <table>
+      <div className="po-cards">
+        {shown.length === 0 && <div className="po-card muted">{base.length ? 'No calls match. Try fewer filters.' : 'No calls yet.'}</div>}
+        {shown.slice(0, 300).map((r) => (
+          <div key={r.id} className={`po-card${onOpen ? ' click' : ''}`} onClick={onOpen ? () => onOpen(r.id) : undefined}>
+            <div className="spread"><strong>{r.po_number}</strong><span className={`chip tone-${STATUS[r.status]?.tone || 'slate'}`}>{STATUS[r.status]?.label || r.status}</span></div>
+            <div className="small muted">#{r.number} · {r.site_name} · {r.contractor_name}{r.trade_name ? ` · ${r.trade_name}` : ''}</div>
+            <div>{r.problem_type && r.problem_type !== r.problem ? <strong>{r.problem_type}. </strong> : null}{r.problem}</div>
+            <div className="row small" style={{ gap: 8 }}>
+              <span className="muted">{dateTime(r.opened_at)}</span>
+              <span>{Number(r.hours_on_site_raw).toFixed(2)} h on site</span>
+              {r.invoice_number ? <span>{money(r.invoice_total)} invoiced</span> : r.mode === 'full' && Number(r.total_cost) > 0 ? <span>{money(r.total_cost)}</span> : null}
+            </div>
+            {(r.flags || []).length > 0 && <div className="row" style={{ gap: 4 }}>{r.flags.map((f) => <span key={f} className="chip tone-red">{FLAG_LABEL[f] || f}</span>)}</div>}
+          </div>
+        ))}
+      </div>
+      <table className="po-table">
         <thead><tr><th>PO</th><th>Problem</th><th className="hide-sm">Opened / accepted</th><th className="num">On site</th><th className="num">Invoice</th></tr></thead>
         <tbody>
           {shown.length === 0 && <tr><td colSpan={5} className="muted">{base.length ? 'No calls match. Try fewer filters.' : 'No calls yet.'}</td></tr>}

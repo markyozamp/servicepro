@@ -14,6 +14,7 @@ import GettingStarted from '@/components/GettingStarted';
 import LocationPicker from '@/components/LocationPicker';
 import { useTabBadge } from '@/lib/tabBadge';
 import PoLog from '@/components/PoLog';
+import ScrollRow from '@/components/ScrollRow';
 import Presence from '@/components/Presence';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox, Notice } from '@/components/bits';
 
@@ -130,6 +131,7 @@ export default function StorePortal() {
     if (!profile) return;
     try { setSiteF(localStorage.getItem(`scp_site_${profile.customer_id}`) || ''); } catch { /* fine */ }
   }, [profile]);
+  const showCalls = (t) => { setTab(t); setTimeout(() => document.getElementById('calls')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); };
   const pickSite = (id) => { setSiteF(id); try { localStorage.setItem(`scp_site_${profile.customer_id}`, id); } catch { /* fine */ } };
 
   // Browser tab: number of things waiting on this store, flashing when a technician is at the door.
@@ -221,13 +223,13 @@ export default function StorePortal() {
         )}
 
         <div className="tiles">
-          <button className="tile" onClick={() => setTab('open')}><span className="tile-n">{counts.open}</span><span>Open calls</span></button>
+          <button className="tile" onClick={() => showCalls('open')}><span className="tile-n">{counts.open}</span><span>Open calls</span></button>
           <button className={`tile${fpending.length ? ' warn' : ''}`} onClick={() => document.getElementById('approvals')?.scrollIntoView({ behavior: 'smooth' })}><span className="tile-n">{fpending.length}</span><span>Waiting for approval</span></button>
-          <button className="tile" onClick={() => setTab('billing')}><span className="tile-n">{counts.billing}</span><span>Done, bill pending</span></button>
-          <button className={`tile${late.length ? ' bad' : ''}`} onClick={() => setTab('billing')}><span className="tile-n">{late.length}</span><span>Bills overdue</span></button>
+          <button className="tile" onClick={() => showCalls('billing')}><span className="tile-n">{counts.billing}</span><span>Done, bill pending</span></button>
+          <button className={`tile${late.length ? ' bad' : ''}`} onClick={() => showCalls('billing')}><span className="tile-n">{late.length}</span><span>Bills overdue</span></button>
         </div>
 
-        <button className="searchbar" onClick={() => { setTab('po'); setTimeout(() => document.getElementById('calls')?.scrollIntoView({ behavior: 'smooth' }), 50); }}>
+        <button className="searchbar" onClick={() => showCalls('po')}>
           <span aria-hidden="true">🔎</span> Search past calls <span className="muted">— by contractor, trade, location or date</span>
         </button>
 
@@ -363,12 +365,12 @@ export default function StorePortal() {
         {/* Calls */}
         <span id="calls" className="anchor" />
         <div className="panel">
-          <div className="tabs" style={{ padding: '0 8px', marginBottom: 0 }}>
+          <ScrollRow className="tabs" style={{ padding: '0 8px' }}>
             <button className={tab === 'open' ? 'on' : ''} onClick={() => setTab('open')}>Open calls ({counts.open})</button>
             <button className={tab === 'billing' ? 'on' : ''} onClick={() => setTab('billing')}>Completed — bill pending ({counts.billing})</button>
             <button className={tab === 'closed' ? 'on' : ''} onClick={() => setTab('closed')}>Invoiced</button>
             <button className={tab === 'po' ? 'on' : ''} onClick={() => setTab('po')}>Past calls / PO log</button>
-          </div>
+          </ScrollRow>
           {tab === 'po' ? <PoLog /> : (
           <table>
             <thead>
