@@ -1609,3 +1609,6 @@ select test.login(:MARIA);
 select test.ok((select set_call_window(test.v('bze'), now() + interval '1 day', now() + interval '1 day 2 hours', 'Before we open')->>'text' like 'Before we open%'), 'with no busy hours, the store asks for a time');
 reset role;
 select test.ok((select count(*) >= 1 from notifications where work_order_id = test.v('bze') and message like '%the customer asks you to come Before we open%'), 'the contractor''s office is told');
+set role authenticated; select test.login(:MARIA);
+select test.ok((select count(*) >= 1 from (select busy_hours from sites) x), 'the apps can read busy hours on locations');
+reset role;
