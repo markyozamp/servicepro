@@ -37,7 +37,7 @@ export default function QuickStart() {
           <h2>Technicians: on the job</h2>
           <ol>
             <li><strong>Open your own link</strong> on your phone, once. Then <em>Install</em> so it's on your home screen.</li>
-            <li>Leaving for the job? Tap <strong>I'm going</strong>. The store sees you're on the way.</li>
+            <li>Leaving for the job? Tap <strong>I'm going</strong> when you actually leave. Your drive time counts from that tap, and the store sees the town you're starting from.</li>
             <li>At the store, the app notices you've arrived (or tap <strong>I'm here</strong>). <strong>Ask the store for the check-in code</strong> and type it in.</li>
             <li>Need the store to OK more money? Tap <strong>Request approval for more</strong> and wait for the answer on your phone.</li>
             <li>Going for parts? Tap <strong>🚚 Parts run</strong> so the time away is explained.</li>
@@ -47,7 +47,7 @@ export default function QuickStart() {
             <strong>Good to know</strong>
             <ul>
               <li>No signal? Keep going. Taps are saved and sent when you're back online.</li>
-              <li>Your location is saved only when you tap a button or arrive. You're never tracked between calls.</li>
+              <li>Your location is saved only when you tap a button or arrive. The store sees the town only, never the exact spot. You're never tracked between calls.</li>
               <li>Link expired or lost your phone? Ask your office for a new sign-in link.</li>
             </ul>
           </div>

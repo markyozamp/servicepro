@@ -79,7 +79,7 @@ function StartDriving({ job }) {
       <div className="row" style={{ gap: 8 }}>
         {ETAS.map((n) => <button key={n} className="primary" disabled={busy} onClick={() => go(n)} style={{ flex: '1 1 30%' }}>{n} min</button>)}
       </div>
-      <div className="small muted">The store sees your arrival time — never your location.</div>
+      <div className="small muted">The store sees your arrival time and the town you're starting from — never the exact spot or a map.</div>
     </div>
   );
 }

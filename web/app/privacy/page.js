@@ -36,6 +36,8 @@ export default function Privacy() {
           location at that moment is saved with the record so the arrival or departure can be confirmed. While a technician is on the way to
           a call with the app open, the phone compares its own position with the site to notice arrival automatically; that route is
           <strong> not</strong> saved or sent to us. <strong>We do not track technicians in the background, between calls, or after hours.</strong>{' '}
+          The store on a call sees only the nearest town to where the trip started and about how far it is, so travel billed can be checked;
+          never the exact spot or a map.{' '}
           A technician can deny location access in the phone&rsquo;s settings; arrival is then confirmed by the check-in code instead.
         </li>
         <li><strong>Photos</strong> a technician chooses to take for a call, such as equipment nameplates or finished work.</li>

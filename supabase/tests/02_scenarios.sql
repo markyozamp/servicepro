@@ -1254,3 +1254,25 @@ select _allow_internal(true); update customers set logo_data = null where name l
 select test.ok((select (demo_restore()->>'ok')::boolean), 'the nightly reset runs');
 select test.ok((select logo_data is not distinct from (select data->>'logo_data' from demo_baseline where tbl = 'customers' and id = c.id::text) from customers c where name like 'Northside%'), 'and puts the demo back as it should be');
 set app.demo_guard_off = 'on';
+
+\echo '=== 57. Where a trip started (town only) and the travel check'
+reset role;
+insert into places (city, state, lat, lon) values ('Grand Forks', 'ND', 47.9253, -97.0329), ('Crookston', 'MN', 47.7742, -96.6081), ('Fisher', 'MN', 47.7999, -96.8001);
+select test.ok((select _nearest_town(47.80, -96.79) = 'Fisher, MN'), 'a point near Fisher is "Fisher, MN"');
+select test.ok((select round(_miles(47.9253, -97.0329, 47.7742, -96.6081)) between 21 and 23), 'Grand Forks to Crookston is about 22 miles as the crow flies');
+select test.ok((select travel_area_miles = 10 from customers where id = (select customer_id from sites where id = :S114)), 'the "already in the area" distance starts at 10 miles');
+select _allow_internal(true);
+insert into gps_logs (technician_id, work_order_id, visit_id, lat, lon, event, recorded_at)
+  select technician_id, work_order_id, id, 47.9300, -97.0400, 'en_route', started_at from visits where work_order_id = test.v('tw') order by visit_no limit 1;
+update call_invoices set other_hours = 0 where work_order_id = test.v('tw');
+select _end_internal();
+select test.ok((select (v->'trip'->>'known')::boolean and (v->'trip'->>'in_area')::boolean and v->'trip'->>'town' = 'Grand Forks, ND'
+   and v->'trip' ? 'miles' and not (v->'trip' ? 'lat')
+  from jsonb_array_elements(_verified(test.v('tw'))->'visits') v limit 1), 'the call shows the start town and distance, never the exact point');
+select test.ok((select exists (select 1 from jsonb_array_elements_text(_invoice_check(test.v('tw'))->'travel_notes') n where n like '%inside your 10-mile area%')),
+  'billing more than verified when the trip started nearby is called out');
+set role authenticated;
+select test.login(:DOUG);
+select test.blocked($$select set_travel_area(0)$$, '1 to 100', 'the distance must make sense');
+reset role;
+select test.ok((select (v->'trip'->>'slow')::boolean from jsonb_array_elements(_verified(test.v('tw'))->'visits') v limit 1), 'a 30-minute drive from about 2 miles away is flagged as slow');

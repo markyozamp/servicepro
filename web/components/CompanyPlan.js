@@ -29,6 +29,8 @@ export default function CompanyPlan({ org, onSaved }) {
   const [busy, setBusy] = useState(false);
   const [soon, setSoon] = useState('');
   const [logo, setLogo] = useState(org?.logo_data || null);
+  const [area, setArea] = useState(org?.travel_area_miles ?? 10);
+  const [areaSaved, setAreaSaved] = useState(org?.travel_area_miles ?? 10);
 
   async function pickLogo(file) {
     setErr(''); setMsg('');
@@ -112,6 +114,20 @@ export default function CompanyPlan({ org, onSaved }) {
           <label className="button-like">{logo ? 'Change logo' : 'Upload logo'}<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style={{ display: 'none' }} onChange={(e) => pickLogo(e.target.files?.[0])} /></label>
           {logo && <button type="button" onClick={removeLogo}>Remove</button>}
         </div>
+      </div>
+
+      <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+        <h3>Travel check <Info title="Travel check">When a technician taps "I'm going", the phone notes where the trip started. On the call you see only the nearest town and about how far it is, never the exact spot or a map, and nothing between calls. If the trip started within this distance of your store, the tech was already in the area: when a bill has more hours than were verified, the call says so, so you can ask whether travel was billed from the shop.</Info></h3>
+        <div className="row" style={{ alignItems: 'flex-end' }}>
+          <label style={{ maxWidth: 260 }}>Already in the area within (miles)
+            <input type="number" min="1" max="100" step="1" value={area} onChange={(e) => setArea(e.target.value)} /></label>
+          <button type="button" className="primary" disabled={Number(area) === Number(areaSaved)} onClick={async () => {
+            setErr(''); setMsg('');
+            try { await act('set_travel_area', { p_miles: Math.round(Number(area)) }); setAreaSaved(Math.round(Number(area))); setMsg(`Saved. Trips starting within ${Math.round(Number(area))} miles count as already in the area.`); }
+            catch (x) { setErr(x.message); }
+          }}>Save</button>
+        </div>
+        <div className="small muted">Shown on each call: "Trip started near Fisher, MN, about 14 mi away." Starts at 10 miles.</div>
       </div>
 
       <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>

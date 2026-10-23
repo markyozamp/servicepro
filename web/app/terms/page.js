@@ -50,6 +50,8 @@ export default function Terms() {
       <p>
         Times come from the phone or computer used, and locations from the phone&rsquo;s GPS, which can be wrong, delayed or unavailable — for
         example with no signal, a dead battery, or location turned off. Offline actions are saved on the phone and sent when it reconnects.
+        Where a trip started is shown to the customer as the nearest town and an estimated distance and drive time; these are estimates
+        from map data, not exact road distances.
         The Service is a strong record of a visit, but customers and contractors should review flags and discuss differences with each other
         before acting on them. We are not liable for decisions made on records that turn out to be incomplete or inaccurate.
       </p>

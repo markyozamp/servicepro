@@ -152,6 +152,11 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
                     <div className="small">On site {hm(v.onsite_min)}{v.travel_min ? ` · travel ${hm(v.travel_min)}${v.travel_counted_min ? '' : ' (not paid)'}` : ''}
                       {v.parts_run_min ? ` · parts run ${hm(v.parts_run_min)}${v.parts_run_unverified_min ? ' (supplier not confirmed by GPS)' : ''}` : ''}
                       {v.checkin_verified === false ? ' · check-in NOT verified' : ''}</div>
+                    {v.trip && (
+                      <div className="small muted">📍 {v.trip.known
+                        ? <>Trip started near <strong>{v.trip.town || 'an unknown town'}</strong>, about {v.trip.miles} mi away{v.trip.expected_min ? ` (usually ~${v.trip.expected_min} min)` : ''}{v.trip.in_area ? ' · already in the area' : ''}{v.trip.slow ? <span style={{ color: 'var(--red-fg)' }}> · drive took {v.trip.drive_min} min</span> : ''}</>
+                        : 'Starting town not known (phone location was off when they left)'}</div>
+                    )}
                     {runs.filter((r) => r.visit_id === v.visit_id).map((r) => (
                       <div key={r.id} className="small muted">🚚 {time(r.left_at)} → {r.supplier || 'supplier'}{r.at_supplier_at ? ` (GPS ${time(r.at_supplier_at)})` : ''} → back {r.returned_at ? time(r.returned_at) : '—'}</div>
                     ))}
@@ -167,6 +172,12 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
               </tr>
             </tbody>
           </table>
+          {chk.travel_notes?.length > 0 && (
+            <div className="notice small stack" style={{ gap: 4 }}>
+              <strong>Travel check</strong>
+              {chk.travel_notes.map((n) => <div key={n}>{n}</div>)}
+            </div>
+          )}
         </>
       )}
 

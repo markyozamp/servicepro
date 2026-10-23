@@ -100,6 +100,12 @@ const STORE = [
     'Settings & plan → Company profile: name, phone, email.',
     'Logo → Upload logo. A wide logo works best. It shows at the top of your dashboard.',
   ]],
+  ['Check travel time on a bill', [
+    'Open the call. Under Verified time, each trip shows the town it started near and about how far away it was: "Trip started near Fisher, MN, about 14 mi away."',
+    'Only the actual drive is counted, from I\'m going to arrival. If the tech was already in the area and the bill has more hours than verified, the call says so.',
+    'Set what counts as "already in the area" under Settings & plan → Travel check. It starts at 10 miles.',
+    'You see the town only, never the exact spot or a map, and nothing between calls.',
+  ]],
   ['Message credits (fair use)', [
     'Phone alerts and email are unlimited. Texts and automatic phone calls use credits: 150 per location per year, shared across your company.',
     'See what you\'ve used under Settings & plan → Texts & phone calls. The chart shows each month.',
@@ -142,6 +148,7 @@ const CONTRACTOR = [
   ['Send your bill', [
     'Finished calls show under Bills to send (and the Billing tab).',
     'Open the call and enter your invoice number, hours and total. The store sees it checked against the verified time.',
+    'Travel counts from where the trip really started (when your tech tapped I\'m going), not from your shop. The store sees the town it started near.',
     'Send it before the store\'s deadline, or it shows as late to them.',
   ]],
   ['Look at one customer', [
@@ -182,7 +189,8 @@ const TECH = [
     'The store sees it as a parts run, so the time away is explained on the bill.',
   ]],
   ['Go on a call', [
-    'Tap the job, then I\'m going when you leave. The store sees you\'re on the way.',
+    'Tap the job, then I\'m going when you leave. The store sees you\'re on the way and the town you\'re starting from (never the exact spot).',
+    'Tap it when you actually leave. Your drive time is counted from that tap.',
     'When you arrive, the app notices (or tap I\'m here). Ask someone at the store for the check-in code and enter it.',
     'Going for parts? Use the parts run button so the time away is explained.',
     'Done? Tap Leaving and say whether it\'s finished or needs another trip.',
