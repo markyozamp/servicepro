@@ -3,7 +3,7 @@
 // Store: every contractor's current rates side by side, plus quotes from companies wanting the account.
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
-import { date } from '@/lib/format';
+const date = (d) => (d ? new Date(`${String(d).slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 import { ErrorBox, Notice } from './bits';
 import { RATE_FIELDS, RateForm, fmtRate } from './RateCard';
 

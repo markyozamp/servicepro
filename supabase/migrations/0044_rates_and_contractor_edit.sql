@@ -177,7 +177,7 @@ begin
                     where tc.contractor_id = cc.contractor_id and tc.customer_id = m.customer_id),
         'card', (rate_card(m.customer_id, cc.contractor_id)->'current'),
         'previous', (rate_card(m.customer_id, cc.contractor_id)->'previous'),
-        'pending', (rate_card(m.customer_id, cc.contractor_id)->'pending') is not null,
+        'pending', jsonb_typeof(rate_card(m.customer_id, cc.contractor_id)->'pending') = 'object',
         'min_hours', cc.min_hours, 'increment_min', cc.increment_min, 'pays_travel', cc.pays_travel, 'is_primary', cc.is_primary) x
       from customer_contractors cc join contractors k on k.id = cc.contractor_id
       where cc.customer_id = m.customer_id and cc.store_removed_at is null

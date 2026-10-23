@@ -1332,3 +1332,5 @@ select test.ok((select (contractor_details(:'valley')->>'can_edit_company')::boo
 select test.ok((select (store_update_contractor(:'valley', null, null, null, null, 'Valley Electric', '701-555-0123')->>'name') = 'Valley Electric'), 'a typo in the company name is fixed');
 select test.ok((select (store_new_contractor_link(:'valley', 'Val Smith', 'val.smith@valley.test', null)->>'token') is not null
   and (select count(*) from join_links where contractor_id = :'valley' and used_at is null and expires_at > now()) = 1), 'a fresh sign-in link to the right email; the old one stops working');
+select test.login(:DOUG);
+select test.ok((select bool_and(not (x->>'pending')::boolean or x->>'name' like 'Prairie%') from compare_contractors() j, jsonb_array_elements(j->'contractors') x), 'only a contractor with a proposal waiting is marked "new rates proposed"');

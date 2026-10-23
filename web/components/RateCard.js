@@ -5,7 +5,8 @@
 // Every change is kept with its start date, so you can see when a rate went up and by how much.
 import { useCallback, useEffect, useState } from 'react';
 import { act } from '@/lib/supabase';
-import { money, date } from '@/lib/format';
+import { money } from '@/lib/format';
+const date = (d) => (d ? new Date(`${String(d).slice(0, 10)}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 import { ErrorBox, Notice } from './bits';
 
 export const RATE_FIELDS = [
