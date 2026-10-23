@@ -86,7 +86,7 @@ export default function TechApp() {
           </HeaderMenu>
         )}
       </header>
-      {isDemoEmail(me.email) && !job && <DemoBanner who={me.full_name} />}
+      {isDemoEmail(me.email) && <DemoBanner who={me.full_name} compact={!!job} />}
       <SyncBar st={st} />
       {st.clock && !st.clock.ok && (
         <div className="syncbar off" style={{ background: 'var(--red-fg)' }}>

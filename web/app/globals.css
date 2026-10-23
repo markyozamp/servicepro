@@ -542,3 +542,11 @@ table.compare .prospect { background: var(--amber-bg); }
 .pm-plan.proposed { border-color: var(--amber-fg); }
 .pm-now { background: var(--bg-soft, #f5f5f2); border-radius: 8px; padding: 8px 10px; }
 .pm-now.bad { background: var(--red-bg, #fbebeb); }
+
+/* Demo countdown */
+.demo-banner.soon { background: #fde2e2; color: #8a1c1c; border-bottom-color: #f2b8b8; }
+.demo-count { font-variant-numeric: tabular-nums; }
+.demo-fresh { position: fixed; left: 50%; top: 12px; transform: translateX(-50%); z-index: 90; max-width: min(560px, calc(100vw - 32px));
+  display: flex; gap: 12px; align-items: center; background: var(--green-bg); color: var(--green-fg); border: 1px solid var(--green-fg);
+  border-radius: 10px; padding: 10px 14px; box-shadow: 0 6px 24px rgba(0,0,0,.15); font-size: 14px; }
+.demo-fresh button { background: none; border: none; color: inherit; font-size: 16px; padding: 0 4px; }

@@ -66,7 +66,7 @@ export default function Demo() {
 
       <section className="demo-sec">
         <h2>Explore the whole system</h2>
-        <p className="muted">One tap opens a working account in our demo companies. Click anything; it all resets every night. Use "← Back to demo menu" at the top to come back here and try another role.</p>
+        <p className="muted">One tap opens a working account in our demo companies. Click anything. The demo goes back to its starting point every 10 minutes, with a countdown at the top so you know when. Use "← Back to demo menu" at the top to come back here and try another role.</p>
         {err && <div className="error">{err}</div>}
         <h3>Stores and property managers</h3>
         <div className="demo-cards">{STORES.map((d) => <Card key={d.email} d={d} />)}</div>

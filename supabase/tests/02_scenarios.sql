@@ -1377,3 +1377,20 @@ set role authenticated;
 select test.login(test.v('PETE'));
 select test.blocked($$select save_pm_plan((select id from pm_plans where name = 'Annual water heater flush'), (select site_id from pm_plans where name = 'Annual water heater flush'), null, 'Annual flush (cheaper)', 12, current_date + 40, '[]', 99, 3, 1, true)$$, 'in force', 'once a plan is in force, only the store changes it');
 reset role;
+
+\echo '=== 61. The demo rewinds to its starting point'
+reset role;
+select test.ok((select (demo_freeze()->>'rows')::int > 20), 'the demo''s starting point is captured');
+select count(*) as wo_before from work_orders where customer_id in (select id from customers where name like '%(demo)') \gset
+select count(*) as n_before from notifications where user_id in (select id from profiles where email like '%.demo') \gset
+select _allow_internal(true);
+update work_orders set issue_description = 'CHANGED BY A VISITOR' where id = (select id from work_orders where customer_id in (select id from customers where name like '%(demo)') and status not in ('invoiced','completed','cancelled') order by number limit 1);
+insert into notifications (user_id, type, message) select id, 'guardrail_flag', 'visitor noise' from profiles where email like '%.demo' limit 1;
+select _end_internal();
+select test.ok((select (demo_rewind()->>'ok')::boolean), 'the rewind runs');
+select test.ok((select count(*) = 0 from work_orders where issue_description = 'CHANGED BY A VISITOR'), 'a visitor''s change is undone');
+select test.ok((select count(*) = 0 from notifications where message = 'visitor noise'), 'notices a visitor caused are gone');
+select test.ok((select count(*) = :wo_before from work_orders where customer_id in (select id from customers where name like '%(demo)')), 'every demo call is back');
+select test.ok((select count(*) = :n_before from notifications where user_id in (select id from profiles where email like '%.demo')), 'and every demo notice');
+select test.ok((select count(*) > 0 from visits v join work_orders w on w.id = v.work_order_id where w.customer_id in (select id from customers where name like '%(demo)')), 'visits came back with their calls');
+select test.ok((select (demo_clock()->>'next')::timestamptz > now() and (demo_clock()->>'next')::timestamptz <= now() + interval '10 minutes'), 'the countdown knows the next rewind');
