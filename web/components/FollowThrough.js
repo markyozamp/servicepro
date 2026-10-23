@@ -46,7 +46,7 @@ export function FollowThroughReport({ onClose, onOpenCall }) {
                 {r.wait_min > 0 && <div className="tile warn" style={{ cursor: 'default' }}><span className="tile-n">{hrs(r.wait_min)}</span><span>technicians waited for codes{Number(r.wait_dollars) > 0 ? `, about ${money(r.wait_dollars)} of labor` : ''}</span></div>}
                 {Number(r.bills_waiting) > 0 && <div className="tile warn" style={{ cursor: 'default' }}><span className="tile-n">{money(r.bills_waiting)}</span><span>in bills waited 7+ days</span></div>}
               </div>
-              {r.over && <div className="notice small"><strong>Over the limit.</strong> {r.missed} missed is more than {pct(r.limit_pct)} of what was asked. The list below shows each one, where, and who was getting the alerts.</div>}
+              {r.over && <div className="notice small"><strong>Over the limit.</strong> {r.missed} missed ({pct(r.pct)}) is over the {pct(r.limit_pct)} limit. The list below shows each one, where, and who was getting the alerts.</div>}
 
               <table className="small">
                 <thead><tr><th>What was asked</th><th className="num">Items</th><th className="num">Missed</th></tr></thead>
