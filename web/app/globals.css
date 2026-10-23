@@ -586,8 +586,4 @@ table.compare .prospect { background: var(--amber-bg); }
 .demo-price small { font-size: 14px; font-weight: 500; color: var(--ink-3); }
 .demo-extras { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
 .demo-free-line { font-size: 16px; padding: 12px 14px; border-radius: 10px; background: var(--green-bg); }
-.demo-biz-row { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
-.demo-biz-row .demo-biz-plan { max-width: none; }
-.demo-biz-row .demo-extras { grid-template-columns: 1fr; }
-@media (max-width: 900px) { .demo-biz-row { grid-template-columns: 1fr; } }
 .sim-chip.red { background: #b3261e; color: #fff; letter-spacing: .01em; }

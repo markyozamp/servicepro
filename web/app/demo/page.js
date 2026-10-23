@@ -116,7 +116,6 @@ export default function Demo() {
 
         {plans === 'business' && (
           <div className="demo-tab-body" id="plans-business">
-            <div className="demo-biz-row">
             <div className="panel panel-pad stack demo-biz-plan">
               <div className="spread"><strong style={{ fontSize: 20 }}>Service Call Proof</strong><span className="demo-price">$395 <small>per location per year</small></span></div>
               <div className="muted">For any business with places to keep running: stores, restaurants, clinics, dental offices, banks and offices.</div>
@@ -137,7 +136,6 @@ export default function Demo() {
                 <strong>Enhanced Time Verify <span className="chip tone-green">No extra charge</span></strong>
                 <span className="small">When your contractor runs Service Call Proof Base or Pro, their bills come straight into your portal, already matched to the call and your PO, ready to download, export or forward to accounting.</span>
               </div>
-            </div>
             </div>
 
             <StorePilot />
