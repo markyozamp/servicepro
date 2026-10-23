@@ -1216,3 +1216,7 @@ select test.ok((select profile_sees_site(:'jo', (select id from sites where name
 select from set_site_access((select id from sites where name = 'M&L Tacoma'), '{}');
 select test.ok((select not profile_sees_site(:'jo', (select id from sites where name = 'M&L Tacoma')) and profile_sees_site(:'jo', (select id from sites where name = 'M&L Seattle'))), 'unticking takes away only that store');
 reset role;
+
+\echo '=== 54. Demo refresh slides dates forward'
+select test.ok((select (refresh_demo_dates()->>'ok')::boolean), 'demo refresh runs');
+select test.ok((select max(created_at) > now() - interval '1 hour' from work_orders where customer_id in (select id from customers where name like '%(demo)')), 'latest demo activity is now recent');
