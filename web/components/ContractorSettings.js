@@ -7,6 +7,8 @@ import { supabase, act, q } from '@/lib/supabase';
 import { ErrorBox, Notice } from './bits';
 import Info from './Info';
 import OrderStickers from './OrderStickers';
+import RateCard from './RateCard';
+import CompareContractors from './CompareContractors';
 
 function contractorInviteEmail(name, store, url) {
   const first = (name || '').split(' ')[0];
@@ -32,8 +34,10 @@ Thanks`;
 
 export default function ContractorSettings({ onClose }) {
   const [org, setOrg] = useState(null);
+  const [custId, setCustId] = useState(null);
+  const [compare, setCompare] = useState(false);
   useEffect(() => {
-    supabase.rpc('me').then(({ data: m }) => m?.customer_id && supabase.from('customers').select('name').eq('id', m.customer_id).single().then(({ data }) => setOrg(data)));
+    supabase.rpc('me').then(({ data: m }) => { if (!m?.customer_id) return; setCustId(m.customer_id); supabase.from('customers').select('name').eq('id', m.customer_id).single().then(({ data }) => setOrg(data)); });
   }, []);
   const [cc, setCc] = useState([]);
   const [trades, setTrades] = useState([]);
@@ -81,6 +85,14 @@ export default function ContractorSettings({ onClose }) {
       <ErrorBox error={err} /><Notice>{msg}</Notice>
 
       <h3>Your contractors <Info title="Your contractors">The service companies you send calls to. For each one you set your rules: whether you pay travel time, what happens to time that wasn't checked in, and how fast they must accept a call. Their record shows how they're doing: on-time acceptance, check-ins with the code, missed windows and unexplained hours.</Info></h3>
+      {active.length > 0 && (
+        <div>{compare ? (
+          <div className="panel panel-pad stack" style={{ gap: 8 }}>
+            <div className="spread"><h3>Compare contractors</h3><button onClick={() => setCompare(false)}>Close</button></div>
+            <CompareContractors canEdit />
+          </div>
+        ) : <button onClick={() => setCompare(true)}>⚖ Compare contractors' rates</button>}</div>
+      )}
       {active.length === 0 && <div className="small muted">No contractors yet. Invite one below.</div>}
       {active.map((r) => (
         <div key={r.contractor_id} className="stack" style={{ gap: 6, borderTop: '1px solid var(--line)', paddingTop: 10 }}>
@@ -109,6 +121,13 @@ export default function ContractorSettings({ onClose }) {
           <div className="small muted">Their terms: {Number(r.min_hours)} h minimum per visit, billed in {r.increment_min}-minute steps (they set this).
             {r.terms_accepted_at ? ` Accepted your terms ${new Date(r.terms_accepted_at).toLocaleDateString()}.` : ''}</div>
           {r.rec && <Record rec={r.rec} />}
+          {custId && (
+            <details>
+              <summary className="small" style={{ cursor: 'pointer' }}>Rates they charge you</summary>
+              <div style={{ paddingTop: 6 }}><RateCard customerId={custId} contractorId={r.contractor_id} side="store" title={null} /></div>
+            </details>
+          )}
+          <Details contractorId={r.contractor_id} onSaved={load} onLink={(x) => { setSent(x); setMsg('New sign-in link is ready under "Invite a contractor" below. Send it with Email it or Text it.'); }} />
           <button disabled={busy} onClick={async () => {
             await run('set_unverified_rule', { p_contractor: r.contractor_id, p_rule: r.unverified_time });
             await run('set_contractor_terms', { p_contractor: r.contractor_id, p_mode: r.mode, p_pays_travel: r.pays_travel,
@@ -218,6 +237,74 @@ export default function ContractorSettings({ onClose }) {
       ))}
       <a href="/store/stickers" target="_blank" rel="noreferrer"><button type="button">Print QR stickers</button></a>
     </div>
+  );
+}
+
+// The store's own contact and note for a contractor; before they sign in, fix their details and send a fresh link.
+function Details({ contractorId, onSaved, onLink }) {
+  const [open, setOpen] = useState(false);
+  const [d, setD] = useState(null);
+  const [f, setF] = useState(null);
+  const [err, setErr] = useState('');
+  const [ok, setOk] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!open || d) return;
+    act('contractor_details', { p_contractor: contractorId }).then((x) => {
+      setD(x);
+      setF({ contact_name: x.contact_name || '', contact_phone: x.contact_phone || '', contact_email: x.contact_email || '', note: x.note || '',
+        company: x.name || '', office: x.office_phone || '', inv_name: x.invite?.name || '', inv_email: x.invite?.email || '', inv_phone: x.invite?.phone || '' });
+    }).catch((e) => setErr(e.message));
+  }, [open, d, contractorId]);
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  async function save(e) {
+    e.preventDefault(); setBusy(true); setErr(''); setOk('');
+    try {
+      const x = await act('store_update_contractor', { p_contractor: contractorId, p_contact_name: f.contact_name, p_contact_phone: f.contact_phone,
+        p_contact_email: f.contact_email, p_note: f.note, p_company: d.can_edit_company ? f.company : null, p_office_phone: d.can_edit_company ? f.office : null });
+      setD(x); setOk('Saved.'); onSaved?.();
+    } catch (x) { setErr(x.message); } finally { setBusy(false); }
+  }
+  return (
+    <details open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
+      <summary className="small" style={{ cursor: 'pointer' }}>Edit details &amp; your contact there</summary>
+      {err && <div className="small" style={{ color: 'var(--red-fg)' }}>{err}</div>}
+      {f && d && (
+        <form className="stack" style={{ gap: 6, paddingTop: 6 }} onSubmit={save}>
+          {d.can_edit_company ? (
+            <div className="row">
+              <label className="grow">Company name<input value={f.company} onChange={set('company')} required /></label>
+              <label className="grow">Office phone<input type="tel" value={f.office} onChange={set('office')} /></label>
+            </div>
+          ) : (
+            <div className="small muted">{d.name}{d.office_phone ? ` · office ${d.office_phone}` : ''}. They've signed in, so their company name and office phone are theirs to keep up to date.</div>
+          )}
+          <div className="small"><strong>Your contact there</strong> <span className="muted">(only your company sees this)</span></div>
+          <div className="row">
+            <label className="grow">Name<input value={f.contact_name} onChange={set('contact_name')} placeholder="e.g. your account rep" /></label>
+            <label className="grow">Phone<input type="tel" value={f.contact_phone} onChange={set('contact_phone')} /></label>
+            <label className="grow">Email<input type="email" value={f.contact_email} onChange={set('contact_email')} /></label>
+          </div>
+          <label>Note<input value={f.note} onChange={set('note')} placeholder="e.g. Ask for Pete first. Contract renews in March." /></label>
+          <div className="row"><button className="primary" disabled={busy}>Save</button>{ok && <span className="small" style={{ color: 'var(--green-fg)' }}>{ok}</span>}</div>
+          {!d.signed_in && d.invite && (
+            <div className="notice small stack" style={{ gap: 6 }}>
+              <div><strong>They haven't signed in yet.</strong> {d.invite.expired ? 'Their link has expired.' : `Link sent to ${d.invite.name}${d.invite.email ? ` (${d.invite.email})` : ''}.`} Wrong person or email? Fix it and send a fresh link (the old one stops working).</div>
+              <div className="row">
+                <label className="grow">Name<input value={f.inv_name} onChange={set('inv_name')} /></label>
+                <label className="grow">Email<input type="email" value={f.inv_email} onChange={set('inv_email')} /></label>
+                <label className="grow">Mobile<input type="tel" value={f.inv_phone} onChange={set('inv_phone')} /></label>
+              </div>
+              <div><button type="button" disabled={busy} onClick={async () => {
+                setBusy(true); setErr('');
+                try { const x = await act('store_new_contractor_link', { p_contractor: contractorId, p_name: f.inv_name, p_email: f.inv_email || null, p_phone: f.inv_phone || null }); onLink?.(x); setD(null); }
+                catch (x) { setErr(x.message); } finally { setBusy(false); }
+              }}>Make a new sign-in link</button></div>
+            </div>
+          )}
+        </form>
+      )}
+    </details>
   );
 }
 

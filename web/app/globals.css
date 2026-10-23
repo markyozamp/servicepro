@@ -522,3 +522,9 @@ a.button-like { display: inline-flex; align-items: center; padding: 8px 14px; bo
 .lb-check { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
 .lb-check input { width: auto; margin-top: 3px; flex: 0 0 auto; transform: scale(1.2); }
 .lb-check:has(input:checked) { border-color: var(--green-fg); background: var(--green-bg, transparent); }
+
+/* Rates */
+.rate-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+table.compare th { text-align: right; vertical-align: bottom; min-width: 110px; }
+table.compare th:first-child { min-width: 130px; }
+table.compare .prospect { background: var(--amber-bg); }

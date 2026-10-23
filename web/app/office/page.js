@@ -62,7 +62,7 @@ export default function OfficePortal() {
     mq.addEventListener?.('change', on);
     return () => mq.removeEventListener?.('change', on);
   }, []);
-  const go = (t) => { setTab(t); setMoreOpen(false); window.scrollTo({ top: 0 }); };
+  const go = (t, cust) => { setTab(t); if (cust) setCpick(`c:${cust}`); setMoreOpen(false); window.scrollTo({ top: 0 }); };
 
   const load = useCallback(async () => {
     try {
@@ -259,7 +259,7 @@ export default function OfficePortal() {
 
         {tab === 'team' && <><CallRouting profile={profile} logo={logo} onLogo={setLogoOverride} /><TeamPanel profile={profile} /></>}
 
-        {tab === 'customers' && <CustomerBook book={book} pick={validPick} onPick={setCpick} onOpenCall={setOpen} admin={!!profile.is_org_admin} onChanged={load} />}
+        {tab === 'customers' && <CustomerBook book={book} pick={validPick} onPick={setCpick} onOpenCall={setOpen} admin={!!profile.is_org_admin} onChanged={load} contractorId={profile.contractor_id} canRates={!!(profile.is_org_admin || profile.can_dispatch)} />}
 
         {tab === 'pm' && (
           <div className="panel tablewrap">

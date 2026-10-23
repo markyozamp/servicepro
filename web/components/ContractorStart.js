@@ -3,7 +3,7 @@
 // Contractor's first days: a one-time welcome (how a call works, in three pictures) and a getting-started checklist
 // that ticks itself off. Shown to the contractor's owner/office; hide-able; disappears when everything's done.
 import { useEffect, useState } from 'react';
-import { supabase, q } from '@/lib/supabase';
+import { supabase, q, act } from '@/lib/supabase';
 
 const ls = {
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -25,6 +25,8 @@ export default function ContractorStart({ me, org, book, onGo }) {
     setWelcome(ls.get(`scp_welcome_${cid}`) !== '1');
     let alive = true;
     (async () => {
+      const custIds = (book || []).map((c) => c.customer_id);
+      const cards = await Promise.all(custIds.map((id) => act('rate_card', { p_customer: id, p_contractor: cid }).catch(() => null)));
       const [cc, team, links] = await Promise.all([
         q(supabase.from('customer_contractors').select('terms_accepted_at').eq('contractor_id', cid).is('contractor_removed_at', null)),
         q(supabase.from('profiles').select('id, is_technician, active').eq('contractor_id', cid).eq('active', true)),
@@ -34,10 +36,12 @@ export default function ContractorStart({ me, org, book, onGo }) {
         terms: cc.length > 0 && cc.every((r) => r.terms_accepted_at),
         techs: team.filter((p) => p.is_technician && p.id !== me.id).length,
         pending: links.filter((l) => new Date(l.expires_at) > new Date()).length,
+        rates: cards.length > 0 && cards.every((k) => k && (k.current || k.pending)),
+        firstNoRates: custIds[cards.findIndex((k) => !(k && (k.current || k.pending)))] || null,
       });
     })().catch(() => {});
     return () => { alive = false; };
-  }, [cid, me.id, office]);
+  }, [cid, me.id, office, (book || []).length]);
 
   if (!office || !st) return null;
   const justMe = ls.get(`scp_justme_${cid}`) === '1';
@@ -49,6 +53,7 @@ export default function ContractorStart({ me, org, book, onGo }) {
   const steps = [
     ['Accept your customer\'s terms', 'Done when you signed in with their link.', st.terms, () => onGo('customers')],
     ['Add your office phone', 'The number stores reach when they tap "Call them now".', !!org?.phone, () => onGo('team')],
+    ['Enter your rates', 'What you charge each customer: labor, after hours, trip charge. They see it and accept it.', st.rates, () => onGo('customers', st.firstNoRates)],
     ['Add your technicians', 'Each tech gets their own sign-in link by text. Just you? Tick "It\'s just me".', st.techs > 0 || justMe, () => onGo('team')],
     ['Your techs sign in on their phones', st.pending ? `${st.pending} sign-in link${st.pending === 1 ? '' : 's'} not opened yet.` : 'Each tech opens their link once and taps Install.', justMe || (st.techs > 0 && st.pending === 0), () => onGo('team')],
     ['Put the app on your phone', 'Menu → Install on this phone (iPhone: Share → Add to Home Screen).', installed, null],
@@ -86,7 +91,7 @@ export default function ContractorStart({ me, org, book, onGo }) {
       {welcomeCard}
       <div className="panel panel-pad stack gs" style={{ marginBottom: 14 }}>
         <div className="spread">
-          <div><h3>Getting started</h3><div className="small muted">{done} of {steps.length} done. About 5 minutes.</div></div>
+          <div><h3>Getting started</h3><div className="small muted">{done} of {steps.length} done. About 10 minutes.</div></div>
           <button className="linkish" onClick={() => { ls.set(`scp_cgs_hide_${cid}`, '1'); setHidden(true); }}>Hide for now</button>
         </div>
         <div className="gs-bar"><span style={{ width: `${(done / steps.length) * 100}%` }} /></div>

@@ -1302,3 +1302,33 @@ select test.ok((select j->'invoice'->>'status' = 'submitted' and (j->>'over_nte'
   from send_bill(test.v('tw'), 'INV-884', 99999, true, null, null, true) j), 'sent over the PO on purpose: flagged and never auto-approved');
 select test.login(:DOUG);
 select from set_auto_approve_bills(false);
+
+\echo '=== 59. Rate cards, rate proposals, compare contractors, editing a contractor'
+set role authenticated;
+select test.login(:DOUG);
+select test.ok((select (save_rates(c.customer_id, c.contractor_id, '{"regular":75,"after_hours":110,"trip":65,"custom":[{"name":"Parts runner","amount":45,"unit":"hr"}]}', current_date - 200)->'current'->'rates'->>'regular')::numeric = 75
+  from customer_contractors c where c.contractor_id = test.v('PRAIRIE') limit 1), 'the store enters the rates it pays Prairie: in force at once');
+select test.blocked($$select save_rates((select customer_id from customer_contractors where contractor_id = (select test.v('PRAIRIE')) limit 1), (select test.v('PRAIRIE')), '{"regular":"lots"}')$$, 'numbers', 'rates must be numbers');
+select test.login(test.v('PETE'));
+select test.ok((select (save_rates(c.customer_id, c.contractor_id, '{"regular":85,"after_hours":120,"trip":65}', current_date, 'Rates go up for 2027')->'pending'->'rates'->>'regular')::numeric = 85
+  from customer_contractors c where c.contractor_id = test.v('PRAIRIE') limit 1), 'the contractor proposes a raise: it waits for the store');
+select test.ok((select (rate_card(c.customer_id, c.contractor_id)->'current'->'rates'->>'regular')::numeric = 75 from customer_contractors c where c.contractor_id = test.v('PRAIRIE') limit 1),
+  'until then the card still shows $75');
+select test.login(:DOUG);
+select test.ok((select count(*) >= 1 from notifications where user_id = :DOUG and message like '%entered their rates%'), 'the store is told about the proposal');
+select test.ok((select (decide_rates((rate_card(c.customer_id, c.contractor_id)->'pending'->>'id')::uuid, true)->'previous'->'rates'->>'regular')::numeric = 75
+  from customer_contractors c where c.contractor_id = test.v('PRAIRIE') limit 1), 'the store accepts: $85 now, $75 kept as what it replaced');
+select test.ok((select (rate_card(c.customer_id, c.contractor_id, current_date - 30)->'current'->'rates'->>'regular')::numeric = 75 from customer_contractors c where c.contractor_id = test.v('PRAIRIE') limit 1),
+  'a call from last month shows last month''s rate');
+select test.ok((select (save_prospect(null, 'Valley Plumbing', '{"regular":70,"trip":50}', array[2::smallint], 'Quote from Jan')->>'ok')::boolean), 'a prospect''s quote is added for comparison');
+select test.ok((select jsonb_array_length(j->'contractors') >= 1 and jsonb_array_length(j->'prospects') = 1 from compare_contractors() j), 'compare shows contractors and the prospect side by side');
+select test.ok((select (store_update_contractor(test.v('PRAIRIE'), 'Pete Olson', '701-555-0199', 'pete@example.com', 'Ask for Pete first')->>'contact_name') = 'Pete Olson'), 'the store keeps its own contact and note for a contractor');
+select test.blocked($$select store_update_contractor((select test.v('PRAIRIE')), 'Pete', null, null, null, 'Renamed Plumbing')$$, 'theirs to change', 'once they''ve signed in, the company name is theirs');
+select test.login(:RIVAL);
+select test.blocked($$select rate_card((select customer_id from customer_contractors where contractor_id = (select test.v('PRAIRIE')) limit 1), (select test.v('PRAIRIE')))$$, 'Not allowed', 'another contractor can''t see the rates');
+select test.login(:DOUG);
+select (invite_contractor('Valley Electrc', 'Val Smith', 'val@valley.test', null, array[]::smallint[], null, null)->>'contractor_id') as valley \gset
+select test.ok((select (contractor_details(:'valley')->>'can_edit_company')::boolean), 'before they sign in, the store can fix their details');
+select test.ok((select (store_update_contractor(:'valley', null, null, null, null, 'Valley Electric', '701-555-0123')->>'name') = 'Valley Electric'), 'a typo in the company name is fixed');
+select test.ok((select (store_new_contractor_link(:'valley', 'Val Smith', 'val.smith@valley.test', null)->>'token') is not null
+  and (select count(*) from join_links where contractor_id = :'valley' and used_at is null and expires_at > now()) = 1), 'a fresh sign-in link to the right email; the old one stops working');

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { act } from '@/lib/supabase';
 import { money, date } from '@/lib/format';
 import PoLog from './PoLog';
+import RateCard from './RateCard';
 import { ErrorBox } from './bits';
 
 const mins = (m) => (m == null ? '—' : m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`);
@@ -13,7 +14,7 @@ const TRAVEL = { yes: 'Pays travel time', no: 'Does not pay travel time', after_
 const UNVERIFIED = { review: 'Time not checked in is reviewed', no_pay: 'Time not checked in is not paid' };
 const mapUrl = (a) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a)}`;
 
-function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged }) {
+function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged, contractorId, canRates }) {
   const [eq, setEq] = useState(null);
   const [err, setErr] = useState('');
   const [show, setShow] = useState('stores');
@@ -59,6 +60,10 @@ function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged }) {
         {!t.terms_accepted_at && <div className="small" style={{ color: 'var(--red-fg)', marginTop: 6 }}>You haven't accepted their terms yet.</div>}
         <div className="small muted" style={{ marginTop: 6 }}>This year: {c.calls_ytd} call{c.calls_ytd === 1 ? '' : 's'} · {money(c.billed_ytd)} invoiced</div>
       </div>
+
+      {contractorId && <div className="panel" style={{ padding: 14 }}>
+        <RateCard customerId={c.customer_id} contractorId={contractorId} side="contractor" canEdit={canRates} />
+      </div>}
 
       <div className="tabs" style={{ marginBottom: 0 }}>
         <button className={show === 'stores' ? 'on' : ''} onClick={() => setShow('stores')}>Stores ({sites.length})</button>
@@ -142,11 +147,11 @@ function RemovedCustomers({ onChanged }) {
   );
 }
 
-export default function CustomerBook({ book, pick, onPick, onOpenCall, admin = false, onChanged = () => {} }) {
+export default function CustomerBook({ book, pick, onPick, onOpenCall, admin = false, onChanged = () => {}, contractorId, canRates = false }) {
   const custId = pick?.startsWith('c:') ? pick.slice(2) : pick?.startsWith('s:') ? book.find((c) => c.sites.some((s) => s.site_id === pick.slice(2)))?.customer_id : null;
   const siteId = pick?.startsWith('s:') ? pick.slice(2) : null;
   const one = custId && book.find((c) => c.customer_id === custId);
-  if (one) return <CustomerPage c={one} siteId={siteId} onBack={() => onPick('')} onOpenCall={onOpenCall} admin={admin} onChanged={onChanged} />;
+  if (one) return <CustomerPage c={one} siteId={siteId} onBack={() => onPick('')} onOpenCall={onOpenCall} admin={admin} onChanged={onChanged} contractorId={contractorId} canRates={canRates} />;
 
   const reasons = (c) => [...new Set(c.sites.flatMap((s) => s.reasons))];
   const sorted = [...book].sort((a, b) => reasons(b).length - reasons(a).length || a.name.localeCompare(b.name));

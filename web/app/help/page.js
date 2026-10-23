@@ -81,6 +81,19 @@ const STORE = [
     'Contractors & QR → Who gets which kind of call.',
     'For each trade (refrigeration, plumbing…), pick the contractor. New calls go to them automatically.',
   ]],
+  ['Edit a contractor', [
+    'Settings → Contractors. Under the contractor, open "Edit details & your contact there".',
+    'Your contact there (name, phone, email) and a note are yours to keep up to date anytime. Only your company sees them.',
+    'Haven\'t they signed in yet? You can fix the company name, office phone, and who the sign-in link goes to, then make a fresh link (the old one stops working).',
+    'Once they\'ve signed in, their company name and office phone are theirs to keep up to date. Your rules for them (travel, accept times, time not checked in) are right above: change them and tap Save.',
+  ]],
+  ['Contractor rates, and comparing contractors', [
+    'Settings → Contractors → "Rates they charge you" under each contractor: regular labor, after hours, helper, trip charge, parts markup and up to 4 others.',
+    'Enter them yourself, or your contractor enters them and you tap Accept. A raise they propose waits for you, with the old rate shown next to it.',
+    'Every change is kept with its start date: "Show rate history" tells you when a rate went up and by how much. On each call, "Their rates" shows the rates as of that call.',
+    'Tap ⚖ Compare contractors\' rates to see everyone side by side (pick a trade). Got a quote from a company that wants your account? Add it and it shows next to your contractors.',
+    'Rates are for reference; they don\'t change how bills are checked.',
+  ]],
   ['Stop using a contractor', [
     'Contractors & QR → find the contractor → Remove this contractor.',
     'Their past calls stay in your records; no new calls can go to them. Finish or cancel any open calls first.',
@@ -154,6 +167,11 @@ const CONTRACTOR = [
   ['Send a technician', [
     'Open the call, pick the technician and the time, and save the trip.',
     'The store sees them under Expected today, and the tech sees it in their app.',
+  ]],
+  ['Enter your rates for a customer', [
+    'Customers → pick the customer → "Your rates for …": regular labor, after hours, helper, trip charge, parts markup and up to 4 others (parts runner, holiday rate…).',
+    'Tap Enter your rates (or Propose new rates), pick the start date and Send to them. They accept, and you\'re told.',
+    'Raising rates? Propose them with the date they start. Until the customer accepts, they see the old rates with your proposal next to it.',
   ]],
   ['Send your bill', [
     'Finished calls show under Bills to send (and the Billing tab).',

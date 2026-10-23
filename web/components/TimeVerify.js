@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { money, dateTime, time, date } from '@/lib/format';
+import RateCard from './RateCard';
 
 const h = (n) => (n == null ? '—' : `${Number(n).toFixed(2)} h`);
 const hm = (m) => `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} m`;
@@ -216,6 +217,14 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
             </div>
           )}
         </div>
+      )}
+
+      {/* Reference: what this contractor charges this customer, as of the call */}
+      {(office || billingStore) && wo.contractor_id && (
+        <details className="small">
+          <summary style={{ cursor: 'pointer' }}>💲 {office ? 'Your rates for this customer' : 'Their rates'} (for reference)</summary>
+          <div style={{ paddingTop: 6 }}><RateCard customerId={wo.customer_id} contractorId={wo.contractor_id} side={office ? 'contractor' : 'store'} at={(wo.created_at || '').slice(0, 10) || null} canEdit={false} title={null} /></div>
+        </details>
       )}
 
       {/* Enter the invoice: required for the contractor; the store can type in a paper/emailed one */}
