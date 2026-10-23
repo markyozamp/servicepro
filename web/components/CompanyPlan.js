@@ -31,6 +31,7 @@ export default function CompanyPlan({ org, onSaved }) {
   const [logo, setLogo] = useState(org?.logo_data || null);
   const [area, setArea] = useState(org?.travel_area_miles ?? 10);
   const [areaSaved, setAreaSaved] = useState(org?.travel_area_miles ?? 10);
+  const [auto, setAuto] = useState(!!org?.auto_approve_bills);
 
   async function pickLogo(file) {
     setErr(''); setMsg('');
@@ -128,6 +129,19 @@ export default function CompanyPlan({ org, onSaved }) {
           }}>Save</button>
         </div>
         <div className="small muted">Shown on each call: "Trip started near Fisher, MN, about 14 mi away." Starts at 10 miles.</div>
+      </div>
+
+      <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+        <h3>Approving bills <Info title="Approving bills">Every contractor bill comes in tied to its call and PO, with the contractor's own invoice number. By default you approve each one. Turn on auto-approve and a bill is approved for you only when it matches exactly: the contractor agreed to the verified hours, the total is within the PO (plus anything you approved on top), and nothing is flagged. Anything else still waits for you.</Info></h3>
+        <label className="row" style={{ gap: 8, fontWeight: 400 }}>
+          <input type="checkbox" style={{ width: 'auto' }} checked={auto} onChange={async (e) => {
+            const on = e.target.checked; setErr(''); setMsg('');
+            try { await act('set_auto_approve_bills', { p_on: on }); setAuto(on); setMsg(on ? 'Auto-approve is on: bills that match exactly are approved for you.' : 'Auto-approve is off: you approve every bill.'); }
+            catch (x) { setErr(x.message); }
+          }} />
+          Approve bills automatically when they match exactly
+        </label>
+        <div className="small muted">Off: you approve every bill (the default). On: only bills that don&apos;t match wait for you.</div>
       </div>
 
       <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>

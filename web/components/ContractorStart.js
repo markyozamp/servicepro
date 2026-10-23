@@ -64,7 +64,7 @@ export default function ContractorStart({ me, org, book, onGo }) {
       <div className="cwel-steps">
         <div><span className="cwel-ic">📥</span><strong>1. A call comes in</strong><span className="small muted">You get an alert. Tap Accept before the store's deadline shown on the call.</span></div>
         <div><span className="cwel-ic">🔧</span><strong>2. Send a tech</strong><span className="small muted">They tap I'm going, then check in at the store with the store's code.</span></div>
-        <div><span className="cwel-ic">🧾</span><strong>3. Send your bill</strong><span className="small muted">Enter it against the store's PO. Hours that match the verified time get approved fastest.</span></div>
+        <div><span className="cwel-ic">🧾</span><strong>3. Send your bill</strong><span className="small muted">Agree to the verified hours, then add your invoice # and total. Bills that match get approved fastest.</span></div>
       </div>
       <div className="small"><a href="/quickstart" target="_blank" rel="noreferrer">Print the one-page quick start</a> for your techs · <a href="/help?for=contractor" target="_blank" rel="noreferrer">How-to guide</a></div>
     </div>

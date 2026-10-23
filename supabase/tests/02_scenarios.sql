@@ -1276,3 +1276,29 @@ select test.login(:DOUG);
 select test.blocked($$select set_travel_area(0)$$, '1 to 100', 'the distance must make sense');
 reset role;
 select test.ok((select (v->'trip'->>'slow')::boolean from jsonb_array_elements(_verified(test.v('tw'))->'visits') v limit 1), 'a 30-minute drive from about 2 miles away is flagged as slow');
+
+\echo '=== 58. The light bill: agree to the hours, stay within the PO; optional auto-approve'
+reset role;
+select _allow_internal(true);
+update call_invoices set status = 'submitted' where work_order_id = test.v('tw');
+select _end_internal();
+set role authenticated;
+select test.login(test.v('PETE'));
+select test.ok((select (j->>'cap')::numeric = 600 and (j->>'trips')::int = 1 from invoice_check(test.v('tw')) j), 'the bill screen knows the ceiling and the number of trips');
+select test.blocked($$select send_bill((select test.v('tw')), 'INV-882', 99999, true)$$, 'over the $', 'a total over the PO is stopped');
+select test.blocked($$select send_bill((select test.v('tw')), 'INV-882', 300, false, 9)$$, 'what the other hours', 'more hours than verified need a reason');
+select test.ok((select (j->'invoice'->>'agreed_hours')::boolean and (j->>'all_verified')::boolean and j->'invoice'->>'status' = 'submitted'
+  from send_bill(test.v('tw'), 'INV-882', 300, true) j), 'agreeing to the verified hours: the bill matches and waits for the store');
+select test.login(:DOUG);
+select test.ok((select (set_auto_approve_bills(true)->>'on')::boolean), 'the store turns on auto-approve');
+select test.login(test.v('PETE'));
+select test.ok((select j->'invoice'->>'status' = 'approved' and (j->'invoice'->>'auto_approved')::boolean
+  from send_bill(test.v('tw'), 'INV-883', 300, true) j), 'a matching bill is approved automatically');
+reset role;
+select _allow_internal(true); update call_invoices set status = 'submitted' where work_order_id = test.v('tw'); select _end_internal();
+set role authenticated;
+select test.login(test.v('PETE'));
+select test.ok((select j->'invoice'->>'status' = 'submitted' and (j->>'over_nte')::boolean
+  from send_bill(test.v('tw'), 'INV-884', 99999, true, null, null, true) j), 'sent over the PO on purpose: flagged and never auto-approved');
+select test.login(:DOUG);
+select from set_auto_approve_bills(false);

@@ -100,6 +100,16 @@ const STORE = [
     'Settings & plan → Company profile: name, phone, email.',
     'Logo → Upload logo. A wide logo works best. It shows at the top of your dashboard.',
   ]],
+  ['Approve a contractor\'s bill', [
+    'Every bill arrives tied to its call and PO, with the contractor\'s own invoice number, so it matches their paperwork in one step.',
+    'Open the call. You see the hours billed next to the verified hours, the total next to what the call allows (PO plus anything you approved on top), and whether the contractor agreed to the verified hours.',
+    'Tap Approve invoice, or Question it and say what\'s wrong (the contractor sees your note).',
+  ]],
+  ['Approve matching bills automatically', [
+    'Settings & plan → Approving bills → tick "Approve bills automatically when they match exactly". It\'s off until you turn it on.',
+    'A bill is approved for you only when the contractor agreed to the verified hours, the total is within the PO, and nothing is flagged.',
+    'Anything else still waits for you. Auto-approved bills are marked "Approved automatically" on the call.',
+  ]],
   ['Check travel time on a bill', [
     'Open the call. Under Verified time, each trip shows the town it started near and about how far away it was: "Trip started near Fisher, MN, about 14 mi away."',
     'Only the actual drive is counted, from I\'m going to arrival. If the tech was already in the area and the bill has more hours than verified, the call says so.',
@@ -147,7 +157,9 @@ const CONTRACTOR = [
   ]],
   ['Send your bill', [
     'Finished calls show under Bills to send (and the Billing tab).',
-    'Open the call and enter your invoice number, hours and total. The store sees it checked against the verified time.',
+    'Open the call. Tick that you agree to the labor hours shown (verified on site + travel, over the number of trips), and that your bill doesn\'t go over the PO plus anything the store approved on top. Parts are included under the PO.',
+    'Type your own invoice number and total, then Agree and send. About 15 seconds.',
+    'Hours different? Tap "My hours are different" and say what the extra time was for. Over the PO? Ask first with Request approval for more, or send it marked over the PO.',
     'Travel counts from where the trip really started (when your tech tapped I\'m going), not from your shop. The store sees the town it started near.',
     'Send it before the store\'s deadline, or it shows as late to them.',
   ]],

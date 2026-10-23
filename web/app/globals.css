@@ -517,3 +517,8 @@ a.button-like { display: inline-flex; align-items: center; padding: 8px 14px; bo
 .cwel-steps > div { display: flex; flex-direction: column; gap: 3px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
 .cwel-ic { font-size: 26px; }
 @media (max-width: 760px) { .cwel-steps { grid-template-columns: 1fr; } }
+
+/* Light bill: the contractor's two agreements */
+.lb-check { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.lb-check input { width: auto; margin-top: 3px; flex: 0 0 auto; transform: scale(1.2); }
+.lb-check:has(input:checked) { border-color: var(--green-fg); background: var(--green-bg, transparent); }

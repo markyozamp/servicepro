@@ -30,7 +30,7 @@ export default function QuickStart() {
             <li>A new call arrives: phone alert, email, and the <strong>Today</strong> list.</li>
             <li><strong>Accept it</strong> before the store's deadline shown on the call: <em>on the way now</em> or a scheduled time.</li>
             <li><strong>Send a tech</strong> (or go yourself).</li>
-            <li>Job done: <strong>enter your bill</strong> against the store's PO. Hours that match the verified time get approved fastest.</li>
+            <li>Job done: open the call, <strong>agree to the verified hours</strong> and that you're within the PO, then type <strong>your invoice # and total</strong>. About 15 seconds.</li>
           </ol>
         </section>
         <section>

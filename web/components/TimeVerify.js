@@ -196,10 +196,16 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
               <tr><td><strong>Not explained</strong></td>
                 <td className="num"><strong style={{ color: Number(chk.unexplained_h) > 0 ? 'var(--red-fg)' : 'var(--green-fg)' }}>{Number(chk.unexplained_h) > 0 ? h(chk.unexplained_h) : 'none ✓'}</strong></td></tr>
               {Number(chk.under_h) > 0 && office && <tr><td className="small muted">You billed less time than was verified</td><td className="num small muted">{h(chk.under_h)}</td></tr>}
-              <tr><td>Invoice total{wo.nte != null ? <span className="small muted"> · limit {money(wo.nte)}</span> : ''}</td>
+              <tr><td>Invoice total{chk.cap != null ? <span className="small muted"> · allowed {money(chk.cap)}{Number(chk.approved_more) ? ` (PO ${money(wo.nte)} + approved ${money(chk.approved_more)})` : ''}</span> : ''}</td>
                 <td className="num"><strong style={chk.over_nte ? { color: 'var(--red-fg)' } : {}}>{money(inv.total)}</strong>{chk.over_nte && <div className="small" style={{ color: 'var(--red-fg)' }}>over by {money(chk.over_nte_by)}</div>}</td></tr>
             </tbody>
           </table>
+          {inv.side === 'contractor' && inv.agreed_hours != null && (
+            <div className="small">{inv.agreed_hours ? '✓ Contractor agreed to the verified hours' : '✎ Contractor billed different hours (see above)'}
+              {' · '}{chk.cap == null ? 'no PO limit' : inv.agreed_cap ? '✓ within the PO' : '⚠ sent over the PO'}
+              {' · '}{chk.trips} trip{chk.trips === 1 ? '' : 's'}</div>
+          )}
+          {inv.auto_approved && <div className="small"><span className="chip tone-green">Approved automatically</span> <span className="muted">it matched: hours agreed, within the PO</span></div>}
           {billingStore && inv.status !== 'approved' && (
             <div className="row">
               <button className="primary" disabled={busy} onClick={() => run('store_review_invoice', { p_wo: wo.id, p_ok: true })}>Approve invoice</button>
@@ -224,21 +230,88 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
 }
 
 function InvoiceForm({ wo, chk, side, busy, run }) {
+  if (side !== 'office') return <StoreInvoiceForm wo={wo} chk={chk} busy={busy} run={run} />;
+  return <LightBill wo={wo} chk={chk} busy={busy} run={run} />;
+}
+
+// Contractor: the light bill. Agree to the verified hours and that the bill stays within the PO, then invoice # and total.
+function LightBill({ wo, chk, busy, run }) {
+  const inv = chk?.invoice;
+  const [f, setF] = useState({ number: inv?.number || '', total: inv?.total ?? '', agreeHours: false, agreeCap: false, differ: false, hours: '', reason: '', overOk: false });
+  const [open, setOpen] = useState(!inv);
+  if (!chk) return null;
+  if (!open) return <button onClick={() => setOpen(true)}>Change the bill</button>;
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
+  const cap = chk.cap == null ? null : Number(chk.cap);
+  const more = Number(chk.approved_more || 0);
+  const total = f.total === '' ? null : Number(f.total);
+  const over = cap != null && total != null && total > cap;
+  const billable = Number(chk.billable_h || 0);
+  const extraH = f.differ && f.hours !== '' ? Number(f.hours) - billable : 0;
+  const hoursOk = f.differ ? f.hours !== '' && (extraH <= 0.009 || f.reason.trim().length >= 5) : f.agreeHours;
+  const capOk = cap == null || (over ? f.overOk : f.agreeCap);
+  const ready = f.number.trim() && total != null && hoursOk && capOk;
+  const parts = Number(chk.parts_run_h) > 0 ? ` + ${h(chk.parts_run_h)} parts runs` : '';
+  return (
+    <form className="stack lightbill" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 8 }} onSubmit={(e) => {
+      e.preventDefault();
+      run('send_bill', { p_wo: wo.id, p_invoice_number: f.number.trim(), p_total: total, p_agree_hours: !f.differ && f.agreeHours,
+        p_hours: f.differ ? Number(f.hours) : null, p_reason: f.differ ? f.reason.trim() || null : null, p_over_ok: over && f.overOk }, () => setOpen(false));
+    }}>
+      <h3>Send your bill · PO {wo.store_po_number || `PO${wo.number}`}</h3>
+      {!f.differ ? (
+        <label className="lb-check"><input type="checkbox" checked={f.agreeHours} onChange={set('agreeHours')} />
+          <span>Labor: <strong>{h(chk.billable_h)}</strong> over <strong>{chk.trips} trip{chk.trips === 1 ? '' : 's'}</strong>
+            <span className="small muted"> ({h(chk.onsite_h)} on site + {h(chk.travel_counted_h)} travel{parts}, with your minimum and rounding)</span></span></label>
+      ) : (
+        <div className="row">
+          <label style={{ flex: '0 0 130px' }}>Hours on your bill<input type="number" step="0.25" min="0" value={f.hours} onChange={set('hours')} required /></label>
+          {extraH > 0.009 && <label className="grow">What were the other {extraH.toFixed(2)} h for?<input value={f.reason} onChange={set('reason')} placeholder="e.g. Shop: rebuilt valve; second tech" /></label>}
+        </div>
+      )}
+      <button type="button" className="linkish small" style={{ alignSelf: 'flex-start' }} onClick={() => setF({ ...f, differ: !f.differ, agreeHours: false })}>
+        {f.differ ? `Use the verified hours (${h(chk.billable_h)})` : 'My hours are different'}</button>
+      {cap == null ? <div className="small muted">No PO limit on this call.</div> : (
+        <label className="lb-check"><input type="checkbox" checked={f.agreeCap} disabled={over} onChange={set('agreeCap')} />
+          <span>My bill doesn&apos;t go over <strong>{money(cap)}</strong>
+            <span className="small muted"> (PO {money(Number(wo.nte))}{more ? ` + approved additions ${money(more)}` : ''}; parts are included under the PO)</span></span></label>
+      )}
+      <div className="row">
+        <label className="grow">Your invoice #<input value={f.number} onChange={set('number')} required placeholder="From your own invoice" /></label>
+        <label className="grow">Total ($)<input type="number" step="0.01" min="0" value={f.total} onChange={set('total')} required /></label>
+      </div>
+      {over && (
+        <div className="notice small stack" style={{ gap: 6 }}>
+          <div><strong>That&apos;s {money(total - cap)} over what this call allows.</strong> Best: ask the store first with <em>Request approval for more</em>.</div>
+          <label className="row" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={f.overOk} onChange={set('overOk')} /> Send it anyway, marked over the PO (the store will see it flagged)</label>
+        </div>
+      )}
+      <div className="row">
+        <button className="primary" disabled={busy || !ready}>Agree and send</button>
+        {inv && <button type="button" onClick={() => setOpen(false)}>Cancel</button>}
+      </div>
+      <div className="small muted">Your invoice # ties this bill to your own paperwork, so the store matches it in one step.</div>
+    </form>
+  );
+}
+
+// Store: type in a contractor's paper or emailed invoice.
+function StoreInvoiceForm({ wo, chk, busy, run }) {
   const inv = chk?.invoice;
   const [f, setF] = useState({ number: inv?.number || '', total: inv?.total ?? '', hours: chk?.billed_h ?? '', other: chk?.other_h ? String(chk.other_h) : '', reason: chk?.other_reason || '' });
   const [open, setOpen] = useState(!inv);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
-  if (!open) return <button onClick={() => setOpen(true)}>{side === 'office' ? 'Change the invoice' : 'Enter the invoice'}</button>;
+  if (!open) return <button onClick={() => setOpen(true)}>Enter the invoice</button>;
   const billable = Number(chk?.billable_h || 0);
   const extra = Number(f.hours || 0) - billable - Number(f.other || 0);
+  const cap = chk?.cap == null ? null : Number(chk.cap);
   return (
     <form className="stack" style={{ gap: 6, borderTop: '1px solid var(--line)', paddingTop: 8 }} onSubmit={(e) => {
       e.preventDefault();
       run('submit_invoice', { p_wo: wo.id, p_invoice_number: f.number, p_total: Number(f.total), p_hours_billed: Number(f.hours),
         p_other_hours: Number(f.other || 0), p_other_reason: f.reason || null }, () => setOpen(false));
     }}>
-      <h3>{side === 'office' ? 'Your invoice for this PO' : "Enter the contractor's invoice (from their paper or email)"}</h3>
-      {side === 'office' && <div className="small muted">The store requires it here. Verified time on this call: <strong>{h(billable)}</strong>. Shop work or other time? Enter it with a reason so it isn't flagged.</div>}
+      <h3>Enter the contractor&apos;s invoice (from their paper or email)</h3>
       <div className="row">
         <label className="grow">Invoice #<input value={f.number} onChange={set('number')} required /></label>
         <label className="grow">Total ($)<input type="number" step="0.01" min="0" value={f.total} onChange={set('total')} required /></label>
@@ -250,8 +323,8 @@ function InvoiceForm({ wo, chk, side, busy, run }) {
       </div>
       {f.hours !== '' && (
         <div className={`small ${extra > 0.009 ? '' : 'muted'}`} style={extra > 0.009 ? { color: 'var(--red-fg)', fontWeight: 600 } : {}}>
-          {extra > 0.009 ? `${extra.toFixed(2)} h more than verified + explained — the store will see this as not explained.` : 'Hours match what was verified.'}
-          {wo.nte != null && Number(f.total) > Number(wo.nte) ? ` Total is over the store's ${money(wo.nte)} limit.` : ''}
+          {extra > 0.009 ? `${extra.toFixed(2)} h more than verified + explained — shows as not explained.` : 'Hours match what was verified.'}
+          {cap != null && Number(f.total) > cap ? ` Total is over the ${money(cap)} this call allows.` : ''}
         </div>
       )}
       <div className="row">
