@@ -1411,5 +1411,10 @@ select test.ok((select (store_request_bill(test.v('lateb'))->>'ok')::boolean), '
 select test.blocked($$select store_request_bill((select test.v('lateb')))$$, 'already asked', 'asking again right away just says they''ve been told');
 reset role;
 select test.ok((select count(*) >= 1 from notifications n join profiles p on p.id = n.user_id where p.contractor_id = (select contractor_id from work_orders where id = test.v('lateb')) and n.message like '%is asking for your invoice%'), 'the contractor''s office is told');
-do $$ begin perform _allow_internal(true); update work_orders set bill_requested_at = now() - interval '25 hours' where id = test.v('lateb'); perform _end_internal(); end $$;
-select test.ok((select bill_request_watch() >= 1), 'a day later with no invoice, both sides are reminded');
+select test.ok((select bill_request_watch() = 0), 'no reminder right after asking');
+do $$ begin perform _allow_internal(true); update work_orders set bill_requested_at = now() - interval '49 hours' where id = test.v('lateb'); perform _end_internal(); end $$;
+select test.ok((select bill_request_watch() >= 1), 'two days later with no invoice, both sides are reminded');
+set role authenticated;
+select test.login(:DOUG);
+select test.ok((select (store_followup_bill(test.v('lateb'), 'call')->>'how') = 'call'), 'the store can log that it called them instead');
+reset role;

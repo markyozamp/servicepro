@@ -174,7 +174,11 @@ export default function StorePortal() {
   const fcalls = validSite ? calls.filter((c) => c.site_id === validSite) : calls;
   const fpending = validSite ? pending.filter((a) => a.work_orders?.site_id === validSite) : pending;
   const fdoor = validSite ? door.filter((v) => v.work_orders?.site_id === validSite) : door;
-  const late = fcalls.filter((c) => c.status === 'completed' && c.invoice_due_at && new Date(c.invoice_due_at) < new Date());
+  const overdueBills = fcalls.filter((c) => c.status === 'completed' && c.invoice_due_at && new Date(c.invoice_due_at) < new Date());
+  // Followed up in the last 2 days: off the alert list until then (comes back if still no invoice)
+  const followed = (c) => c.bill_requested_at && Date.now() - new Date(c.bill_requested_at).getTime() < 2 * 24 * 3600 * 1000;
+  const late = overdueBills.filter((c) => !followed(c));
+  const waitingBills = overdueBills.filter(followed);
   const shown = fcalls.filter((c) => c.kind !== 'pm' || !isOpen(c.status)).filter((c) =>
     tab === 'open' ? isOpen(c.status) : tab === 'billing' ? c.status === 'completed' : ['invoiced', 'cancelled'].includes(c.status));
   const counts = {
@@ -334,6 +338,12 @@ export default function StorePortal() {
         ))}
 
         {/* Late bills */}
+        {waitingBills.length > 0 && (
+          <div className="small muted" style={{ padding: '0 4px' }}>
+            Waiting on {waitingBills.length} invoice{waitingBills.length === 1 ? '' : 's'} you already followed up on: {waitingBills.map((c, i) => (
+              <span key={c.id}>{i ? ', ' : ''}<a href="#" onClick={(e) => { e.preventDefault(); setOpen(c.id); }}>call #{c.number}</a></span>))}. They'll come back here if they don't arrive within 2 days.
+          </div>
+        )}
         {late.length > 0 && (
           <div className="panel panel-pad" style={{ borderColor: '#e6b3ab' }}>
             <h3 style={{ color: 'var(--red-fg)' }}>Contractor invoices not received</h3>

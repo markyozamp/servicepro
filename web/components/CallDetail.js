@@ -511,28 +511,32 @@ function Step({ done, label, at, extra }) {
   );
 }
 
-// Work done, invoice late. Store: ask the contractor for it (emailed and on their phone), or call them.
-// Contractor: see that the store asked.
+// Work done, invoice late. Store: ask the contractor for it (email + phone alert) or call them; once followed up,
+// the alert goes quiet for 2 days and comes back only if the invoice still hasn't arrived. Contractor: sees that the store asked.
 function LateInvoice({ wo, side, busy, run }) {
   const who = wo.contractors?.name || 'the contractor';
   const asked = wo.bill_requested_at;
-  const remind = asked ? new Date(new Date(asked).getTime() + 24 * 3600 * 1000) : null;
+  const quiet = asked && Date.now() - new Date(asked).getTime() < 2 * 24 * 3600 * 1000;
+  const remind = asked ? new Date(new Date(asked).getTime() + 2 * 24 * 3600 * 1000) : null;
+  const how = wo.bill_request_how === 'call' ? 'You called them' : 'You asked for it';
   if (side === 'office') {
     return (
       <div className="late-inv stack" style={{ gap: 4 }}>
         <strong>Your invoice is late. It was due to {wo.customers?.name || 'the store'} {date(wo.invoice_due_at)}.</strong>
-        {asked && <div className="small">They asked for it {dateTime(asked)}. Enter it now so it's off their list.</div>}
+        {asked && <div className="small">They {wo.bill_request_how === 'call' ? 'called you about it' : 'asked for it'} {dateTime(asked)}. Enter it now so it's off their list.</div>}
       </div>
     );
   }
   return (
-    <div className="late-inv stack" style={{ gap: 6 }}>
-      <strong>Invoice not received</strong>
+    <div className={`late-inv stack${quiet ? ' quiet' : ''}`} style={{ gap: 6 }}>
+      <strong>{quiet ? 'Waiting for the invoice' : 'Invoice not received'}</strong>
       <div className="small">The work was finished {date(wo.completed_at)}. <strong>{who}'s invoice was due to you {date(wo.invoice_due_at)}</strong>, and you haven't received it.</div>
-      {asked && <div className="small">✓ You asked for it {dateTime(asked)}. They were sent an email and a phone alert. If it hasn't come by {dateTime(remind)}, you'll both get a reminder.</div>}
+      {asked && <div className="small">✓ {how} {dateTime(asked)}{wo.bill_request_how === 'call' ? '' : ' (they got an email and a phone alert)'}.
+        {quiet ? ` This alert is off until ${dateTime(remind)}; if the invoice still hasn't come by then, you'll both be reminded.` : ' Still nothing, so it\'s back on your list.'}</div>}
       <div className="row">
-        <button className="primary" disabled={busy} onClick={() => run('store_request_bill', { p_wo: wo.id })}>📧 {asked ? 'Ask again' : `Ask ${who} for the invoice`}</button>
+        <button className={quiet ? '' : 'primary'} disabled={busy} onClick={() => run('store_followup_bill', { p_wo: wo.id, p_how: 'email' })}>📧 {asked ? 'Ask again' : `Ask ${who} for the invoice`}</button>
         {wo.contractors?.phone && <a className="callbtn" href={`tel:${wo.contractors.phone.replace(/[^\d+]/g, '')}`}>📞 Call {who}</a>}
+        <button disabled={busy} onClick={() => run('store_followup_bill', { p_wo: wo.id, p_how: 'call' })}>☎ I called them</button>
       </div>
     </div>
   );
