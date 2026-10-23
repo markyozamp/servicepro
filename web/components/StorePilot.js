@@ -13,7 +13,7 @@ export default function StorePilot() {
   return (
     <div className="pilot-offer stack" style={{ gap: 8 }} id="pilot-stores">
       <strong style={{ fontSize: 17 }}>Pilot locations wanted: stores, restaurants, clinics, dental offices, banks and offices</strong>
-      <div className="small">Time Verify is in its pilot phase. We're looking for <strong>4 companies</strong> with service calls at their locations to use it on real service calls and help us make it better.</div>
+      <div className="small">Service Call Proof is in its pilot phase. We're looking for <strong>4 companies</strong> to use it on real service calls at their locations and help us make it better.</div>
       <ul className="small plan-list">
         <li><strong>Free for the first year,</strong> up to 5 locations.</li>
         <li>After that, <strong>$295 per location</strong> (instead of $395), locked for as long as you're a customer.</li>
