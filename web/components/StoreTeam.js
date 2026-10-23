@@ -84,7 +84,7 @@ export default function StoreTeam({ me }) {
   return (
     <div className="stack">
       <div className="spread">
-        <h3>Your team <Info title="Your team">{`Add the people at your company who use Service Call Proof: store managers, a director of maintenance, a facilities person. Add as many people as you need; logins are included in your plan. You choose which locations each person sees and how much they can approve. Your contractors and their technicians don't use these logins; they're free.`}</Info></h3>
+        <h3>Your team <Info title="Your team">{`Add the people at your company who use Service Call Proof: store managers, a director of maintenance, a facilities person. Add as many people as you need; logins are included in your plan. Give everyone their own login rather than sharing one: it's free, a password change never locks others out, and you can see who did what. You choose which locations each person sees and how much they can approve. Your contractors and their technicians don't use these logins; they're free.`}</Info></h3>
         {seats && <span className="chip tone-slate">{seats.used} {seats.used === 1 ? 'person' : 'people'}</span>}
       </div>
       <ErrorBox error={err} /><Notice>{msg}</Notice>

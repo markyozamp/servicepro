@@ -44,6 +44,8 @@ const STORE = [
     'Tick what they can do (open calls, approve up to an amount, equipment, contractors, locations, team, settings & plan).',
     'Under Which locations do they see?, tick All locations or just their stores.',
     'Save, then send them the sign-in link by text or email. Logins are included in your plan; add as many people as you need.',
+    'Give every person their own login, and never share one. Logins are free and unlimited. With a shared login, one person changing the password locks everyone out, and you can\'t tell who approved what.',
+    'Set people up with an email they\'ll keep, ideally a company email. The owner especially should use a company email the owner controls, so password resets always reach the right person.',
   ]],
   ['Choose which stores a person sees', [
     'Team → Edit next to the person → Which locations do they see? → tick their stores → Save.',
