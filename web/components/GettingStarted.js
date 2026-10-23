@@ -15,7 +15,7 @@ export default function GettingStarted({ me, onGo, onNewCall }) {
     (async () => {
       const [sites, cc, eq, team, calls] = await Promise.all([
         q(supabase.from('sites').select('id, lat')),
-        q(supabase.from('customer_contractors').select('contractor_id')),
+        q(supabase.from('customer_contractors').select('contractor_id').is('store_removed_at', null)),
         q(supabase.from('equipment').select('id').is('retired_at', null).limit(1)),
         q(supabase.from('profiles').select('id').eq('customer_id', me.customer_id).eq('active', true)),
         q(supabase.from('work_orders').select('id').limit(1)),

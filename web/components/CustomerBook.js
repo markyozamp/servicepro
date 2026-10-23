@@ -13,7 +13,7 @@ const TRAVEL = { yes: 'Pays travel time', no: 'Does not pay travel time', after_
 const UNVERIFIED = { review: 'Time not checked in is reviewed', no_pay: 'Time not checked in is not paid' };
 const mapUrl = (a) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a)}`;
 
-function CustomerPage({ c, siteId, onBack, onOpenCall }) {
+function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged }) {
   const [eq, setEq] = useState(null);
   const [err, setErr] = useState('');
   const [show, setShow] = useState('stores');
@@ -40,6 +40,10 @@ function CustomerPage({ c, siteId, onBack, onOpenCall }) {
           {c.to_bill > 0 && <span className="chip tone-amber">{c.to_bill} to bill</span>}
         </div>
       </div>
+
+      {c.store_removed_at && (
+        <div className="notice">{c.name} took you off their contractor list on {date(c.store_removed_at)}. They can't send you new calls. Your past calls with them are still here.</div>
+      )}
 
       <div className="panel" style={{ padding: 14 }}>
         <div className="small" style={{ fontWeight: 700, marginBottom: 6 }}>Their terms with you</div>
@@ -105,19 +109,49 @@ function CustomerPage({ c, siteId, onBack, onOpenCall }) {
       )}
 
       {show === 'calls' && <PoLog customerId={c.customer_id} siteId={siteId} onOpen={onOpenCall} />}
+
+      {admin && !siteId && (
+        <button className="linkbtn small" style={{ alignSelf: 'flex-start', color: 'var(--red-fg)' }} onClick={async () => {
+          if (!window.confirm(`Remove ${c.name} from your customers?\n\nYour past calls and invoices with them stay in your records. They can't send you new calls, and they'll see that you stopped serving them. You can restore them later.`)) return;
+          setErr('');
+          try { await act('remove_customer', { p_customer: c.customer_id }); onBack(); onChanged(); } catch (e) { setErr(e.message); }
+        }}>Remove this customer</button>
+      )}
     </div>
   );
 }
 
-export default function CustomerBook({ book, pick, onPick, onOpenCall }) {
+function RemovedCustomers({ onChanged }) {
+  const [list, setList] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [err, setErr] = useState('');
+  const load = () => act('contractor_removed_customers', {}).then(setList).catch((e) => setErr(e.message));
+  useEffect(() => { load(); }, []);
+  if (!list || !list.length) return null;
+  return (
+    <div className="small" style={{ marginTop: 10 }}>
+      <ErrorBox error={err} />
+      <button className="linkbtn" onClick={() => setOpen(!open)}>{open ? 'Hide' : 'Show'} removed customers ({list.length})</button>
+      {open && list.map((c) => (
+        <div key={c.customer_id} className="row spread" style={{ padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+          <span><strong>{c.name}</strong> <span className="muted">removed {date(c.removed_at)}</span></span>
+          <button onClick={async () => { try { await act('restore_customer', { p_customer: c.customer_id }); await load(); onChanged(); } catch (e) { setErr(e.message); } }}>Restore</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function CustomerBook({ book, pick, onPick, onOpenCall, admin = false, onChanged = () => {} }) {
   const custId = pick?.startsWith('c:') ? pick.slice(2) : pick?.startsWith('s:') ? book.find((c) => c.sites.some((s) => s.site_id === pick.slice(2)))?.customer_id : null;
   const siteId = pick?.startsWith('s:') ? pick.slice(2) : null;
   const one = custId && book.find((c) => c.customer_id === custId);
-  if (one) return <CustomerPage c={one} siteId={siteId} onBack={() => onPick('')} onOpenCall={onOpenCall} />;
+  if (one) return <CustomerPage c={one} siteId={siteId} onBack={() => onPick('')} onOpenCall={onOpenCall} admin={admin} onChanged={onChanged} />;
 
   const reasons = (c) => [...new Set(c.sites.flatMap((s) => s.reasons))];
   const sorted = [...book].sort((a, b) => reasons(b).length - reasons(a).length || a.name.localeCompare(b.name));
   return (
+    <>
     <div className="panel">
       <table>
         <thead><tr><th>Customer</th><th className="num">Open</th><th className="num hide-sm">To bill</th><th className="num hide-sm">This year</th></tr></thead>
@@ -128,6 +162,7 @@ export default function CustomerBook({ book, pick, onPick, onOpenCall }) {
             return (
               <tr key={c.customer_id} className="click" onClick={() => onPick(`c:${c.customer_id}`)}>
                 <td><strong>{c.name}</strong> <span className="small muted">{c.sites.length} store{c.sites.length === 1 ? '' : 's'}</span>
+                  {c.store_removed_at && <div><span className="chip tone-slate">They removed you {date(c.store_removed_at)}</span></div>}
                   {r.length > 0 && <div className="row" style={{ gap: 4, marginTop: 4 }}>{r.map((x) => <span key={x} className="chip tone-red">{x}</span>)}</div>}</td>
                 <td className="num">{c.open_calls}</td>
                 <td className="num hide-sm">{c.to_bill || '—'}</td>
@@ -138,5 +173,7 @@ export default function CustomerBook({ book, pick, onPick, onOpenCall }) {
         </tbody>
       </table>
     </div>
+    {admin && <RemovedCustomers onChanged={onChanged} />}
+    </>
   );
 }

@@ -22,7 +22,7 @@ export default function TeamPanel({ profile }) {
       const [p, l, t] = await Promise.all([
         q(supabase.from('profiles').select('id, full_name, phone, email, is_technician, can_dispatch, is_org_admin, active').eq('contractor_id', profile.contractor_id).order('full_name')),
         admin ? q(supabase.from('join_links').select('token, full_name, phone, email, used_at, expires_at, kind').neq('kind', 'contractor_owner').is('used_at', null).order('created_at', { ascending: false })) : Promise.resolve([]),
-        q(supabase.from('customer_contractors').select('customer_id, mode, min_hours, increment_min, pays_travel, customers(name)').eq('contractor_id', profile.contractor_id)),
+        q(supabase.from('customer_contractors').select('customer_id, mode, min_hours, increment_min, pays_travel, customers(name)').eq('contractor_id', profile.contractor_id).is('contractor_removed_at', null)),
       ]);
       setPeople(p); setLinks(l.filter((x) => new Date(x.expires_at) > new Date())); setTerms(t);
       const c = await q(supabase.from('contractors').select('tech_call_alerts').eq('id', profile.contractor_id));

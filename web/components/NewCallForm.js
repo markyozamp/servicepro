@@ -46,7 +46,7 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
   const loadSites = () => q(supabase.from('sites').select('id, name, address, customer_id, property_type, customers(name, kind, phone)').order('name'));
   useEffect(() => {
     Promise.all([loadSites(), q(supabase.from('issue_types').select('*').eq('active', true).order('sort')),
-      q(supabase.from('customer_contractors').select('customer_id, contractor_id, is_primary, mode, created_at, accept_emergency_min, accept_normal_min, contractors(name, phone, email)')),
+      q(supabase.from('customer_contractors').select('customer_id, contractor_id, is_primary, mode, created_at, accept_emergency_min, accept_normal_min, contractors(name, phone, email)').is('store_removed_at', null).is('contractor_removed_at', null)),
       q(supabase.from('trade_contractors').select('customer_id, site_id, trade_id, contractor_id')),
       q(supabase.from('trades').select('id, name').order('id')),
       q(supabase.from('equipment_types').select('code, name, trade_id').is('contractor_id', null).order('name'))])
@@ -87,7 +87,7 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
     if (!f.site || !f.issue || verify) return;
     (async () => {
       const contractor = route?.contractor_id || profile?.contractor_id || (await q(supabase.from('customer_contractors').select('contractor_id, is_primary')
-        .eq('customer_id', site.customer_id).order('is_primary', { ascending: false }).limit(1)))[0]?.contractor_id;
+        .eq('customer_id', site.customer_id).is('store_removed_at', null).is('contractor_removed_at', null).order('is_primary', { ascending: false }).limit(1)))[0]?.contractor_id;
       if (!contractor) return;
       const a = await act('diagnosis_amount', { p_site: f.site, p_issue: f.issue, p_contractor: contractor, p_at: new Date().toISOString() });
       setAmount(a);

@@ -13,6 +13,7 @@ import AppFooter from '@/components/AppFooter';
 import { useTabBadge } from '@/lib/tabBadge';
 import CustomerPicker, { pickMatch } from '@/components/CustomerPicker';
 import CustomerBook from '@/components/CustomerBook';
+import CallRouting from '@/components/CallRouting';
 
 const LIST = `id, customer_id, site_id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, invoiced_at, due_on,
   total_cost, invoice_ready, qbo_invoice_id, store_po_number, sites(name), customers(name),
@@ -218,9 +219,9 @@ export default function OfficePortal() {
           </div>
         )}
 
-        {tab === 'team' && <TeamPanel profile={profile} />}
+        {tab === 'team' && <><CallRouting profile={profile} /><TeamPanel profile={profile} /></>}
 
-        {tab === 'customers' && <CustomerBook book={book} pick={validPick} onPick={setCpick} onOpenCall={setOpen} />}
+        {tab === 'customers' && <CustomerBook book={book} pick={validPick} onPick={setCpick} onOpenCall={setOpen} admin={!!profile.is_org_admin} onChanged={load} />}
 
         {tab === 'pm' && (
           <div className="panel">

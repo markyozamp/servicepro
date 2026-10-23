@@ -306,3 +306,7 @@ label.button-like { display: inline-flex; align-items: center; padding: 8px 14px
 .custpick-group > button:hover, .custpick-group > button.on { background: var(--brand-soft); }
 .custpick-group > button.sub { padding-left: 26px; font-weight: 400; }
 .custpick-group .sub-why { color: var(--red-fg); padding: 0 10px 6px; }
+.reach { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--bg, #f6f8fa); border: 1px solid var(--line); }
+.reach.urgent { border-color: #d93025; background: #fdecea; }
+.reach.urgent a.callbtn { border-color: #d93025; }
+.soon { opacity: .55; }

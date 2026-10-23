@@ -24,7 +24,7 @@ export default function ContractorSettings({ onClose }) {
   async function load() {
     try {
       const [a, b, c, d, e] = await Promise.all([
-        q(supabase.from('customer_contractors').select('contractor_id, mode, pays_travel, unverified_time, terms_accepted_at, accept_emergency_min, accept_normal_min, min_hours, increment_min, is_primary, contractors(name, phone, email)').order('created_at')),
+        q(supabase.from('customer_contractors').select('contractor_id, store_removed_at, contractor_removed_at, mode, pays_travel, unverified_time, terms_accepted_at, accept_emergency_min, accept_normal_min, min_hours, increment_min, is_primary, contractors(name, phone, email)').order('created_at')),
         q(supabase.from('trades').select('id, name').order('id')),
         q(supabase.from('trade_contractors').select('site_id, trade_id, contractor_id')),
         q(supabase.from('sites').select('id, name').order('name')),
@@ -44,6 +44,10 @@ export default function ContractorSettings({ onClose }) {
   }
   const setRow = (id, k, v) => setCc(cc.map((r) => (r.contractor_id === id ? { ...r, [k]: v } : r)));
   const link = (tok) => `${window.location.origin}/join/${tok}`;
+  const [showRemoved, setShowRemoved] = useState(false);
+  const active = cc.filter((r) => !r.store_removed_at);
+  const removed = cc.filter((r) => r.store_removed_at);
+  const routable = active.filter((r) => !r.contractor_removed_at);
 
   return (
     <div className={onClose ? 'panel panel-pad stack' : 'stack'}>
@@ -51,9 +55,11 @@ export default function ContractorSettings({ onClose }) {
       <ErrorBox error={err} /><Notice>{msg}</Notice>
 
       <h3>Your contractors <Info title="Your contractors">The service companies you send calls to. For each one you set your rules: whether you pay travel time, what happens to time that wasn't checked in, and how fast they must accept a call. Their record shows how they're doing: on-time acceptance, check-ins with the code, missed windows and unexplained hours.</Info></h3>
-      {cc.map((r) => (
+      {active.length === 0 && <div className="small muted">No contractors yet. Invite one below.</div>}
+      {active.map((r) => (
         <div key={r.contractor_id} className="stack" style={{ gap: 6, borderTop: '1px solid var(--line)', paddingTop: 10 }}>
           <div><strong>{r.contractors?.name}</strong> <span className="small muted">{r.contractors?.phone ? `office ${r.contractors.phone}` : ''}</span></div>
+          {r.contractor_removed_at && <div className="notice">{r.contractors?.name} stopped serving you on {new Date(r.contractor_removed_at).toLocaleDateString()}. New calls can't go to them. Remove them to clear them from your list.</div>}
           <div className="row">
             <label className="grow">How you work with them
               <select value={r.mode} onChange={(e) => setRow(r.contractor_id, 'mode', e.target.value)}>
@@ -82,8 +88,24 @@ export default function ContractorSettings({ onClose }) {
             await run('set_contractor_terms', { p_contractor: r.contractor_id, p_mode: r.mode, p_pays_travel: r.pays_travel,
               p_accept_emergency_min: Number(r.accept_emergency_min), p_accept_normal_min: Number(r.accept_normal_min) }, () => setMsg(`Saved ${r.contractors?.name}.`));
           }}>Save</button>
+          <button className="linkbtn small" style={{ alignSelf: 'flex-start', color: 'var(--red-fg)' }} disabled={busy} onClick={() => {
+            if (window.confirm(`Remove ${r.contractors?.name} from your contractors?\n\nTheir past calls stay in your records. No new calls can go to them, and any trades they covered go back to your main contractor. You can restore them later.`)) {
+              run('remove_contractor', { p_contractor: r.contractor_id }, () => setMsg(`${r.contractors?.name} removed.`));
+            }
+          }}>Remove this contractor</button>
         </div>
       ))}
+      {removed.length > 0 && (
+        <div className="small">
+          <button className="linkbtn" onClick={() => setShowRemoved(!showRemoved)}>{showRemoved ? 'Hide' : 'Show'} removed contractors ({removed.length})</button>
+          {showRemoved && removed.map((r) => (
+            <div key={r.contractor_id} className="row spread" style={{ padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+              <span><strong>{r.contractors?.name}</strong> <span className="muted">removed {new Date(r.store_removed_at).toLocaleDateString()}</span></span>
+              <button disabled={busy} onClick={() => run('restore_contractor', { p_contractor: r.contractor_id }, () => setMsg(`${r.contractors?.name} is back on your list. Set which trades they cover below.`))}>Restore</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <h3 style={{ marginTop: 8 }}>Who gets which kind of call (all locations) <Info title="Who gets which call">Pick a contractor for each trade (refrigeration, plumbing, electrical…). When you open a call, it goes to the right one automatically. Contractors invited for specific locations are routed there only.</Info></h3>
       <table><tbody>
@@ -93,7 +115,7 @@ export default function ContractorSettings({ onClose }) {
             <tr key={t.id}><td>{t.name}</td><td>
               <select value={cur} disabled={busy} onChange={(e) => run('set_trade_contractor', { p_site: null, p_trade: t.id, p_contractor: e.target.value || null })}>
                 <option value="">Main contractor</option>
-                {cc.map((c) => <option key={c.contractor_id} value={c.contractor_id}>{c.contractors?.name}</option>)}
+                {routable.map((c) => <option key={c.contractor_id} value={c.contractor_id}>{c.contractors?.name}</option>)}
               </select></td></tr>
           );
         })}

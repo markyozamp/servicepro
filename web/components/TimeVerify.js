@@ -24,7 +24,7 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
       ]);
       setChk(c); setRuns(r);
       if (side === 'store') {
-        setContractors(await q(supabase.from('customer_contractors').select('contractor_id, mode, contractors(name)').eq('customer_id', wo.customer_id)));
+        setContractors(await q(supabase.from('customer_contractors').select('contractor_id, mode, contractors(name)').eq('customer_id', wo.customer_id).is('store_removed_at', null).is('contractor_removed_at', null)));
       }
     } catch { /* shown elsewhere */ }
   }, [wo.id, wo.customer_id, side]);
@@ -57,6 +57,25 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
               {wo.scheduled_start ? ` — scheduled ${dateTime(wo.scheduled_start)}${wo.scheduled_end ? `–${time(wo.scheduled_end)}` : ''}` : ''}</span>
             : wo.accept_due_at ? <span className={`chip ${late ? 'tone-red' : 'tone-amber'}`}>{late ? 'NOT accepted — was due' : 'Waiting to be accepted by'} {dateTime(wo.accept_due_at)}</span> : null}
           {wo.accept_note && <span className="muted"> · {wo.accept_note}</span>}
+        </div>
+      )}
+
+      {/* Reaching the contractor by phone (store), and what the store noted (both sides) */}
+      {wo.store_phoned_at && (
+        <div className="small">📞 <strong>Store talked to them:</strong> {wo.store_phone_note} <span className="muted">— {wo.store_phoned_by_name || 'store'}, {dateTime(wo.store_phoned_at)}</span></div>
+      )}
+      {side === 'store' && !closed && !wo.declined_at && (
+        <div className={`reach${wo.priority === 1 && !wo.accepted_at ? ' urgent' : ''}`}>
+          <div className="row" style={{ gap: 8 }}>
+            {wo.contractors?.phone
+              ? <a className="callbtn" href={`tel:${wo.contractors.phone.replace(/[^\d+]/g, '')}`}>📞 Call {wo.contractors?.name} now · {wo.contractors.phone}</a>
+              : <span className="small muted">No office phone on file for {wo.contractors?.name}.</span>}
+            <button disabled={busy} onClick={() => {
+              const n = window.prompt('Who did you talk to, and when? (for example "Dana, 2:10 pm — on the way")');
+              if (n && n.trim()) run('store_log_phone_contact', { p_wo: wo.id, p_note: n.trim() });
+            }}>I talked to them</button>
+          </div>
+          {!wo.accepted_at && <div className="small muted">Coming soon: if they don't accept in time, Service Call Proof will phone them automatically, then their backup number, and let you know.</div>}
         </div>
       )}
 

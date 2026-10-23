@@ -1164,3 +1164,22 @@ select test.ok((select not coalesce(bool_or(x->>'name' like 'Northside%'), false
 select test.login(:SAM);
 select test.ok((select contractor_book() = '[]'::jsonb), 'a store user gets an empty book');
 reset role;
+
+\echo '=== 51. Removing a contractor / a customer; "I talked to them"; office phone'
+set role authenticated;
+select test.login(:'lee');
+select test.ok((select (remove_contractor((select id from contractors where name = 'Dakota Electric'))->>'ok')::boolean), 'the store removes a contractor it no longer uses');
+select test.ok((select store_removed_at is not null from customer_contractors where contractor_id = (select id from contractors where name = 'Dakota Electric')), 'they leave the store''s list');
+select test.ok((select count(*) = 0 from trade_contractors where contractor_id = (select id from contractors where name = 'Dakota Electric')), 'and no trade routes to them any more');
+select test.blocked($$select open_po_call(p_site => (select id from sites where name = 'M&L Seattle'), p_issue_type => (select id from issue_types where code = 'drain_backup'), p_details => 'test', p_contractor => (select id from contractors where name = 'Dakota Electric'))$$, 'removed', 'no new calls can be sent to a removed contractor');
+select test.ok((select (restore_contractor((select id from contractors where name = 'Dakota Electric'))->>'ok')::boolean), 'and they can be restored');
+select test.login(:SAM);
+select test.ok((select (store_log_phone_contact((select id from work_orders where customer_id = (select customer_id from profiles where id = :SAM) order by created_at desc limit 1), 'Talked to Dana, 2:10 pm')->>'ok')::boolean), 'the store notes it talked to the contractor');
+select test.blocked($$select store_log_phone_contact((select id from work_orders where customer_id = (select customer_id from profiles where id = '00000000-0000-0000-0000-0000000000c1') order by created_at desc limit 1), '')$$, 'who you talked', 'the note needs who and when');
+select test.login(:DANA);
+select test.ok((select (set_contractor_office_phone('701-555-0111')->>'ok')::boolean), 'the contractor office sets its office phone');
+select test.blocked($$select set_contractor_office_phone('555')$$, 'area code', 'a full number is required');
+select test.blocked($$select remove_customer('20000000-0000-0000-0000-000000000001')$$, 'open call', 'a contractor can''t drop a customer with open calls');
+select test.login(:MIKE);
+select test.blocked($$select remove_customer('20000000-0000-0000-0000-000000000001')$$, 'admin', 'only the contractor admin can remove a customer');
+reset role;
