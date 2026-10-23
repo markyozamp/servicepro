@@ -1,8 +1,9 @@
 'use client';
 
 // The demo, for people deciding whether to buy: a hands-on side-by-side (store + technician's phone), then one-tap
-// sign-ins to every role in the demo companies. Demo accounts reset every night and can't make permanent changes.
-import { useState } from 'react';
+// sign-ins to every role in the demo companies (they go back to the start every 10 minutes), then Plans & pricing
+// in two tabs: for businesses and for contractors. The two buttons at the top open the right tab.
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { portalFor, signOutLocal } from '@/lib/useProfile';
 import PilotOffer from '@/components/PilotOffer';
@@ -24,9 +25,30 @@ const CONTRACTORS = [
   { email: 'tech@arcticair.demo', who: 'Technician', org: 'Arctic Air Mechanical · Mike', see: 'A refrigeration tech\'s day: jobs, parts runs, photos, approvals.' },
 ];
 
+const BUSINESS_INCLUDES = [
+  'Every visit checked in with your code, and the time on site verified',
+  'Every bill checked against the verified time, your PO and the contractor\'s rates',
+  'Approvals with dollar limits, owner approval above them',
+  'Equipment, warranties and repair history; QR stickers so staff can report a problem',
+  'Maintenance plans your contractors propose and you accept',
+  'Follow-through report: what your locations missed, and what it cost',
+  'Unlimited service calls, all trades, unlimited people on your team',
+];
+
 export default function Demo() {
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
+  const [plans, setPlans] = useState('business');
+  const showPlans = (k) => {
+    setPlans(k);
+    setTimeout(() => document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+  };
+  // Links like /demo#contractors or #plans-business open the right tab
+  useEffect(() => {
+    const h = window.location.hash;
+    if (h === '#contractors' || h === '#plans-contractors') showPlans('contractors');
+    else if (h === '#plans-business' || h === '#pilot-stores') showPlans('business');
+  }, []);
 
   async function enter(email) {
     setBusy(email); setErr('');
@@ -54,9 +76,18 @@ export default function Demo() {
       </header>
 
       <section className="demo-hero">
-        <h1>Know who's in your building, for how long, and what it should cost.</h1>
-        <p>Service Call Proof sits between your locations (stores, restaurants, clinics, dental offices, banks, offices) and your service contractors: every visit checked in with your code, every bill checked against the time actually spent.</p>
-        <p className="small"><a href="#pilot-stores"><strong>Pilot locations wanted:</strong> stores, restaurants, clinics, dental offices, banks and offices. 4 companies, free for the first year →</a></p>
+        <div className="demo-hero-text">
+          <h1>Know who's in your building, for how long, and what it should cost.</h1>
+          <p>Service Call Proof sits between your locations (stores, restaurants, clinics, dental offices, banks, offices) and your service contractors: every visit checked in with your code, every bill checked against the time actually spent.</p>
+          <p className="small" style={{ marginTop: 10 }}><a href="#pilot-stores" onClick={(e) => { e.preventDefault(); setPlans('business'); setTimeout(() => document.getElementById('pilot-stores')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40); }}><strong>Pilot locations wanted:</strong> 4 companies, free for the first year →</a></p>
+        </div>
+        <div className="demo-hero-plans">
+          <div className="demo-hero-plans-h">Plans &amp; pricing</div>
+          <button type="button" className="demo-plan-btn" onClick={() => showPlans('business')}>
+            <strong>For businesses</strong><span>Stores, restaurants, clinics, dental offices, banks, offices</span></button>
+          <button type="button" className="demo-plan-btn" onClick={() => showPlans('contractors')}>
+            <strong>For contractors</strong><span>HVAC, refrigeration, plumbing, electrical</span></button>
+        </div>
       </section>
 
       <section className="demo-sec">
@@ -76,23 +107,48 @@ export default function Demo() {
         <div className="demo-cards">{CONTRACTORS.map((d) => <Card key={d.email} d={d} />)}</div>
       </section>
 
-      <section className="demo-sec demo-cta">
-        <h2>Ready to start?</h2>
-        <p>$395 per location per year. All trades, unlimited service calls, unlimited people. Your contractors use it free.</p>
-        <StorePilot />
-        <p className="small"><strong>Temperature monitoring (coming):</strong> sensors in coolers, freezers or the whole building alert you and your contractor when it gets too hot or too cold, so a furnace that quits over the weekend doesn't mean a 45° office and cancelled appointments Monday morning. Available through contractors on Base or above.</p>
-        <p className="small"><strong>Enhanced Time Verify, at no extra charge:</strong> when your contractor runs Service Call Proof Base or Pro, their bills come straight into your portal, already matched to the call and your PO. Download them, export them, or forward them to your accounting department. No mailed or emailed bills to chase.</p>
-        <div className="demo-cta-row">
-          <button type="button" className="primary big" disabled title="Coming soon">Get started now <span className="soon">Coming soon</span></button>
-          <a className="button-like" href="mailto:sales@servicecallproof.com?subject=Service%20Call%20Proof%20questions">Questions? Talk to us</a>
+      <section className="demo-sec demo-plans" id="plans">
+        <h2>Plans &amp; pricing</h2>
+        <div className="demo-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={plans === 'business'} className={plans === 'business' ? 'on' : ''} onClick={() => setPlans('business')}>For businesses</button>
+          <button type="button" role="tab" aria-selected={plans === 'contractors'} className={plans === 'contractors' ? 'on' : ''} onClick={() => setPlans('contractors')}>For contractors</button>
         </div>
-        <p className="small muted"><strong>Are you a contractor?</strong> Contractors join free when a customer invites them. Ask the customers you work for, or <a href="mailto:sales@servicecallproof.com?subject=Contractor%20interested">tell us which customers</a> and we'll reach out. Want to run your whole shop on it? <a href="#contractors">See the contractor plans and the pilot offer</a>.</p>
-      </section>
 
-      <section className="demo-sec" id="contractors">
-        <h2>For contractors: plans</h2>
-        <p className="muted">Time Verify is free when a customer invites you. Base, Pro and Enterprise run your whole shop, and they're in pilot now.</p>
-        <PilotOffer source="demo" current={null} />
+        {plans === 'business' && (
+          <div className="demo-tab-body" id="plans-business">
+            <div className="panel panel-pad stack demo-biz-plan">
+              <div className="spread"><strong style={{ fontSize: 20 }}>Service Call Proof</strong><span className="demo-price">$395 <small>per location per year</small></span></div>
+              <div className="muted">For any business with places to keep running: stores, restaurants, clinics, dental offices, banks and offices.</div>
+              <ul className="plan-list">{BUSINESS_INCLUDES.map((i) => <li key={i}>{i}</li>)}</ul>
+              <div><strong>Your contractors join free.</strong> <span className="muted">(For them it&apos;s our free Time Verify plan.)</span></div>
+              <div className="demo-cta-row">
+                <button type="button" className="primary big" disabled title="Coming soon">Get started now <span className="soon">Coming soon</span></button>
+                <a className="button-like" href="mailto:sales@servicecallproof.com?subject=Service%20Call%20Proof%20questions">Questions? Talk to us</a>
+              </div>
+            </div>
+
+            <div className="demo-extras">
+              <div className="panel panel-pad stack" style={{ gap: 6 }}>
+                <strong>Temperature monitoring <span className="soon">Coming soon</span></strong>
+                <span className="small">Sensors in coolers, freezers or the whole building alert you and your contractor when it gets too hot or too cold. A furnace that quits over the weekend shouldn&apos;t mean a 45° office and cancelled appointments Monday morning. Available through contractors on Base or above.</span>
+              </div>
+              <div className="panel panel-pad stack" style={{ gap: 6 }}>
+                <strong>Enhanced Time Verify <span className="chip tone-green">No extra charge</span></strong>
+                <span className="small">When your contractor runs Service Call Proof Base or Pro, their bills come straight into your portal, already matched to the call and your PO, ready to download, export or forward to accounting.</span>
+              </div>
+            </div>
+
+            <StorePilot />
+          </div>
+        )}
+
+        {plans === 'contractors' && (
+          <div className="demo-tab-body" id="plans-contractors">
+            <div className="demo-free-line"><strong>Free when your customer uses Service Call Proof.</strong> That&apos;s Time Verify: calls, check-ins and bills for that customer, at no cost to you, always. Base, Pro and Enterprise run your whole shop, and they&apos;re in pilot now.</div>
+            <PilotOffer source="demo" current={null} />
+            <div className="small muted">Want Time Verify with a customer who isn&apos;t on it yet? <a href="mailto:sales@servicecallproof.com?subject=Contractor%20interested">Tell us which customers</a> and we&apos;ll reach out.</div>
+          </div>
+        )}
       </section>
       <div style={{ padding: '0 16px 24px' }}><LegalFooter /></div>
     </main>

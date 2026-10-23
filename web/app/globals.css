@@ -567,3 +567,22 @@ table.compare .prospect { background: var(--amber-bg); }
 .ft-miss.click { cursor: pointer; }
 .ft-miss.click:hover { background: #f7f9fb; }
 .temp-note { padding: 8px 10px; border-radius: 8px; background: #eef4fb; border: 1px solid #c9dcf0; }
+/* Demo page: hero with the two plan buttons, and the tabbed Plans & pricing section */
+.demo-hero { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: center; padding-bottom: 12px; }
+.demo-hero-plans { display: flex; flex-direction: column; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; box-shadow: var(--shadow); }
+.demo-hero-plans-h { font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); }
+.demo-plan-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--brand); background: #f3f8fe; }
+.demo-plan-btn strong { font-size: 17px; color: var(--brand); }
+.demo-plan-btn span { font-size: 13px; color: var(--ink-2); }
+.demo-plan-btn:hover { background: #e6f0fc; }
+@media (max-width: 860px) { .demo-hero { grid-template-columns: 1fr; } }
+.demo-plans { gap: 16px; }
+.demo-tabs { display: flex; gap: 6px; border-bottom: 2px solid var(--line); }
+.demo-tabs button { border: 0; background: none; padding: 10px 16px; font-weight: 700; font-size: 16px; color: var(--ink-3); border-bottom: 3px solid transparent; margin-bottom: -2px; border-radius: 0; }
+.demo-tabs button.on { color: var(--brand); border-bottom-color: var(--brand); }
+.demo-tab-body { display: flex; flex-direction: column; gap: 20px; padding-top: 6px; }
+.demo-biz-plan { gap: 12px; max-width: 760px; border-top: 4px solid var(--brand); }
+.demo-price { font-size: 26px; font-weight: 800; }
+.demo-price small { font-size: 14px; font-weight: 500; color: var(--ink-3); }
+.demo-extras { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.demo-free-line { font-size: 16px; padding: 12px 14px; border-radius: 10px; background: var(--green-bg); }
