@@ -1394,3 +1394,9 @@ select test.ok((select count(*) = :wo_before from work_orders where customer_id 
 select test.ok((select count(*) = :n_before from notifications where user_id in (select id from profiles where email like '%.demo')), 'and every demo notice');
 select test.ok((select count(*) > 0 from visits v join work_orders w on w.id = v.work_order_id where w.customer_id in (select id from customers where name like '%(demo)')), 'visits came back with their calls');
 select test.ok((select (demo_clock()->>'next')::timestamptz > now() and (demo_clock()->>'next')::timestamptz <= now() + interval '10 minutes'), 'the countdown knows the next rewind');
+set role authenticated;
+select test.login(:DOUG);
+select test.blocked($$select demo_tech_enters_code(gen_random_uuid())$$, 'Not allowed', 'the demo code button only works on your own demo calls');
+select test.login(:'lee');
+select test.blocked($$select demo_tech_enters_code(gen_random_uuid())$$, 'only in the demo', 'and never in a real account');
+reset role;

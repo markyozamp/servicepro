@@ -51,17 +51,51 @@ function useJustRefreshed() {
   return [show, setShow];
 }
 
+// In the demo, "Call" and "Text" buttons don't open a phone or calling app: we show what would happen instead.
+function useDemoCalls() {
+  const [call, setCall] = useState(null);
+  useEffect(() => {
+    const onClick = (e) => {
+      const a = e.target.closest?.('a[href^="tel:"], a[href^="sms:"]');
+      if (!a) return;
+      e.preventDefault();
+      const href = a.getAttribute('href');
+      const num = decodeURIComponent(href.replace(/^(tel|sms):/, '').split('?')[0]);
+      setCall({ kind: href.startsWith('sms:') ? 'text' : 'call', num, label: (a.textContent || '').replace(/📞|💬/g, '').trim() });
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, []);
+  return [call, setCall];
+}
+
+const pretty = (n) => { const d = String(n).replace(/\D/g, '').replace(/^1(?=\d{10}$)/, ''); return d.length === 10 ? `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}` : n; };
+
 const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
 export default function DemoBanner({ who, compact }) {
   const left = useDemoClock();
   const [fresh, setFresh] = useJustRefreshed();
+  const [call, setCall] = useDemoCalls();
   const soon = left != null && left <= 60000;
   const now = left != null && left <= 0;
   const clock = left == null ? null : now ? <strong>Refreshing the demo now…</strong>
     : <>Demo refreshes in <strong className="demo-count">{mmss(left)}</strong>{soon ? '. Everything goes back to the start.' : ''}</>;
   return (
     <>
+      {call && (
+        <>
+          <div className="scrim" style={{ zIndex: 95 }} onClick={() => setCall(null)} />
+          <div className="demo-call" role="dialog" aria-label="Demo call">
+            <div className="demo-call-ic">{call.kind === 'text' ? '💬' : '📞'}</div>
+            <strong style={{ fontSize: 18 }}>{call.kind === 'text' ? 'Ready to text' : 'Ready to make a call'}</strong>
+            <div>{(() => { const who = call.label.replace(/^(call|text)\s+(them\s+now|office)?\s*/i, '').replace(/\s*·.*$/, '').replace(/\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/, '').trim(); return who ? <>{who}<br /></> : null; })()}
+              <span className="demo-call-num">{pretty(call.num)}</span></div>
+            <div className="small muted">In the real app, this opens your phone (or your computer's calling app) and {call.kind === 'text' ? 'starts a text to' : 'dials'} this number. In the demo, no {call.kind === 'text' ? 'text is sent' : 'call is made'}.</div>
+            <button className="primary" onClick={() => setCall(null)}>{call.kind === 'text' ? 'Done' : 'Hang up'}</button>
+          </div>
+        </>
+      )}
       {fresh && (
         <div className="demo-fresh" role="status">
           <span><strong>The demo was just refreshed.</strong> Everything's back to the start, so you can try it all again.</span>

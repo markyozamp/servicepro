@@ -1,4 +1,5 @@
 'use client';
+import { isDemoEmail } from '@/lib/useProfile';
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
@@ -178,7 +179,12 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                     <h3>Check-in code</h3>
                     <div className="small muted">Read this to the technician when they arrive. Don't share it before.</div>
                   </div>
-                  <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: 8 }}>{code.code}</div>
+                  <div className="stack" style={{ gap: 6, alignItems: 'center' }}>
+                    <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: 8 }}>{code.code}</div>
+                    {isDemoEmail(profile?.email) && activeVisit.status === 'on_site' && (
+                      <button type="button" className="demo-act" disabled={busy} onClick={() => run('demo_tech_enters_code', { p_visit: activeVisit.id })}>▶ Demo: give the tech the code</button>
+                    )}
+                  </div>
                 </div>
               )}
 

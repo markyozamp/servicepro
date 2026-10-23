@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
-import { useProfile } from '@/lib/useProfile';
+import { useProfile, isDemoEmail } from '@/lib/useProfile';
 import PmPlans from '@/components/PmPlans';
 import { money, ago, dateTime, date, poLabel, PO_KIND } from '@/lib/format';
 import TopBar from '@/components/TopBar';
@@ -249,7 +249,15 @@ export default function StorePortal() {
                 <strong style={{ fontSize: 18 }}>Technician at the door — waiting {mins < 1 ? 'less than a minute' : `${mins} min`}</strong>
                 <span>{v.profiles?.full_name} is at {v.work_orders?.sites?.name}{v.work_orders?.unit ? `, unit ${v.work_orders.unit}` : ''} for call #{v.work_orders?.number}. <strong>Labor time is running</strong> — please meet them and give this code.</span>
               </div>
-              <div className="doorcode">{v.code || '—'}</div>
+              <div className="stack" style={{ gap: 6, alignItems: 'center' }}>
+                <div className="doorcode">{v.code || '—'}</div>
+                {isDemoEmail(profile.email) && (
+                  <button type="button" className="demo-act" onClick={async () => {
+                    try { await act('demo_tech_enters_code', { p_visit: v.id }); setMsg(`Demo: ${v.profiles?.full_name || 'The technician'} typed in ${v.code} on his phone. He's checked in and the alert is cleared.`); load(); }
+                    catch (x) { setErr(x.message); }
+                  }}>▶ Demo: give the tech the code</button>
+                )}
+              </div>
             </div>
           );
         })}
