@@ -356,6 +356,16 @@ Proof of temperature for bad-product claims, and early warning before product is
 **Before the paid launch (Mark, 2026-10-22):** move Supabase to Pro (daily backups, no pausing) and Vercel to Pro (commercial use); then the "Your data" text can promise daily backups.
 Earlier from the remote test: arrival watched only after "I'm going"; owner-tech needs I'm going/I'm here on the office screen — open.
 
+### 28. Licensing / branded partner version (Mark, 2026-10-23) — planned, after proven pilot results
+- Who: wholesalers (UNFI/SuperValu, SpartanNash, independent-grocer distributors) and franchisors (Dairy Queen, Panera, etc.) offering it to their stores as a branded system. Today most franchisees run on phone calls and email.
+- Model: partner buys per location at a wholesale price (roughly $200–250 vs $395 retail) and resells, or a franchisor pays for every store as a brand standard.
+- Selling point for franchisors: a roll-up view across all their stores — maintenance spend, equipment failures, contractor performance, overdue PM (only with the stores' permission).
+- Portability: same system underneath, so a store that leaves the partner moves to Service Call Proof with 100% of its data; no start-over. The store owns its data (put in terms now).
+- Build when a partner signs a letter of intent: (1) co-branding ("Provided by …"), (2) full white-label: partner logo/colors/name, sign-in at partner subdomain or domain, emails in their name, (3) partner layer above companies: provision stores, roll out default contractors/rules, roll-up reports, (4) partner billing (after Stripe).
+- Now: keep nothing hard-wired to the Service Call Proof brand; terms say the store owns its data.
+- Expect: 6–18 month sales cycles, security questionnaires/audit, insurance, uptime and support commitments. Lead with pilot numbers (hours caught, late bills, savings).
+- Same partner layer should carry any future products.
+
 ### 27. Contractor growth path and QR inventory (Mark, 2026-10-22) — idea, for Enterprise
 - Contractors start free on Time Verify because their stores use it; once used to it, Base → Pro → Enterprise is a natural move. Goal: a good enough product to pull small/mid contractors off ServiceTitan.
 - **QR inventory (Enterprise):** QR labels on bins, shelves and truck stock; techs scan to take a part (it lands on the job and the invoice), scan to restock; low-stock alerts, truck-by-truck counts, reorder lists. Ties into the existing parts list and the live cost meter.
