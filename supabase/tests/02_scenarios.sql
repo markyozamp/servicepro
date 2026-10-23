@@ -1400,3 +1400,16 @@ select test.blocked($$select demo_tech_enters_code(gen_random_uuid())$$, 'Not al
 select test.login(:'lee');
 select test.blocked($$select demo_tech_enters_code(gen_random_uuid())$$, 'only in the demo', 'and never in a real account');
 reset role;
+
+\echo '=== 62. Asking a contractor for a late invoice'
+reset role;
+select test.put('lateb', (select id from work_orders where customer_id = (select customer_id from sites where id = :S114) and status = 'completed' order by number limit 1));
+do $$ begin perform _allow_internal(true); update work_orders set invoice_due_at = now() - interval '1 day' where id = test.v('lateb'); perform _end_internal(); end $$;
+set role authenticated;
+select test.login(:DOUG);
+select test.ok((select (store_request_bill(test.v('lateb'))->>'ok')::boolean), 'the store asks the contractor for the late invoice');
+select test.blocked($$select store_request_bill((select test.v('lateb')))$$, 'already asked', 'asking again right away just says they''ve been told');
+reset role;
+select test.ok((select count(*) >= 1 from notifications n join profiles p on p.id = n.user_id where p.contractor_id = (select contractor_id from work_orders where id = test.v('lateb')) and n.message like '%is asking for your invoice%'), 'the contractor''s office is told');
+do $$ begin perform _allow_internal(true); update work_orders set bill_requested_at = now() - interval '25 hours' where id = test.v('lateb'); perform _end_internal(); end $$;
+select test.ok((select bill_request_watch() >= 1), 'a day later with no invoice, both sides are reminded');

@@ -119,6 +119,9 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
           {!d && !err && <div className="muted">Loading…</div>}
           {wo && (
             <>
+              {wo.status === 'completed' && wo.invoice_due_at && new Date(wo.invoice_due_at) < new Date() && (
+                <LateInvoice wo={wo} side={side} busy={busy} run={run} />
+              )}
               {wo.mode === 'verify' && <VerifyPanel wo={wo} side={side} profile={profile} busy={busy} run={run} visits={d.visits} techs={techs} />}
               {side === 'store' && <TechHereButton wo={wo} visits={d.visits} busy={busy} run={run} />}
 
@@ -505,5 +508,32 @@ function Step({ done, label, at, extra }) {
       <span>{label}{extra ? <span className="muted"> · {extra}</span> : null}</span>
       <span className="when">{done && at ? dateTime(at) : ''}</span>
     </li>
+  );
+}
+
+// Work done, invoice late. Store: ask the contractor for it (emailed and on their phone), or call them.
+// Contractor: see that the store asked.
+function LateInvoice({ wo, side, busy, run }) {
+  const who = wo.contractors?.name || 'the contractor';
+  const asked = wo.bill_requested_at;
+  const remind = asked ? new Date(new Date(asked).getTime() + 24 * 3600 * 1000) : null;
+  if (side === 'office') {
+    return (
+      <div className="late-inv stack" style={{ gap: 4 }}>
+        <strong>Your invoice is late. It was due to {wo.customers?.name || 'the store'} {date(wo.invoice_due_at)}.</strong>
+        {asked && <div className="small">They asked for it {dateTime(asked)}. Enter it now so it's off their list.</div>}
+      </div>
+    );
+  }
+  return (
+    <div className="late-inv stack" style={{ gap: 6 }}>
+      <strong>Invoice not received</strong>
+      <div className="small">The work was finished {date(wo.completed_at)}. <strong>{who}'s invoice was due to you {date(wo.invoice_due_at)}</strong>, and you haven't received it.</div>
+      {asked && <div className="small">✓ You asked for it {dateTime(asked)}. They were sent an email and a phone alert. If it hasn't come by {dateTime(remind)}, you'll both get a reminder.</div>}
+      <div className="row">
+        <button className="primary" disabled={busy} onClick={() => run('store_request_bill', { p_wo: wo.id })}>📧 {asked ? 'Ask again' : `Ask ${who} for the invoice`}</button>
+        {wo.contractors?.phone && <a className="callbtn" href={`tel:${wo.contractors.phone.replace(/[^\d+]/g, '')}`}>📞 Call {who}</a>}
+      </div>
+    </div>
   );
 }

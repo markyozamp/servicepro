@@ -20,7 +20,7 @@ import Presence from '@/components/Presence';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox, Notice } from '@/components/bits';
 
 const LIST = `id, site_id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, total_cost, store_po_number,
-  mode, source, store_confirmed_at, store_disputed, accepted_at, accept_due_at, declined_at, nte, contact_name, contractors(name),
+  mode, source, store_confirmed_at, store_disputed, accepted_at, accept_due_at, declined_at, nte, contact_name, bill_requested_at, contractors(name),
   sites(name), visits(id, visit_no, status, eta_at, arrived_at, received_at, checkin_required, checkin_at, profiles(full_name)),
   parts_orders(status, expected_on)`;
 
@@ -228,7 +228,7 @@ export default function StorePortal() {
           <button className="tile" onClick={() => showCalls('open')}><span className="tile-n">{counts.open}</span><span>Open calls</span></button>
           <button className={`tile${fpending.length ? ' warn' : ''}`} onClick={() => document.getElementById('approvals')?.scrollIntoView({ behavior: 'smooth' })}><span className="tile-n">{fpending.length}</span><span>Waiting for approval</span></button>
           <button className="tile" onClick={() => showCalls('billing')}><span className="tile-n">{counts.billing}</span><span>Done, bill pending</span></button>
-          <button className={`tile${late.length ? ' bad' : ''}`} onClick={() => showCalls('billing')}><span className="tile-n">{late.length}</span><span>Bills overdue</span></button>
+          <button className={`tile${late.length ? ' bad' : ''}`} onClick={() => showCalls('billing')}><span className="tile-n">{late.length}</span><span>Invoices not received</span></button>
         </div>
 
         <button className="searchbar" onClick={() => showCalls('po')}>
@@ -336,11 +336,13 @@ export default function StorePortal() {
         {/* Late bills */}
         {late.length > 0 && (
           <div className="panel panel-pad" style={{ borderColor: '#e6b3ab' }}>
-            <h3 style={{ color: 'var(--red-fg)' }}>Late bills</h3>
+            <h3 style={{ color: 'var(--red-fg)' }}>Contractor invoices not received</h3>
+            <div className="small muted" style={{ marginBottom: 4 }}>The work is done, but the contractor hasn't sent you their invoice yet. Open a call to ask them for it.</div>
             {late.map((c) => (
-              <div key={c.id} className="spread small click" style={{ padding: '6px 0', cursor: 'pointer' }} onClick={() => setOpen(c.id)}>
-                <span>Call #{c.number} · {c.sites?.name} — completed {date(c.completed_at)}, invoice was due {date(c.invoice_due_at)}</span>
-                <strong>{c.mode === 'verify' ? 'invoice not entered' : `about ${money(c.total_cost)}`}</strong>
+              <div key={c.id} className="spread small click" style={{ padding: '6px 0', cursor: 'pointer', gap: 10 }} onClick={() => setOpen(c.id)}>
+                <span>Call #{c.number} · {c.sites?.name} · completed {date(c.completed_at)}. <strong>{c.contractors?.name || 'The contractor'}'s invoice was due to you {date(c.invoice_due_at)}</strong>; you haven't received it.
+                  {c.bill_requested_at ? <span className="muted"> You asked for it {date(c.bill_requested_at)}.</span> : ''}</span>
+                <strong style={{ whiteSpace: 'nowrap' }}>{c.mode === 'verify' ? 'Ask for it →' : `about ${money(c.total_cost)} →`}</strong>
               </div>
             ))}
           </div>
