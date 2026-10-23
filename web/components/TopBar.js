@@ -22,7 +22,7 @@ export default function TopBar({ profile, org, portal }) {
         <div className="hdr-who">{profile?.full_name}{org ? ` — ${org.name}` : ''}</div>
         <AlertsButton />
         {profile?.is_technician && portal === 'Office' && <button onClick={() => router.push('/tech')}>My jobs (tech app)</button>}
-        {profile?.contractor_id && profile?.is_org_admin && <UpgradeButton />}
+        {profile?.contractor_id && profile?.is_org_admin && <UpgradeButton profile={profile} org={org} />}
         <InstallButton />
         {!demo && <PasswordButton />}
         {demo ? <button className="demo-back" onClick={backToDemo}>← Back to demo menu</button> : <button onClick={() => signOut(router, profile)}>Sign out</button>}

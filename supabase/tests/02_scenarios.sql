@@ -1334,3 +1334,46 @@ select test.ok((select (store_new_contractor_link(:'valley', 'Val Smith', 'val.s
   and (select count(*) from join_links where contractor_id = :'valley' and used_at is null and expires_at > now()) = 1), 'a fresh sign-in link to the right email; the old one stops working');
 select test.login(:DOUG);
 select test.ok((select bool_and(not (x->>'pending')::boolean or x->>'name' like 'Prairie%') from compare_contractors() j, jsonb_array_elements(j->'contractors') x), 'only a contractor with a proposal waiting is marked "new rates proposed"');
+
+\echo '=== 60. Maintenance plans: store sees and manages them; contractor proposes; PMs done properly'
+set role authenticated;
+select test.login(:DOUG);
+select test.ok((select jsonb_array_length(pm_plans_list()) >= 2), 'the store sees its maintenance plans');
+select (save_pm_plan(null, :S121, test.v('PRAIRIE'), 'Semiannual drain and grease trap PM', 6, current_date + 3,
+   '[{"item":"Jet the main drain"},{"item":"Pump and clean the grease trap","photo":true},"Check backflow preventer"]', 250, 8, 2, true)->>'id') as pmstore \gset
+select test.ok((select approval = 'accepted' and jsonb_array_length(checklist) = 3 from pm_plans where id = :'pmstore'), 'a plan the store creates is in force at once, with its checklist');
+select test.login(test.v('PETE'));
+select test.ok((select (save_pm_plan(null, :S114, null, 'Annual water heater flush', 12, current_date + 40, '["Flush tank","Check anode rod"]', 180, 3, 1, true)->>'approval') = 'proposed'),
+  'the contractor proposes a plan: it waits for the store');
+select test.login(:DOUG);
+select test.ok((select count(*) >= 1 from notifications where user_id = :DOUG and message like '%proposed a maintenance plan%'), 'the store is told');
+select test.ok((select (decide_pm_plan((select id from pm_plans where name = 'Annual water heater flush'), true)->>'ok')::boolean), 'the store accepts it');
+reset role;
+select test.ok((select pm_generate() >= 1), 'the accepted plan creates its PM call ahead of the due date');
+select test.ok((select w.mode = (select mode from customer_contractors where contractor_id = test.v('PRAIRIE') and customer_id = w.customer_id) and (w.mode <> 'verify' or w.nte = 250)
+  from work_orders w where w.pm_plan_id = :'pmstore'), 'the PM call follows the contractor''s mode (Time Verify: plan price is the PO limit)');
+-- a PM that drags: two trips a week apart by two different techs
+select _allow_internal(true);
+insert into visits (work_order_id, technician_id, visit_no, status, assigned_at, started_at, arrived_at, departed_at, completed_at)
+select w.id, test.v('PETE'), 1, 'done', now() - interval '8 days', now() - interval '8 days', now() - interval '8 days' + interval '20 minutes', now() - interval '8 days' + interval '4 hours', now() - interval '8 days' + interval '4 hours'
+  from work_orders w where w.pm_plan_id = :'pmstore';
+insert into visits (work_order_id, technician_id, visit_no, status, assigned_at, started_at, arrived_at, departed_at, completed_at)
+select w.id, test.v('TONY'), 2, 'done', now() - interval '1 day', now() - interval '1 day', now() - interval '1 day' + interval '15 minutes', now() - interval '1 day' + interval '3 hours', now() - interval '1 day' + interval '3 hours'
+  from work_orders w where w.pm_plan_id = :'pmstore';
+select _end_internal();
+select test.ok((select (j->>'trips')::int = 2 and (j->>'techs')::int = 2 and (j->>'dragging')::boolean and (j->>'tech_changed')::boolean and (j->>'longest_gap_days')::int >= 6
+  from work_orders w, _pm_progress(w.id) j where w.pm_plan_id = :'pmstore'), 'a PM spread over a week by two technicians is seen as dragging and changing techs');
+select pm_generate();
+select test.ok((select count(*) = 2 from guardrail_flags g join work_orders w on w.id = g.work_order_id where w.pm_plan_id = :'pmstore' and g.flag in ('pm_dragging','pm_tech_changed') and g.visible_to_customer),
+  'both are flagged to the store');
+set role authenticated;
+select test.login(:DOUG);
+select test.ok((select bool_or((x->'open'->'progress'->>'dragging')::boolean) from jsonb_array_elements(pm_plans_list()) x where x->>'name' like 'Semiannual%'), 'the plans screen shows how the PM is going');
+reset role;
+select set_config('request.jwt.claim.sub', '', false);
+select test.ok((select (pilot_signup('Valley Heating', 'Val Smith', 'val@valley.test', null, 2, 'base', 'Two trucks', 'demo')->>'ok')::boolean), 'anyone can raise a hand to pilot');
+select test.blocked($$select pilot_signup('V', 'x', null, null, 1, 'base', null, 'demo')$$, 'company and your name', 'a pilot sign-up needs a name and a way to reach them');
+set role authenticated;
+select test.login(test.v('PETE'));
+select test.blocked($$select save_pm_plan((select id from pm_plans where name = 'Annual water heater flush'), (select site_id from pm_plans where name = 'Annual water heater flush'), null, 'Annual flush (cheaper)', 12, current_date + 40, '[]', 99, 3, 1, true)$$, 'in force', 'once a plan is in force, only the store changes it');
+reset role;

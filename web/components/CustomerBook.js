@@ -7,6 +7,7 @@ import { act } from '@/lib/supabase';
 import { money, date } from '@/lib/format';
 import PoLog from './PoLog';
 import RateCard from './RateCard';
+import PmPlans from './PmPlans';
 import { ErrorBox } from './bits';
 
 const mins = (m) => (m == null ? '—' : m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`);
@@ -69,6 +70,7 @@ function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged, contrac
         <button className={show === 'stores' ? 'on' : ''} onClick={() => setShow('stores')}>Stores ({sites.length})</button>
         <button className={show === 'equipment' ? 'on' : ''} onClick={() => setShow('equipment')}>Equipment{eq ? ` (${eqShown.length})` : ''}</button>
         <button className={show === 'calls' ? 'on' : ''} onClick={() => setShow('calls')}>Past calls</button>
+        {contractorId && <button className={show === 'pm' ? 'on' : ''} onClick={() => setShow('pm')}>Maintenance plans</button>}
       </div>
       <ErrorBox error={err} />
 
@@ -113,6 +115,7 @@ function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged, contrac
         </div>
       )}
 
+      {show === 'pm' && <PmPlans side="contractor" customerId={c.customer_id} sites={c.sites.map((x) => ({ id: x.site_id, name: x.name }))} canEdit={canRates} onOpenCall={onOpenCall} />}
       {show === 'calls' && <PoLog customerId={c.customer_id} siteId={siteId} onOpen={onOpenCall} />}
 
       {admin && !siteId && (

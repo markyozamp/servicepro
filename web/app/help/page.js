@@ -81,6 +81,12 @@ const STORE = [
     'Contractors & QR → Who gets which kind of call.',
     'For each trade (refrigeration, plumbing…), pick the contractor. New calls go to them automatically.',
   ]],
+  ['Maintenance plans (PMs)', [
+    'On your dashboard, tap 📋 Maintenance plans. Each plan shows how often, the next due date, the price, about how many hours it should take, and how many days it must be finished in once it starts.',
+    'The PM call opens by itself before each due date, and your contractor schedules the trip. You see it under Preventive maintenance until it\'s done.',
+    'Each PM shows how it\'s going: trips, which technicians, hours on site, checklist done. If it drags past its window, or the technician changes partway, it\'s flagged to you.',
+    'Tap + New maintenance plan to add one, or your contractor proposes one and you tap Accept. "Show the last PMs" tells you which were on time and which were split up.',
+  ]],
   ['Edit a contractor', [
     'Settings → Contractors. Under the contractor, open "Edit details & your contact there".',
     'Your contact there (name, phone, email) and a note are yours to keep up to date anytime. Only your company sees them.',
@@ -167,6 +173,11 @@ const CONTRACTOR = [
   ['Send a technician', [
     'Open the call, pick the technician and the time, and save the trip.',
     'The store sees them under Expected today, and the tech sees it in their app.',
+  ]],
+  ['Propose a maintenance plan', [
+    'Customers → pick the customer → Maintenance plans → + Propose a maintenance plan.',
+    'Set the location, how often, next due date, price, about how many hours, how many days to finish once started, and the checklist. Send it; the store accepts it.',
+    'Once accepted, the PM call opens by itself before each due date. Schedule the trip and finish it within the days on the plan, with the same technician if the plan says so.',
   ]],
   ['Enter your rates for a customer', [
     'Customers → pick the customer → "Your rates for …": regular labor, after hours, helper, trip charge, parts markup and up to 4 others (parts runner, holiday rate…).',

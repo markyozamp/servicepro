@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { portalFor, signOutLocal } from '@/lib/useProfile';
+import PilotOffer from '@/components/PilotOffer';
 import DemoSim from '@/components/DemoSim';
 import { LegalFooter } from '@/components/Legal';
 
@@ -57,9 +58,10 @@ export default function Demo() {
       </section>
 
       <section className="demo-sec">
-        <h2>Watch it work: try it yourself</h2>
-        <p className="muted">The store's screen on the left, the technician's phone on the right. Follow the steps; nothing here is real or saved.</p>
+        <h2>Watch one call, start to finish</h2>
+        <div className="sim-disclaimer"><strong>This is an animation, not the actual program.</strong> It's a small, simplified window into one service call: the store's screen on the left, the technician's phone on the right. Follow the steps; nothing here is real or saved.</div>
         <DemoSim />
+        <p className="small muted" style={{ marginTop: 10 }}>The real system does much more: approvals, equipment history, maintenance plans, contractor records and rates, bill checks, team permissions and reports. <strong>To see it all, sign in to any role below and click around.</strong></p>
       </section>
 
       <section className="demo-sec">
@@ -79,7 +81,13 @@ export default function Demo() {
           <button type="button" className="primary big" disabled title="Coming soon">Get started now <span className="soon">Coming soon</span></button>
           <a className="button-like" href="mailto:sales@servicecallproof.com?subject=Service%20Call%20Proof%20questions">Questions? Talk to us</a>
         </div>
-        <p className="small muted"><strong>Are you a contractor?</strong> Contractors join free when a store invites them. Ask the stores you work for, or <a href="mailto:sales@servicecallproof.com?subject=Contractor%20interested">tell us which stores</a> and we'll reach out.</p>
+        <p className="small muted"><strong>Are you a contractor?</strong> Contractors join free when a store invites them. Ask the stores you work for, or <a href="mailto:sales@servicecallproof.com?subject=Contractor%20interested">tell us which stores</a> and we'll reach out. Want to run your whole shop on it? <a href="#contractors">See the contractor plans and the pilot offer</a>.</p>
+      </section>
+
+      <section className="demo-sec" id="contractors">
+        <h2>For contractors: plans</h2>
+        <p className="muted">Time Verify is free when a store invites you. Base, Pro and Enterprise run your whole shop, and they're in pilot now.</p>
+        <PilotOffer source="demo" current={null} />
       </section>
       <div style={{ padding: '0 16px 24px' }}><LegalFooter /></div>
     </main>

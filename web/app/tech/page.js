@@ -79,7 +79,7 @@ export default function TechApp() {
             <div className="hdr-who">{me.full_name}</div>
             <AlertsButton />
             {(me.is_org_admin || me.can_dispatch || me.can_bill) && <button onClick={() => router.push('/office')}>Office</button>}
-            {me.is_org_admin && <UpgradeButton />}
+            {me.is_org_admin && <UpgradeButton profile={me} />}
             <InstallButton />
             {!isDemoEmail(me.email) && <PasswordButton />}
             {isDemoEmail(me.email) ? <button onClick={signOut}>← Back to demo menu</button> : <button onClick={signOut}>Sign out</button>}

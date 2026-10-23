@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { useProfile } from '@/lib/useProfile';
+import PmPlans from '@/components/PmPlans';
 import { money, ago, dateTime, date, poLabel, PO_KIND } from '@/lib/format';
 import TopBar from '@/components/TopBar';
 import CallDetail from '@/components/CallDetail';
@@ -32,6 +33,7 @@ export default function StorePortal() {
   const [calls, setCalls] = useState([]);
   const [pending, setPending] = useState([]);
   const [pms, setPms] = useState([]);
+  const [showPlans, setShowPlans] = useState(false);
   const [tab, setTab] = useState('open');
   const [open, setOpen] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -337,11 +339,20 @@ export default function StorePortal() {
         )}
 
         {/* Preventive maintenance: stays here until done */}
+        {showPlans && (
+          <div className="panel panel-pad stack" style={{ gap: 8 }}>
+            <div className="spread"><h3>Maintenance plans</h3><button onClick={() => setShowPlans(false)}>Close</button></div>
+            <PmPlans side="store" canEdit={!!(profile.is_org_admin || profile.can_manage_equipment || profile.can_manage_pm)} onOpenCall={setOpen} />
+          </div>
+        )}
+        {!showPlans && pms.length === 0 && (
+          <div><button onClick={() => setShowPlans(true)}>📋 Maintenance plans</button></div>
+        )}
         {pms.length > 0 && (
           <div className="panel">
             <div className="spread" style={{ padding: '12px 16px 0' }}>
               <h3>Preventive maintenance</h3>
-              <span className="small muted">Shown until completed</span>
+              <span className="row" style={{ gap: 8 }}><span className="small muted">Shown until completed</span>{!showPlans && <button className="small" onClick={() => setShowPlans(true)}>📋 All maintenance plans</button>}</span>
             </div>
             <table>
               <tbody>
