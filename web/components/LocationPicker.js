@@ -5,11 +5,15 @@
 import { useEffect, useState } from 'react';
 import { usePlace } from '@/lib/terms';
 
-export default function LocationPicker({ sites, attention, value, onChange, canAdd, onAdd, onGoTo }) {
+export default function LocationPicker({ sites, attention, value, onChange, canAdd, onAdd, onGoTo, openSignal }) {
   const place = usePlace();
   const [open, setOpen] = useState(false);
   const [blink, setBlink] = useState(true);
   useEffect(() => { try { setBlink(localStorage.getItem('scp_blink') !== '0'); } catch { /* fine */ } }, []);
+  // Opened for you after an alert you jumped to is taken care of
+  const [nextUp, setNextUp] = useState(false);
+  useEffect(() => { if (openSignal) { setOpen(true); setNextUp(true); } }, [openSignal]);
+  useEffect(() => { if (!open) setNextUp(false); }, [open]);
   useEffect(() => {
     if (!open) return undefined;
     const close = (e) => { if (!e.target.closest('.locpick')) setOpen(false); };
@@ -36,6 +40,7 @@ export default function LocationPicker({ sites, attention, value, onChange, canA
       </button>
       {open && (
         <div className="locpick-menu" role="menu">
+          {nextUp && value && <div className="locpick-next">✓ Done. {items(value).length} more at {current?.name}: tap the next one.</div>}
           {sites.length > 1 && (
             <button role="menuitem" className={!value ? 'on' : ''} onClick={() => { onChange(''); setOpen(false); }}>
               <span>All {place.many}</span>{hotCount > 0 && <span className="dot" />}

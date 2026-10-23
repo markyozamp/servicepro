@@ -149,7 +149,10 @@ export default function StorePortal() {
   const showCalls = (t) => { setTab(t); setTimeout(() => document.getElementById('calls')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); };
   const pickSite = (id) => { setSiteF(id); try { localStorage.setItem(`scp_site_${profile.customer_id}`, id); } catch { /* fine */ } };
   // From the location menu: go to that location, scroll to the alert and highlight it
+  const [walk, setWalk] = useState(null);       // the alert you jumped to from the menu
+  const [menuSignal, setMenuSignal] = useState(0);
   const goTo = (siteId, target) => {
+    setWalk({ site: siteId, target, at: Date.now() });
     pickSite(siteId);
     let tries = 0;
     const find = () => {
@@ -162,6 +165,18 @@ export default function StorePortal() {
     };
     setTimeout(find, 120);
   };
+  // When the alert you jumped to is taken care of: back to the top, and open the menu on what's left at that location
+  useEffect(() => {
+    if (!walk || open) return;      // wait until the call window is closed
+    if (Date.now() - walk.at > 20 * 60000) { setWalk(null); return; }
+    const a = attention.find((x) => x.site_id === walk.site);
+    const left = a?.items || [];
+    if (left.some((i) => i.target === walk.target)) return;
+    setWalk(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (left.length) setTimeout(() => setMenuSignal((n) => n + 1), 450);
+    else setMsg(`All alerts at ${a?.name || 'this location'} are taken care of.`);
+  }, [attention, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Browser tab: number of things waiting on this store, flashing when a technician is at the door.
   const waitingCount = pending.length + calls.filter((c) => c.status === 'completed' && c.invoice_due_at && new Date(c.invoice_due_at) < new Date()).length + door.length;
@@ -220,7 +235,7 @@ export default function StorePortal() {
         <div className="spread">
           <div>
             {orgLogo ? <img className="org-logo" src={orgLogo} alt={org?.name || 'Company logo'} /> : <h1>{org?.name || `Your ${place.many}`}</h1>}
-            <div style={{ margin: '6px 0 2px' }}><LocationPicker sites={allSites} attention={attention} value={validSite} onChange={pickSite} onGoTo={goTo}
+            <div style={{ margin: '6px 0 2px' }}><LocationPicker sites={allSites} attention={attention} value={validSite} onChange={pickSite} onGoTo={goTo} openSignal={menuSignal}
               canAdd={storePerms(profile).locations} onAdd={() => { setAddLoc(true); setLocked(false); setSettings('locations'); setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); }} /></div>
             <div className="muted small">{profile.title || ''}{profile.approval_limit != null ? ` · approves up to ${money(profile.approval_limit)}` : profile.can_approve ? ' · approves any amount' : ''}</div>
           </div>
@@ -307,7 +322,7 @@ export default function StorePortal() {
             </div>
           );
         })}
-        <Presence onOpen={setOpen} refreshKey={calls} siteId={validSite} />
+        <Presence onOpen={setOpen} refreshKey={calls} siteId={validSite} onChanged={load} />
         {door.length > 0 && !sound && <button className="danger" onClick={enableAlerts}>🔔 Turn on sound and pop-up alerts for this screen</button>}
 
         <div ref={panelRef} className="anchor" />

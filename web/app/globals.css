@@ -600,3 +600,4 @@ table.compare .prospect { background: var(--amber-bg); }
 .locpick-menu { max-height: min(70vh, 640px); overflow-y: auto; }
 @keyframes attnflash { 0% { box-shadow: 0 0 0 0 rgba(217, 48, 37, .0); } 15% { box-shadow: 0 0 0 4px rgba(217, 48, 37, .55); } 100% { box-shadow: 0 0 0 0 rgba(217, 48, 37, 0); } }
 .attn-flash { animation: attnflash 1.2s ease-out 3; outline: 3px solid #d93025; outline-offset: 2px; border-radius: 10px; scroll-margin-top: 90px; }
+.locpick-next { margin: 2px 4px 6px; padding: 6px 10px; border-radius: 8px; background: var(--green-bg); color: var(--green-fg); font-weight: 600; font-size: 13px; }

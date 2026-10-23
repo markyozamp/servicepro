@@ -21,7 +21,7 @@ const SEL = `id, status, arrived_at, scheduled_start, scheduled_end, missed_aler
   profiles(full_name), work_orders(id, site_id, number, unit, issue_description, store_po_number, sites(id, name), contractors(name),
   equipment(location_description, equipment_types(name)))`;
 
-export default function Presence({ onOpen, refreshKey, siteId }) {
+export default function Presence({ onOpen, refreshKey, siteId, onChanged }) {
   const [inside, setInside] = useState([]);
   const [expected, setExpected] = useState([]);
   const [visitors, setVisitors] = useState([]);
@@ -156,7 +156,7 @@ export default function Presence({ onOpen, refreshKey, siteId }) {
                 {!x.resolved_at && x.contractors?.phone && <a className="callbtn small" href={`tel:${telOf(x.contractors.phone)}`}>📞 Call office</a>}
                 {!x.resolved_at && (
                   <button className="small" onClick={async () => {
-                    try { await act('store_resolve_visitor', { p_id: x.id }); load(); } catch (e) { setErr(e.message); }
+                    try { await act('store_resolve_visitor', { p_id: x.id }); load(); onChanged?.(); } catch (e) { setErr(e.message); }
                   }}>✓ Taken care of</button>
                 )}
               </span>
