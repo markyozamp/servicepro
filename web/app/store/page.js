@@ -276,9 +276,9 @@ export default function StorePortal() {
         {settings && <StoreSettings key={org?.id || 'org'} tab={settings} setTab={setSettings} onClose={() => { setAddLoc(false); closeArea(); }} startAdding={addLoc} onLocationsChanged={load} me={profile} org={org} hideTabs onOrgChanged={(logoData) => { if (logoData !== undefined) setLogoOverride(logoData); }} />}
         <div ref={workRef} className="anchor" />
         {project && (
-          <div className="panel panel-pad stack">
+          <div className="panel panel-pad stack work-panel">
             <div className="spread"><h2>Install or project quote <span className="soon">Coming soon</span> <Info title="Installs and projects">For bigger work: a new condensing unit, a walk-in freezer, a remodel. You describe the job, pick one or more contractors to quote it, and they send their quotes back on their own letterhead with photos. You compare, approve one, and it runs like any other call: scheduled, verified on arrival, the new equipment added to your list with its warranty.</Info></h2><button onClick={() => closeWork('project')}>Close</button></div>
-            <div className="muted">Coming soon. Here's how it will work:</div>
+            <div><strong>This feature is coming soon.</strong> Here's how it will work when it's ready:</div>
             <ol className="stack" style={{ gap: 4, margin: 0, paddingLeft: 20 }}>
               <li>Describe the job and the location, add photos.</li>
               <li>Pick the contractors you want quotes from (one, or several to compare).</li>
@@ -312,9 +312,9 @@ export default function StorePortal() {
 
         <div ref={callRef} className="anchor" />
         {creating && (
-          <NewCallForm side="store" profile={profile} defaultSite={validSite} onCancel={() => closeWork('call')} onCreated={async (wo) => {
+          <div className="work-panel-wrap"><NewCallForm side="store" profile={profile} defaultSite={validSite} onCancel={() => closeWork('call')} onCreated={async (wo) => {
             closeWork('call'); await load(); setOpen(wo.id);
-          }} />
+          }} /></div>
         )}
 
         {/* Approvals */}

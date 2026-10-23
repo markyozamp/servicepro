@@ -561,3 +561,6 @@ table.compare .prospect { background: var(--amber-bg); }
 .late-inv .small { color: #5c1a12; }
 .late-inv.quiet { background: #f6f5f1; border-color: var(--line); color: var(--ink); }
 .late-inv.quiet .small { color: var(--ink); }
+
+/* A panel you just opened (new call, project quote): tinted so it stands out from the dashboard */
+.work-panel, .work-panel-wrap > .panel { background: #eef7f0; border: 1px solid #8cc79c; border-left: 5px solid var(--green-fg); box-shadow: 0 4px 18px rgba(29,107,60,.12); }
