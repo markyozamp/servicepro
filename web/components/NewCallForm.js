@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
+import { busySummary } from '@/lib/busy';
 import { money, PRIORITY } from '@/lib/format';
 import { ErrorBox } from './bits';
 
@@ -13,6 +14,7 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
   const [ahInfo, setAhInfo] = useState(null);     // after hours for this contractor right now?
   const [wait, setWait] = useState(null);         // 'now' | 'morning'
   const [leaseOk, setLeaseOk] = useState(false);
+  const [win, setWin] = useState({ mode: '', start: '', end: '', note: '' });   // "When can they come?"
   const [amount, setAmount] = useState(null);
   const [trades, setTrades] = useState([]);
   const [types, setTypes] = useState([]);
@@ -46,7 +48,7 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
   })();
   const verify = route?.mode === 'verify';
 
-  const loadSites = () => q(supabase.from('sites').select('id, name, address, customer_id, property_type, customers(name, kind, phone)').order('name'));
+  const loadSites = () => q(supabase.from('sites').select('id, name, address, customer_id, property_type, busy_hours, timezone, customers(name, kind, phone, require_call_window)').order('name'));
   useEffect(() => {
     Promise.all([loadSites(), q(supabase.from('issue_types').select('*').eq('active', true).order('sort')),
       q(supabase.from('customer_contractors').select('customer_id, contractor_id, is_primary, mode, created_at, accept_emergency_min, accept_normal_min, contractors(name, phone, email)').is('store_removed_at', null).is('contractor_removed_at', null)),
@@ -65,6 +67,13 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
   async function addHome(e) {
     e.preventDefault();
     if (askWait && !wait) { setErr('It\'s after hours: choose "Send it now" or "Wait until morning".'); return; }
+    const askWin = side === 'store' && issue?.priority !== 1;
+    if (askWin && site?.customers?.require_call_window && !win.mode) { setErr('Say when they can come: Anytime, or pick a time.'); return; }
+    if (askWin && win.mode === 'time' && !win.start) { setErr('Pick the time they can come, or choose Anytime.'); return; }
+    if (askWin && win.mode === 'time') {
+      const bad = await act('check_call_window', { p_site: f.site, p_start: new Date(win.start).toISOString(), p_end: win.end ? new Date(win.end).toISOString() : null }).catch(() => null);
+      if (bad) { setErr(bad); return; }
+    }
     if (leased && !leaseOk) { setErr(`This unit is leased from ${leased.lease_company}. Call them, or tick the box to open a call with your contractor anyway.`); return; }
     setBusy(true); setErr('');
     try {
@@ -147,6 +156,11 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
       }
       if (f.unit.trim() || f.contact.trim() || f.phone.trim() || f.entry.trim()) {
         await act('set_call_contact', { p_wo: wo.id, p_unit: f.unit, p_contact_name: f.contact, p_contact_phone: f.phone, p_entry_notes: f.entry });
+      }
+      if (side === 'store' && issue?.priority !== 1 && (win.mode === 'time' || (win.mode === 'any' && (win.note.trim() || site?.customers?.require_call_window)))) {
+        await act('set_call_window', { p_wo: wo.id, p_start: win.mode === 'time' ? new Date(win.start).toISOString() : null,
+          p_end: win.mode === 'time' && win.end ? new Date(win.end).toISOString() : null, p_note: win.note.trim() || (win.mode === 'any' ? 'Anytime' : null) })
+          .catch(() => {});
       }
       onCreated && onCreated(wo);
     } catch (e2) {
@@ -329,6 +343,24 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
           ? 'The homeowner will approve anything above the diagnosis from a link (or tell you by phone, and you record it).'
           : "The technician cannot go past the authorized amount. If more is needed, you'll be asked to approve it (PO A, B…), with photos and a price."}
       </div>
+      {side === 'store' && f.site && issue?.priority !== 1 && (
+        <div className="stack" style={{ gap: 6 }}>
+          <strong className="small">When can they come?{site?.customers?.require_call_window ? '' : <span className="muted" style={{ fontWeight: 400 }}> (optional)</span>}</strong>
+          {busySummary(site?.busy_hours) && <div className="small muted">Busy hours here: {busySummary(site.busy_hours)}. Contractors can&apos;t come then unless it&apos;s an emergency.</div>}
+          <div className="row" style={{ gap: 14 }}>
+            <label className="row" style={{ gap: 6, fontWeight: 400 }}><input type="radio" name="win" style={{ width: 'auto' }} checked={win.mode === 'any'} onChange={() => setWin({ ...win, mode: 'any' })} /> Anytime{busySummary(site?.busy_hours) ? ' outside busy hours' : ''}</label>
+            <label className="row" style={{ gap: 6, fontWeight: 400 }}><input type="radio" name="win" style={{ width: 'auto' }} checked={win.mode === 'time'} onChange={() => setWin({ ...win, mode: 'time' })} /> Pick a time</label>
+          </div>
+          {win.mode === 'time' && (
+            <div className="row">
+              <label className="grow">From<input type="datetime-local" value={win.start} onChange={(e) => setWin({ ...win, start: e.target.value })} /></label>
+              <label className="grow">To<input type="datetime-local" value={win.end} onChange={(e) => setWin({ ...win, end: e.target.value })} /></label>
+            </div>
+          )}
+          {win.mode && <input value={win.note} onChange={(e) => setWin({ ...win, note: e.target.value })} placeholder="Note (optional), e.g. Before we open, use the back door" />}
+          {win.mode === 'time' && <div className="small muted">They come in your window, or offer you other times to pick from.</div>}
+        </div>
+      )}
       {askWait && (
         <div className="notice stack" style={{ gap: 6 }}>
           <div><strong>It&apos;s after hours for {route?.contractors?.name}.</strong>{ahInfo.regular_rate != null && ahInfo.after_rate != null ? ` Their rate now is ${money(ahInfo.after_rate)}/hr instead of ${money(ahInfo.regular_rate)}/hr.` : ' After-hours rates apply.'} Is it an emergency, or can it wait until morning?</div>

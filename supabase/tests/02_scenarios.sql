@@ -1576,3 +1576,36 @@ select test.ok((select (store_pick_trip_time(test.v('of2'), 2)->>'ok')::boolean)
 reset role;
 select test.ok((select status = 'assigned' and scheduled_start between now() + interval '2 days 3 hours' and now() + interval '2 days 5 hours' and scheduled_by = :MARIA
   from visits where work_order_id = test.v('rt') and status <> 'cancelled'), 'the trip is scheduled at the time the store picked');
+
+\echo '=== 73. Busy hours on a location, and "When can they come?"'
+set role authenticated; select test.login(:DOUG);
+select test.ok((select set_busy_hours(:S121, '{"mon":[["00:00","23:59"]],"tue":[["00:00","23:59"]],"wed":[["00:00","23:59"]],"thu":[["00:00","23:59"]],"fri":[["00:00","23:59"]],"sat":[["00:00","23:59"]],"sun":[["00:00","23:59"]]}')->>'summary' like 'Every day%'),
+  'the store sets busy hours (here: all day, to test)');
+select test.blocked($$select set_busy_hours('30000000-0000-0000-0000-000000000002', '{"mon":[["14:00","11:00"]]}')$$, 'end after they start', 'busy hours must make sense');
+select test.login(:MARIA);
+select test.put('bz', (open_po_call(:S121, (select id from issue_types where code='drain_backup'), 'Slow drain, not urgent', 'NS-9200')).id);
+select test.blocked($$select set_call_window((select test.v('bz')), now() + interval '1 day', now() + interval '1 day 2 hours', 'Before we open')$$, 'busy hours', 'the store''s own window can''t sit in busy hours either');
+select test.login(test.v('PETE'));
+select test.blocked($$select accept_call((select test.v('bz')), 'now')$$, 'busy hours', 'the contractor can''t come now during busy hours');
+select test.blocked($$select offer_trip_times((select test.v('bz')), (select test.v('TONY')), jsonb_build_array(jsonb_build_object('start', now() + interval '1 day')))$$, 'busy', 'or offer a time inside them');
+select test.login(test.v('TONY'));
+select test.blocked($$select tech_claim_call((select test.v('bz')))$$, 'busy hours', 'and a tech can''t just tap "I''m going"');
+select test.login(:MARIA);
+select test.ok((select (store_allow_busy(test.v('bz'))->>'ok')::boolean), 'the store lets them come now');
+select test.login(test.v('PETE'));
+select test.ok((select accepted_at is not null from accept_call(test.v('bz'), 'now')), 'then the contractor can accept and go');
+select test.login(:MARIA);
+select test.put('bze', (open_po_call(p_site => :S121, p_issue_type => (select id from issue_types where code='drain_backup'), p_details => 'Sewage backing up', p_po_number => 'NS-9201', p_priority => 1::smallint)).id);
+select test.login(test.v('TONY'));
+select test.put('bzv', (tech_claim_call(test.v('bze'))).id);
+select test.ok((select status = 'en_route' from visits where id = test.v('bzv')), 'an emergency goes any time');
+select from tech_arrive(test.v('bzv'), null, 47.8936, -97.0632);
+reset role;
+select test.ok(busy_watch() >= 1, 'the watcher runs');
+select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('bze') and flag = 'busy_hours_visit'), 'an emergency visit during busy hours is noted on the call');
+set role authenticated; select test.login(:DOUG);
+select from set_busy_hours(:S121, null);
+select test.login(:MARIA);
+select test.ok((select set_call_window(test.v('bze'), now() + interval '1 day', now() + interval '1 day 2 hours', 'Before we open')->>'text' like 'Before we open%'), 'with no busy hours, the store asks for a time');
+reset role;
+select test.ok((select count(*) >= 1 from notifications where work_order_id = test.v('bze') and message like '%the customer asks you to come Before we open%'), 'the contractor''s office is told');

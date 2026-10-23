@@ -37,6 +37,7 @@ export default function CompanyPlan({ org, onSaved }) {
   const [auto, setAuto] = useState(!!org?.auto_approve_bills);
   const [word, setWord] = useState(place.word);
   const [ftOpen, setFtOpen] = useState(false);
+  const [reqWin, setReqWin] = useState(!!org?.require_call_window);
 
   async function pickLogo(file) {
     setErr(''); setMsg('');
@@ -137,6 +138,13 @@ export default function CompanyPlan({ org, onSaved }) {
 
       <FollowThroughSettings org={org} onOpen={() => setFtOpen(!ftOpen)} />
       {ftOpen && <FollowThroughReport onClose={() => setFtOpen(false)} />}
+
+      <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+        <h3>When contractors come <Info title="When contractors come">Each {place.one} can have busy hours (under {place.Many}): contractors can&apos;t come for non-emergency work then. On top of that, you can ask your people to say when the contractor should come on every new call ("Anytime", "Tomorrow before we open"). The contractor either comes in that window or offers you other times to pick from. Emergencies always go right away.</Info></h3>
+        <label className="row" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={reqWin}
+          onChange={async (e) => { const v = e.target.checked; setErr(''); setMsg(''); try { await act('set_require_call_window', { p_on: v }); setReqWin(v); setMsg(v ? 'Saved. New non-emergency calls ask "When can they come?"' : 'Saved. "When can they come?" is optional on new calls.'); } catch (x) { setErr(x.message); } }} />
+          Ask &ldquo;When can they come?&rdquo; on every non-emergency call</label>
+      </div>
 
       <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
         <h3>Travel check <Info title="Travel check">When a technician taps "I'm going", the phone notes where the trip started. On the call you see only the nearest town and about how far it is, never the exact spot or a map, and nothing between calls. If the trip started within this distance of your {place.one}, the tech was already in the area: when a bill has more hours than were verified, the call says so, so you can ask whether travel was billed from the shop.</Info></h3>

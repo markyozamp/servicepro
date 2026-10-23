@@ -125,6 +125,16 @@ const STORE = [
     'Contractors & QR → order or print QR stickers and put one on each unit.',
     'Set a location PIN there too. Any employee can scan a sticker, enter the PIN and report a problem.',
   ]],
+  ['Busy hours: keep contractors out of your rush', [
+    'Settings → Locations → the location → Busy hours → Set busy hours. Add up to 2 windows a day (for example 11:00–1:30 and 5:00–7:30), or tick Same every day → Save.',
+    'Contractors can\'t schedule, offer, accept "on the way now" or start a non-emergency visit during them. Emergencies still come right away.',
+    'Want someone during busy hours on one call? Open the call and tap "Let them come now". A technician already working when busy hours start isn\'t stopped; you get a heads-up.',
+  ]],
+  ['Say when they can come', [
+    'On a new non-emergency call, "When can they come?": Anytime, or pick a time (from–to), with a note like "before we open".',
+    'The contractor accepts for your time, or offers you other times to pick from.',
+    'Settings & plan → When contractors come → tick to ask this on every non-emergency call.',
+  ]],
   ['A contractor wants to come back: pick a time', [
     'When a contractor needs to come back (the part came in, a second visit), they send you up to 3 times. You get an alert, and a blue box on your dashboard and on the call.',
     'Tap the time that fits your day. Only then is the trip scheduled, with a check-in code for it.',
@@ -232,6 +242,11 @@ const CONTRACTOR = [
   ['Set your office phone and logo', [
     'Team → Who gets the calls → Office phone → Save. This is the number customers reach when they tap Call them now.',
     'Your logo (company admin): Team → Your logo → Upload logo.',
+  ]],
+  ['Busy hours and the customer\'s requested time', [
+    'The call shows "The customer asks you to come …" and the location\'s busy hours. Your techs see both on their phones.',
+    'Accept with "I\'ll come in your time", or "Can\'t make that time — offer others" to send up to 3 times for them to pick.',
+    'During busy hours the app won\'t let you schedule, offer or start a non-emergency trip, unless the customer taps "Let them come now". Emergencies can go any time; a visit during busy hours is noted on the call.',
   ]],
   ['Schedule a return trip', [
     'Open the call → Schedule the next trip → pick the technician → offer up to 3 times (+ Add another time) → Send times to the customer.',

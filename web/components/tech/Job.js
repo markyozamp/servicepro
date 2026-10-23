@@ -43,6 +43,8 @@ function Header({ job, wifi }) {
         <div className="small">Meet: <strong>{w.contact_name}</strong>{w.contact_phone && <> · <a href={`tel:${w.contact_phone}`}>{w.contact_phone}</a></>}</div>
       )}
       {(s.access_notes || w.entry_notes) && <div className="notice small">{[w.entry_notes, s.access_notes].filter(Boolean).join(' · ')}</div>}
+      {w.window && <div className="small">🕑 <strong>Customer asks you to come:</strong> {w.window}</div>}
+      {w.busy_hours && <div className="small" style={{ color: w.busy_ok || w.priority === 1 ? 'var(--ink-2)' : 'var(--red-fg)' }}>⛔ <strong>Busy hours:</strong> {w.busy_hours}{w.priority === 1 ? ' (emergency: you can go)' : w.busy_ok ? ' (the customer said you can come)' : ' — don\'t go then'}</div>}
       {job.warranties.length > 0 && (
         <div className="notice small"><strong>Warranty on this site:</strong> {job.warranties.map((x) => `${x.kind} until ${date(x.ends_on)} (${x.description})`).join('; ')}</div>
       )}

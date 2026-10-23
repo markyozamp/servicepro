@@ -5,6 +5,7 @@ import TripPick, { OFFER_SELECT, optText } from './TripPick';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { money, dateTime, time, date } from '@/lib/format';
+import { busySummary, busyNow } from '@/lib/busy';
 import RateCard from './RateCard';
 
 const h = (n) => (n == null ? '—' : `${Number(n).toFixed(2)} h`);
@@ -15,6 +16,7 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
   const [runs, setRuns] = useState([]);
   const [contractors, setContractors] = useState([]);
   const [sched, setSched] = useState(null);
+  const [offerNow, setOfferNow] = useState(0);
   const [po, setPo] = useState('');
   const [reroute, setReroute] = useState('');
 
@@ -85,6 +87,20 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
         </div>
       )}
 
+      {/* When they can come: the customer's requested time and the location's busy hours */}
+      {(wo.window_start || wo.window_note || busySummary(wo.sites?.busy_hours)) && !closed && (
+        <div className="small stack" style={{ gap: 4 }}>
+          {(wo.window_start || wo.window_note) && <div>🕑 <strong>{office ? 'The customer asks you to come:' : 'You asked them to come:'}</strong> {[wo.window_note, wo.window_start ? `${dateTime(wo.window_start)}${wo.window_end ? `–${time(wo.window_end)}` : ''}` : ''].filter(Boolean).join(' · ')}</div>}
+          {busySummary(wo.sites?.busy_hours) && (
+            <div className="row" style={{ gap: 8 }}>
+              <span>⛔ <strong>Busy hours:</strong> {busySummary(wo.sites.busy_hours)}{wo.priority === 1 ? ' (an emergency can come anyway)' : office ? ' — no non-emergency visits then' : ''}</span>
+              {wo.busy_override_at ? <span className="chip tone-green">{office ? 'The customer said you can come during busy hours' : 'You allowed a visit during busy hours'}</span>
+                : !office && wo.priority !== 1 && <button disabled={busy} onClick={() => run('store_allow_busy', { p_wo: wo.id })}>Let them come now{busyNow(wo.sites.busy_hours, wo.sites.timezone) ? '' : ' (during busy hours)'}</button>}
+            </div>
+          )}
+        </div>
+      )}
+
       {office && !closed && !wo.accepted_at && (
         sched ? (
           <div className="stack" style={{ gap: 6 }}>
@@ -100,7 +116,9 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
           </div>
         ) : (
           <div className="row">
-            <button className="primary" disabled={busy} onClick={() => run('accept_call', { p_wo: wo.id, p_when: 'now' })}>Accept — on the way now</button>
+            {wo.window_start && <button className="primary" disabled={busy} onClick={() => run('accept_call', { p_wo: wo.id, p_when: 'scheduled', p_start: wo.window_start, p_end: wo.window_end })}>Accept — I&apos;ll come in your time</button>}
+            {wo.window_start && <button disabled={busy} onClick={() => setOfferNow((n) => n + 1)}>Can&apos;t make that time — offer others</button>}
+            <button className={wo.window_start ? '' : 'primary'} disabled={busy} onClick={() => run('accept_call', { p_wo: wo.id, p_when: 'now' })}>Accept — on the way now</button>
             <button disabled={busy} onClick={() => setSched({ start: '', end: '' })}>Accept — schedule a time</button>
             <button className="danger" disabled={busy} onClick={() => {
               const r = window.prompt("Why can't you take it? (the customer sees this)");
@@ -110,7 +128,7 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
         )
       )}
       {/* Trips: every trip is announced to the store before it happens */}
-      <Trips wo={wo} visits={visits} techs={techs} office={office} closed={closed} busy={busy} run={run} reload={() => runOuter('invoice_check', { p_wo: wo.id }, () => setTimeout(load, 300))} />
+      <Trips wo={wo} visits={visits} techs={techs} office={office} closed={closed} busy={busy} run={run} startOffer={offerNow} reload={() => runOuter('invoice_check', { p_wo: wo.id }, () => setTimeout(load, 300))} />
 
       {/* Store: confirm a call the contractor entered from a phone call */}
       {side === 'store' && wo.source === 'contractor' && !wo.store_confirmed_at && (
@@ -381,8 +399,9 @@ export function TechHereButton({ wo, visits, busy, run }) {
 }
 
 // Every trip to the store, announced ahead: who, when. The office (or owner) schedules; the store sees it as Expected.
-function Trips({ wo, visits, techs, office, closed, busy, run, reload }) {
+function Trips({ wo, visits, techs, office, closed, busy, run, reload, startOffer }) {
   const [f, setF] = useState(null);
+  useEffect(() => { if (startOffer) setF({ tech: '', now: false, opts: [{ start: '', end: '' }], note: '' }); }, [startOffer]);
   const [offers, setOffers] = useState([]);
   const loadOffers = () => q(supabase.from('trip_offers').select(OFFER_SELECT).eq('work_order_id', wo.id).order('created_at', { ascending: false }).limit(5)).then(setOffers).catch(() => {});
   useEffect(() => { loadOffers(); }, [wo.id, visits?.length]); // eslint-disable-line react-hooks/exhaustive-deps

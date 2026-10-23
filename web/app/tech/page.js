@@ -188,6 +188,8 @@ function OpenCalls({ calls }) {
             <span className="small">{c.issue && c.issue !== c.problem ? `${c.issue}: ` : ''}{c.problem}</span>
           </div>
           <div className="small muted">PO {c.po_number}{c.scheduled_start ? ` · scheduled ${time(c.scheduled_start)}${c.scheduled_end ? `–${time(c.scheduled_end)}` : ''}` : ` · opened ${ago(c.created_at)}`}</div>
+          {c.window && <div className="small">🕑 Customer asks: {c.window}</div>}
+          {c.busy_hours && <div className="small" style={{ color: 'var(--red-fg)' }}>⛔ Busy hours: {c.busy_hours}{c.priority === 1 ? ' (emergency: go anyway)' : c.busy_ok ? ' (customer said OK)' : ''}</div>}
           <button className="primary big" disabled={!!busy} onClick={async () => {
             setBusy(c.id); setErr('');
             try { await T.claim(c.id); } catch (e) { setErr(e.message); T.sync(); } finally { setBusy(null); }

@@ -8,6 +8,7 @@ import { money } from '@/lib/format';
 import { ErrorBox, Notice } from './bits';
 import AddressFinder from './AddressFinder';
 import SiteAccess from './SiteAccess';
+import BusyHours from './BusyHours';
 import Info from './Info';
 import { dateTime } from '@/lib/format';
 import { usePlace } from '@/lib/terms';
@@ -27,7 +28,7 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
   async function load() {
     try {
       const [sites, wifi] = await Promise.all([
-        q(supabase.from('sites').select('id, name, address, emergency_limit, lat, lon, timezone, backup_code_set_at, backup_code_set_by_name, visitor_require_plate, visitor_require_photo').order('name')),
+        q(supabase.from('sites').select('id, name, address, emergency_limit, lat, lon, timezone, backup_code_set_at, backup_code_set_by_name, visitor_require_plate, visitor_require_photo, busy_hours').order('name')),
         q(supabase.from('site_wifi').select('site_id, ssid, password')),
       ]);
       setRows(sites.map((s) => {
@@ -135,6 +136,7 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
             <button disabled={busy} onClick={() => hereNow(r)}>Fine-tune map point (on site)</button>
             <Info title="Fine-tune map point">The address already puts this {place.one} on the map. If technicians park or enter somewhere else (a back lot, a loading dock, a big property), stand at that spot with your phone and tap this, so their arrival is noticed there. Use a phone at the {place.one}; a computer only knows roughly where it is.</Info>
           </div>
+          <BusyHours key={`busy-${r.id}-${JSON.stringify(r.busy_hours || {})}`} siteId={r.id} siteName={r.name} initial={r.busy_hours} onSaved={load} />
           <label>Emergency calls are approved up to ($) <span className="muted" style={{ fontWeight: 400 }}>— leave blank to approve every emergency request yourself</span>
             <input type="number" min="0" step="any" value={r.em} onChange={set(r.id, 'em')} placeholder="e.g. 1500" /></label>
           {r.em !== '' && <div className="small muted">On emergency calls the technician can go ahead up to {money(r.em)} total without waiting; you're told immediately.</div>}
