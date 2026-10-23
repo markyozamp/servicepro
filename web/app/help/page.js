@@ -91,7 +91,7 @@ const STORE = [
     'Settings → Contractors. Under the contractor, open "Edit details & your contact there".',
     'Your contact there (name, phone, email) and a note are yours to keep up to date anytime. Only your company sees them.',
     'Haven\'t they signed in yet? You can fix the company name, office phone, and who the sign-in link goes to, then make a fresh link (the old one stops working).',
-    'Once they\'ve signed in, their company name and office phone are theirs to keep up to date. Your rules for them (travel, accept times, time not checked in) are right above: change them and tap Save.',
+    'Once they\'ve signed in, their company name and office phone are theirs to keep up to date. Your rules for them (travel, accept times, how many days they have to send the invoice, time not checked in) are right above: change them and tap Save.',
   ]],
   ['Contractor rates, and comparing contractors', [
     'Settings → Contractors → "Rates they charge you" under each contractor: regular labor, after hours, helper, trip charge, parts markup and up to 4 others.',

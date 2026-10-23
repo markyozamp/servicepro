@@ -282,11 +282,11 @@ export default function StorePortal() {
             <ol className="stack" style={{ gap: 4, margin: 0, paddingLeft: 20 }}>
               <li>Describe the job and the location, add photos.</li>
               <li>Pick the contractors you want quotes from (one, or several to compare).</li>
-              <li>They send quotes back here, on their letterhead.</li>
-              <li>Compare side by side and approve one; it becomes a PO.</li>
-              <li>The install runs like any call: scheduled, checked in, verified. The new equipment and its warranty are added to your list.</li>
+              <li>Contractors on Service Call Proof <strong>Base, Pro or Enterprise</strong> send a full quote right here: line items, good / better / best options, their logo and terms, photos. Any other contractor can reply with a price and their own PDF.</li>
+              <li>Compare side by side and approve one with a tap.</li>
+              <li>From a Base, Pro or Enterprise contractor, the approved quote becomes the job and PO by itself: scheduled, checked in, verified, and the new equipment and its warranty added to your list.</li>
             </ol>
-            <div className="small muted">Until then: open a regular service call and write "Quote for new …" in the description.</div>
+            <div className="small muted">Tip: ask your contractors to join Service Call Proof Base or Pro, and their quotes will come in ready to compare and approve. Until then: open a regular service call and write "Quote for new …" in the description.</div>
           </div>
         )}
 

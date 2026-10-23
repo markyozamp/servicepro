@@ -3,7 +3,7 @@
 // Contractor side: the customers they serve. List of accounts (stores, open calls, bills, this year's work, what needs attention),
 // and one customer's page: contacts, terms, stores, equipment and past calls.
 import { useEffect, useState } from 'react';
-import { act } from '@/lib/supabase';
+import { act, supabase } from '@/lib/supabase';
 import { money, date } from '@/lib/format';
 import PoLog from './PoLog';
 import RateCard from './RateCard';
@@ -19,6 +19,12 @@ function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged, contrac
   const [eq, setEq] = useState(null);
   const [err, setErr] = useState('');
   const [show, setShow] = useState('stores');
+  const [billDays, setBillDays] = useState(null);
+  useEffect(() => {
+    if (!contractorId) return;
+    supabase.from('customer_contractors').select('billing_days').eq('customer_id', c.customer_id).eq('contractor_id', contractorId).maybeSingle()
+      .then(({ data }) => setBillDays(data?.billing_days ?? 7));
+  }, [c.customer_id, contractorId]);
   useEffect(() => { act('contractor_customer_equipment', { p_customer: c.customer_id }).then(setEq).catch((e) => setErr(e.message)); }, [c.customer_id]);
   const t = c.terms || {};
   const sites = siteId ? c.sites.filter((s) => s.site_id === siteId) : c.sites;
@@ -56,6 +62,7 @@ function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged, contrac
           {t.min_hours != null && <span className="chip tone-slate">{t.min_hours} h minimum</span>}
           {t.increment_min != null && <span className="chip tone-slate">Billed in {t.increment_min}-min steps</span>}
           {t.unverified_time && <span className="chip tone-slate">{UNVERIFIED[t.unverified_time] || t.unverified_time}</span>}
+          {billDays != null && <span className="chip tone-slate">Invoice due within {billDays} days of finishing</span>}
           {(c.trades || []).map((x) => <span key={x} className="chip tone-blue">{x}</span>)}
         </div>
         {!t.terms_accepted_at && <div className="small" style={{ color: 'var(--red-fg)', marginTop: 6 }}>You haven't accepted their terms yet.</div>}

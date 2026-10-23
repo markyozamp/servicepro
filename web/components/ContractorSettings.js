@@ -54,7 +54,7 @@ export default function ContractorSettings({ onClose }) {
   async function load() {
     try {
       const [a, b, c, d, e] = await Promise.all([
-        q(supabase.from('customer_contractors').select('contractor_id, store_removed_at, contractor_removed_at, mode, pays_travel, unverified_time, terms_accepted_at, accept_emergency_min, accept_normal_min, min_hours, increment_min, is_primary, contractors(name, phone, email)').order('created_at')),
+        q(supabase.from('customer_contractors').select('contractor_id, store_removed_at, contractor_removed_at, mode, pays_travel, unverified_time, terms_accepted_at, accept_emergency_min, accept_normal_min, min_hours, increment_min, is_primary, billing_days, contractors(name, phone, email)').order('created_at')),
         q(supabase.from('trades').select('id, name').order('id')),
         q(supabase.from('trade_contractors').select('site_id, trade_id, contractor_id')),
         q(supabase.from('sites').select('id, name').order('name')),
@@ -113,6 +113,11 @@ export default function ContractorSettings({ onClose }) {
             <label className="grow">Emergency calls must be accepted within (min)<input type="number" min="5" max="240" value={r.accept_emergency_min} onChange={(e) => setRow(r.contractor_id, 'accept_emergency_min', e.target.value)} /></label>
             <label className="grow">Other calls within (min)<input type="number" min="15" max="4320" step="15" value={r.accept_normal_min} onChange={(e) => setRow(r.contractor_id, 'accept_normal_min', e.target.value)} /></label>
           </div>
+          <label>Invoice due to you within
+            <select value={r.billing_days ?? ''} onChange={(e) => setRow(r.contractor_id, 'billing_days', e.target.value === '' ? null : Number(e.target.value))}>
+              <option value="">7 days after the work is done (standard)</option>
+              {[3, 5, 10, 14, 21, 30, 45, 60].map((n) => <option key={n} value={n}>{n} days after the work is done</option>)}
+            </select></label>
           <label>Time not verified in Service Call Proof
             <select value={r.unverified_time} onChange={(e) => setRow(r.contractor_id, 'unverified_time', e.target.value)}>
               <option value="review">We review it case by case</option>
@@ -130,6 +135,7 @@ export default function ContractorSettings({ onClose }) {
           <Details contractorId={r.contractor_id} onSaved={load} onLink={(x) => { setSent(x); setMsg('New sign-in link is ready under "Invite a contractor" below. Send it with Email it or Text it.'); }} />
           <button disabled={busy} onClick={async () => {
             await run('set_unverified_rule', { p_contractor: r.contractor_id, p_rule: r.unverified_time });
+            await run('set_billing_days', { p_contractor: r.contractor_id, p_days: r.billing_days ?? null });
             await run('set_contractor_terms', { p_contractor: r.contractor_id, p_mode: r.mode, p_pays_travel: r.pays_travel,
               p_accept_emergency_min: Number(r.accept_emergency_min), p_accept_normal_min: Number(r.accept_normal_min) }, () => setMsg(`Saved ${r.contractors?.name}.`));
           }}>Save</button>

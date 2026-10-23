@@ -1428,3 +1428,13 @@ select test.ok((select (store_ack_flag((select g.id from guardrail_flags g join 
 select test.login(:RIVAL);
 select test.blocked($$select store_resolve_visitor((select id from site_visitors order by recorded_at desc limit 1))$$, 'Not allowed', 'nobody else can clear a store''s visitor alert');
 reset role;
+
+\echo '=== 64. The store sets how long a contractor has to send the invoice'
+set role authenticated;
+select test.login(:DOUG);
+select test.ok((select (set_billing_days(test.v('PRAIRIE'), 21)->>'days')::int = 21), 'the store gives Prairie 21 days to invoice');
+reset role;
+select test.ok((select _billing_days(w.id) = 21 from work_orders w where w.contractor_id = test.v('PRAIRIE') and w.agreement_id is null limit 1), 'calls with Prairie now use the 21-day window');
+set role authenticated;
+select test.blocked($$select set_billing_days((select test.v('PRAIRIE')), 200)$$, '1 to 90', 'the window has to make sense');
+reset role;
