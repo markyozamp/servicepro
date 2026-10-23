@@ -378,3 +378,7 @@ label.button-like { display: inline-flex; align-items: center; padding: 8px 14px
   .po-cards { display: flex; flex-direction: column; }
   .po-card { padding: 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
 }
+
+.phone-show { display: none; }
+@media (max-width: 900px) { .phone-show { display: block; } }
+.tablewrap { overflow-x: auto; }

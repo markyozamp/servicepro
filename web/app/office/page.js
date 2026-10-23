@@ -125,7 +125,8 @@ export default function OfficePortal() {
   const lateBills = toBill.filter((c) => daysUntil(c.invoice_due_at) < 0).length;
   const toAcceptF = callsF.filter((w) => w.status === 'created' && w.mode === 'verify' && !w.accepted_at && !w.declined_at);
   const todayCount = toAcceptF.length + callsF.filter((w) => w.status === 'created' && w.mode === 'verify' && w.accepted_at && !w.declined_at && !latest(w)).length
-    + callsF.filter((w) => w.status === 'completed' && daysUntil(w.invoice_due_at) < 0).length + reviewFlags.length;
+    + callsF.filter((w) => w.status === 'completed' && daysUntil(w.invoice_due_at) < 0).length + reviewFlags.length
+    + callsF.filter((w) => !['completed', 'invoiced', 'cancelled'].includes(w.status) && (w.visits || []).some((v) => v.status === 'assigned' && v.missed_alert_at)).length;
   const history = callsF.filter((c) => ['invoiced', 'cancelled'].includes(c.status));
 
   const assignBox = (w) => (
@@ -256,20 +257,20 @@ export default function OfficePortal() {
         {tab === 'customers' && <CustomerBook book={book} pick={validPick} onPick={setCpick} onOpenCall={setOpen} admin={!!profile.is_org_admin} onChanged={load} />}
 
         {tab === 'pm' && (
-          <div className="panel">
+          <div className="panel tablewrap">
             <table>
-              <thead><tr><th>PM</th><th>Location</th><th>Due</th><th>Technician</th><th></th></tr></thead>
+              <thead><tr><th>PM</th><th className="hide-sm">Location</th><th>Due</th><th>Technician</th><th className="hide-sm"></th></tr></thead>
               <tbody>
                 {pms.length === 0 && <tr><td colSpan={5} className="muted">No open PM visits. They're created automatically 14 days before they're due.</td></tr>}
                 {pms.sort((a, b) => (a.due_on > b.due_on ? 1 : -1)).map((p) => {
                   const v = latest(p); const d = daysUntil(p.due_on);
                   return (
                     <tr key={p.id} className="click" onClick={() => setOpen(p.id)}>
-                      <td><strong>#{p.number}</strong><div className="small">{p.issue_description}</div></td>
-                      <td>{p.customers?.name}<div className="small muted">{p.sites?.name}</div></td>
+                      <td><strong>#{p.number}</strong><div className="small">{p.issue_description}</div><div className="small muted phone-show">{p.customers?.name} · {p.sites?.name}</div></td>
+                      <td className="hide-sm">{p.customers?.name}<div className="small muted">{p.sites?.name}</div></td>
                       <td>{d < 0 ? <span className="chip tone-red">OVERDUE {-d} days</span> : <span className={`chip ${d <= 7 ? 'tone-amber' : 'tone-slate'}`}>{date(p.due_on)}</span>}</td>
                       <td>{v ? v.profiles?.full_name : assignBox(p)}</td>
-                      <td><StatusChip status={p.status} /></td>
+                      <td className="hide-sm"><StatusChip status={p.status} /></td>
                     </tr>
                   );
                 })}
@@ -279,22 +280,22 @@ export default function OfficePortal() {
         )}
 
         {tab === 'billing' && (
-          <div className="panel">
+          <div className="panel tablewrap">
             <table>
-              <thead><tr><th>Call</th><th>Customer</th><th>Invoice due</th><th>Ready?</th><th className="num">Total</th></tr></thead>
+              <thead><tr><th>Call</th><th className="hide-sm">Customer</th><th>Invoice due</th><th className="hide-sm">Ready?</th><th className="num hide-sm">Total</th></tr></thead>
               <tbody>
                 {toBill.length === 0 && <tr><td colSpan={5} className="muted">Nothing waiting to be invoiced.</td></tr>}
                 {toBill.map((w) => {
                   const d = daysUntil(w.invoice_due_at);
                   return (
                     <tr key={w.id} className="click" onClick={() => setOpen(w.id)}>
-                      <td><strong>#{w.number}</strong><div className="small muted">completed {date(w.completed_at)}</div></td>
-                      <td>{w.customers?.name}<div className="small muted">{w.sites?.name}</div></td>
+                      <td><strong>#{w.number}</strong><div className="small muted">completed {date(w.completed_at)}</div><div className="small muted phone-show">{w.customers?.name} · {w.sites?.name}</div></td>
+                      <td className="hide-sm">{w.customers?.name}<div className="small muted">{w.sites?.name}</div></td>
                       <td>{d < 0 ? <span className="chip tone-red">LATE {-d} days — store notified</span>
                         : <span className={`chip ${d <= 2 ? 'tone-amber' : 'tone-slate'}`}>{date(w.invoice_due_at)} ({d} days)</span>}</td>
-                      <td>{w.mode === 'verify' ? <span className="chip tone-amber">Enter invoice (Time Verify)</span>
+                      <td className="hide-sm">{w.mode === 'verify' ? <span className="chip tone-amber">Enter invoice (Time Verify)</span>
                         : w.invoice_ready ? <span className="chip tone-green">Ready</span> : <span className="chip tone-red">{blockingByWo[w.id] || 0} to review</span>}</td>
-                      <td className="num">{w.mode === 'verify' ? '—' : money(w.total_cost)}</td>
+                      <td className="num hide-sm">{w.mode === 'verify' ? '—' : money(w.total_cost)}</td>
                     </tr>
                   );
                 })}
@@ -304,17 +305,17 @@ export default function OfficePortal() {
         )}
 
         {tab === 'review' && (
-          <div className="panel">
+          <div className="panel tablewrap">
             <table>
-              <thead><tr><th>Call</th><th>Issue found</th><th className="num">Total</th><th></th></tr></thead>
+              <thead><tr><th>Call</th><th>Issue found</th><th className="num hide-sm">Total</th><th className="hide-sm"></th></tr></thead>
               <tbody>
                 {reviewFlags.length === 0 && <tr><td colSpan={4} className="muted">Nothing to review.</td></tr>}
                 {reviewFlags.map((f) => (
                   <tr key={f.id} className="click" onClick={() => setOpen(f.work_order_id)}>
                     <td><strong>#{f.work_orders?.number}</strong><div className="small muted">{f.work_orders?.sites?.name}</div></td>
                     <td><span className="chip tone-red">{FLAG_LABEL[f.flag] || f.flag}</span><div className="small" style={{ marginTop: 4 }}>{f.description}</div><div className="small muted">{ago(f.triggered_at)}</div></td>
-                    <td className="num">{money(f.work_orders?.total_cost)}</td>
-                    <td className="num"><button>Review</button></td>
+                    <td className="num hide-sm">{money(f.work_orders?.total_cost)}</td>
+                    <td className="num hide-sm"><button>Review</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -323,17 +324,17 @@ export default function OfficePortal() {
         )}
 
         {tab === 'history' && (
-          <div className="panel">
+          <div className="panel tablewrap">
             <table>
-              <thead><tr><th>Call</th><th>Customer</th><th>Status</th><th>Invoice</th><th className="num">Total</th></tr></thead>
+              <thead><tr><th>Call</th><th className="hide-sm">Customer</th><th>Status</th><th className="hide-sm">Invoice</th><th className="num">Total</th></tr></thead>
               <tbody>
                 {history.length === 0 && <tr><td colSpan={5} className="muted">No invoiced or cancelled calls yet.</td></tr>}
                 {history.map((w) => (
                   <tr key={w.id} className="click" onClick={() => setOpen(w.id)}>
-                    <td><strong>#{w.number}</strong><div className="small muted">{dateTime(w.created_at)}</div></td>
-                    <td>{w.customers?.name}<div className="small muted">{w.sites?.name}</div></td>
+                    <td><strong>#{w.number}</strong><div className="small muted">{dateTime(w.created_at)}</div><div className="small muted phone-show">{w.customers?.name} · {w.sites?.name}</div></td>
+                    <td className="hide-sm">{w.customers?.name}<div className="small muted">{w.sites?.name}</div></td>
                     <td><StatusChip status={w.status} /></td>
-                    <td>{w.qbo_invoice_id || '—'}{w.invoiced_at && w.invoice_due_at && new Date(w.invoiced_at) > new Date(w.invoice_due_at) ? <span className="chip tone-red" style={{ marginLeft: 6 }}>late</span> : null}</td>
+                    <td className="hide-sm">{w.qbo_invoice_id || '—'}{w.invoiced_at && w.invoice_due_at && new Date(w.invoiced_at) > new Date(w.invoice_due_at) ? <span className="chip tone-red" style={{ marginLeft: 6 }}>late</span> : null}</td>
                     <td className="num">{money(w.total_cost)}</td>
                   </tr>
                 ))}
