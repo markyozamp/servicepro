@@ -4,7 +4,7 @@
 import TripPick, { OFFER_SELECT, optText } from './TripPick';
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
-import { money, dateTime, time, date } from '@/lib/format';
+import { money, dateTime, time, date, ago } from '@/lib/format';
 import { busySummary, busyNow } from '@/lib/busy';
 import RateCard from './RateCard';
 
@@ -40,6 +40,7 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
   const isStoreAdmin = side === 'store' && (profile?.can_open_calls || profile?.is_org_admin);
   const billingStore = side === 'store' && (profile?.can_see_billing || profile?.can_approve || profile?.is_org_admin);
   const closed = ['completed', 'invoiced', 'cancelled'].includes(wo.status);
+  const asking = !!wo.busy_ask_at && !wo.busy_ask_answered_at && !wo.busy_override_at;   // contractor asked to come during busy hours
   const late = !wo.accepted_at && !wo.declined_at && wo.accept_due_at && new Date(wo.accept_due_at) < new Date();
   const noVisit = !(chk?.visits || []).length && ['created'].includes(wo.status);
   const inv = chk?.invoice;
@@ -95,9 +96,19 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
             <div className="row" style={{ gap: 8 }}>
               <span>⛔ <strong>Busy hours:</strong> {busySummary(wo.sites.busy_hours)}{wo.priority === 1 ? ' (an emergency can come anyway)' : office ? ' — no non-emergency visits then' : ''}</span>
               {wo.busy_override_at ? <span className="chip tone-green">{office ? 'The customer said you can come during busy hours' : 'You allowed a visit during busy hours'}</span>
-                : !office && wo.priority !== 1 && <button disabled={busy} onClick={() => run('store_allow_busy', { p_wo: wo.id })}>Let them come now{busyNow(wo.sites.busy_hours, wo.sites.timezone) ? '' : ' (during busy hours)'}</button>}
+                : !office && wo.priority !== 1 ? <>
+                  <button className={asking ? 'primary' : ''} disabled={busy} onClick={() => run('store_allow_busy', { p_wo: wo.id })}>Let them come now{busyNow(wo.sites.busy_hours, wo.sites.timezone) ? '' : ' (during busy hours)'}</button>
+                  {asking && <button disabled={busy} onClick={() => run('store_decline_busy', { p_wo: wo.id })}>Not yet</button>}
+                </>
+                : office && wo.priority !== 1 && (asking ? <span className="chip tone-amber">Asked {ago(wo.busy_ask_at)}: waiting on the customer</span>
+                  : <button disabled={busy} onClick={() => {
+                    const n = window.prompt('Ask the customer to let you come now, during their busy hours. Add a note? (optional)', '');
+                    if (n !== null) run('ask_busy_ok', { p_wo: wo.id, p_note: n.trim() || null });
+                  }}>Ask to come now</button>)}
             </div>
           )}
+          {!wo.busy_override_at && asking && !office && <div>🙋 <strong>{wo.contractors?.name || 'The contractor'} asks to come now</strong>{wo.busy_ask_note ? `: “${wo.busy_ask_note}”` : ''} <span className="muted">({ago(wo.busy_ask_at)})</span></div>}
+          {!wo.busy_override_at && wo.busy_ask_answer === 'no' && <div className="muted">{office ? 'The customer said not during busy hours.' : 'You said not during busy hours.'}</div>}
         </div>
       )}
 

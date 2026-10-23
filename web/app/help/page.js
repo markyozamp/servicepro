@@ -129,6 +129,14 @@ const STORE = [
     'Settings → Locations → the location → Busy hours → Set busy hours. Add up to 2 windows a day (for example 11:00–1:30 and 5:00–7:30), or tick Same every day → Save.',
     'Contractors can\'t schedule, offer, accept "on the way now" or start a non-emergency visit during them. Emergencies still come right away.',
     'Want someone during busy hours on one call? Open the call and tap "Let them come now". A technician already working when busy hours start isn\'t stopped; you get a heads-up.',
+    'If a contractor taps "Ask to come now", you get an alert: tap "Let them come now" or "Not yet".',
+  ]],
+  ['Answer from the email, no login', [
+    'When something waits on you (a tech\'s crew, a return-trip time, an approval, an invoice, a call to confirm, a contractor asking to come during busy hours), the alert email has one button that answers it. No password.',
+    'The button answers as you, works once and expires after 3 days, so don\'t forward the email.',
+    'Everything waiting is also listed at the top of your dashboard under "Waiting on you". Tap one to go to it.',
+    'Nobody answers? A reminder goes out (after 15 minutes if urgent, 4 hours if not, daytime only). Still nothing: it goes to the location\'s backup person (after 30 minutes, or the next morning). Nothing is decided for you.',
+    'Set the backup: Settings → Locations → the location → "If nobody here answers, send it to". Not set: your admins get it.',
   ]],
   ['Say when they can come', [
     'On a new non-emergency call, "When can they come?": Anytime, or pick a time (from–to), with a note like "before we open".',
@@ -247,6 +255,7 @@ const CONTRACTOR = [
     'The call shows "The customer asks you to come …" and the location\'s busy hours. Your techs see both on their phones.',
     'Accept with "I\'ll come in your time", or "Can\'t make that time — offer others" to send up to 3 times for them to pick.',
     'During busy hours the app won\'t let you schedule, offer or start a non-emergency trip, unless the customer taps "Let them come now". Emergencies can go any time; a visit during busy hours is noted on the call.',
+    'Need to come now anyway? Tap "Ask to come now" on the call (office) or on the job (tech\'s phone). The customer gets the request and you get their answer.',
   ]],
   ['Schedule a return trip', [
     'Open the call → Schedule the next trip → pick the technician → offer up to 3 times (+ Add another time) → Send times to the customer.',

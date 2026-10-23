@@ -243,9 +243,8 @@ select from _patch_fn('tech_claim_call(uuid,timestamptz,double precision,double 
   '  if w.declined_at is not null then raise exception ''Your office declined this call.''; end if;' || chr(10) ||
   '  perform _busy_guard(w.id, t, null);' || chr(10));
 select from _patch_fn('tech_start(uuid,timestamptz,double precision,double precision)'::regprocedure,
-  ' if v.status <> ''assigned'' then return v; end if; -- duplicate sync' || chr(10),
-  ' if v.status <> ''assigned'' then return v; end if; -- duplicate sync' || chr(10) ||
-  ' perform _busy_guard(v.work_order_id, t, null);' || chr(10));
+  'if v.status <> ''assigned'' then return v; end if;',
+  'if v.status <> ''assigned'' then return v; end if; perform _busy_guard(v.work_order_id, t, null);');
 
 -- The tech's phone shows busy hours and the customer's requested time
 select from _patch_fn('tech_jobs()'::regprocedure,

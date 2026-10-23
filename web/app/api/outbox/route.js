@@ -27,7 +27,9 @@ export async function POST(req) {
   let pushed = 0; let emailed = 0;
 
   for (const n of items || []) {
-    const link = `${origin}/${n.portal}${n.work_order_id && n.portal !== 'tech' ? `?call=${n.work_order_id}` : n.type === 'followthrough' ? '?report=followthrough' : ''}`;
+    const callLink = `${origin}/${n.portal}${n.work_order_id && n.portal !== 'tech' ? `?call=${n.work_order_id}` : n.type === 'followthrough' ? '?report=followthrough' : ''}`;
+    // Something waiting on this person: the button answers it in one tap (no password), the call link stays below
+    const link = n.action?.token ? `${origin}/a/${n.action.token}` : callLink;
     if (canPush) {
       for (const s of n.push || []) {
         try {
@@ -42,8 +44,10 @@ export async function POST(req) {
     }
     if (process.env.RESEND_API_KEY && process.env.ALERT_FROM && realEmail(n.email)) {
       const r = await sendEmail({ to: n.email, subject: n.number ? `Call #${n.number}: ${n.message.slice(0, 80)}` : n.message.slice(0, 90),
-        lines: [n.message], button: { label: n.number ? `Open call #${n.number}` : n.type === 'followthrough' ? 'Open the Follow-through report' : 'Open Service Call Proof', url: link },
-        footerNote: 'You get this because of your Service Call Proof alert settings.' });
+        lines: [n.message],
+        button: n.action?.token ? { label: n.action.label, url: link }
+          : { label: n.number ? `Open call #${n.number}` : n.type === 'followthrough' ? 'Open the Follow-through report' : 'Open Service Call Proof', url: link },
+        footerNote: `${n.action?.token ? `The button answers as you, works once and expires in 3 days, so please don’t forward this email. Or open the call: ${callLink}  ` : ''}You get this because of your Service Call Proof alert settings.` });
       if (r && r.ok) emailed++;
     }
   }

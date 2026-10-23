@@ -1612,3 +1612,94 @@ select test.ok((select count(*) >= 1 from notifications where work_order_id = te
 set role authenticated; select test.login(:MARIA);
 select test.ok((select count(*) >= 1 from (select busy_hours from sites) x), 'the apps can read busy hours on locations');
 reset role;
+
+\echo '=== 74. One-tap links, reminders, and going up the chain'
+set role authenticated; select test.login(:MARIA);
+select test.put('wl', (open_po_call(:S121, (select id from issue_types where code='drain_backup'), 'Link test: slow drain', 'NS-9300')).id);
+select test.login(test.v('PETE'));
+select test.put('wo1', (offer_trip_times(test.v('wl'), test.v('TONY'), jsonb_build_array(jsonb_build_object('start', now() + interval '1 day'), jsonb_build_object('start', now() + interval '2 days')))->>'id')::uuid);
+reset role;
+select test.ok((select _alert_action(:MARIA, test.v('wl'), null, null) ->> 'label' = 'Pick a time'), 'Maria''s alert about the call carries a one-tap "Pick a time" link');
+select test.ok((select _alert_action(test.v('PETE'), test.v('wl'), null, null) is null), 'the contractor''s alerts don''t');
+create temp table tk as select _action_link(:MARIA, 'trip', test.v('wo1')) t; grant select on tk to anon;
+select test.ok((select _action_link(:MARIA, 'trip', test.v('wo1')) = (select t from tk)), 'one link per person per item');
+set role anon; select set_config('request.jwt.claim.sub', '', false);
+select test.ok((select action_link_info((select t from tk))->>'kind' = 'trip' and (action_link_info((select t from tk))->>'open')::boolean
+  and jsonb_array_length(action_link_info((select t from tk))->'details'->'options') = 2), 'the link opens that one item with its times, no login');
+select test.ok((select action_link_info(gen_random_uuid()) is null), 'a made-up link opens nothing');
+select test.ok((select (action_link_do((select t from tk), 'pick', 2)->>'ok')::boolean), 'one tap picks the second time');
+select test.blocked($$select action_link_do((select t from tk), 'pick', 1)$$, 'already answered', 'the link works once');
+select test.ok(coalesce(current_setting('request.jwt.claim.sub', true), '') = '', 'using a link doesn''t leave anyone signed in');
+reset role;
+select test.ok((select scheduled_by = :MARIA from visits where work_order_id = test.v('wl') and status = 'assigned'), 'it''s recorded as Maria''s answer');
+select test.ok((select used_at is not null from action_links where token = (select t from tk)), 'the link is marked used');
+
+-- Crew question: urgent. Reminder at 15 minutes, the backup at 30.
+set role authenticated; select test.login(:MARIA);
+select test.put('wc', (open_po_call(:S121, (select id from issue_types where code='drain_backup'), 'Link test: crew', 'NS-9301')).id);
+select test.login(test.v('TONY'));
+select test.put('wcv', (tech_claim_call(test.v('wc'), null, 47.92, -97.03)).id);
+select from tech_arrive(test.v('wcv'), now() - interval '5 minutes', 47.8936, -97.0632);
+select from tech_set_crew(test.v('wcv'), 2, 'Jake, Sam');
+select test.login(:DOUG);
+select test.ok((select (set_site_backup(:S121, :DOUG)->>'ok')::boolean), 'the admin picks the location''s backup person');
+select test.blocked($$select set_site_backup('30000000-0000-0000-0000-000000000002', (select test.v('PETE')))$$, 'your team', 'the backup has to be on the team');
+select test.login(:MARIA);
+select test.blocked($$select set_site_backup('30000000-0000-0000-0000-000000000002', null)$$, 'manages locations', 'only an admin or location manager sets it');
+reset role;
+select set_config('app.watch_demo', 'on', false);
+select from waiting_watch();
+select test.ok((select done_at is null and reminded_at is null from waiting_log where kind = 'crew' and ref = test.v('wcv')), 'the watcher tracks the crew question');
+update waiting_log set first_seen = now() - interval '20 minutes' where kind = 'crew' and ref = test.v('wcv');
+select test.ok(waiting_watch() >= 1, 'after 15 minutes the watcher sends reminders');
+select test.ok((select count(*) = 1 from notifications where user_id = :MARIA and action_kind = 'crew' and action_ref = test.v('wcv') and message like 'Reminder, still waiting on you%'), 'Maria gets one reminder');
+select test.ok((select _alert_action(:MARIA, test.v('wc'), 'crew', test.v('wcv'))->>'label' = 'Confirm the crew'), 'and it carries the "Confirm the crew" link');
+select test.ok((select count(*) = 0 from notifications where user_id = :DOUG and action_ref = test.v('wcv') and message like 'No one at%'), 'the backup isn''t bothered yet');
+update waiting_log set first_seen = now() - interval '35 minutes' where kind = 'crew' and ref = test.v('wcv');
+select from waiting_watch(); select from waiting_watch();
+select test.ok((select count(*) = 1 from notifications where user_id = :DOUG and action_ref = test.v('wcv') and message like 'No one at Store #121 has answered in 35 min%'), 'after 30 minutes it goes to the backup, once');
+create temp table tc as select _action_link(:DOUG, 'crew', test.v('wcv')) t; grant select on tc to anon;
+set role anon; select set_config('request.jwt.claim.sub', '', false);
+select test.ok((select action_link_info((select t from tc))->'details'->>'helpers' = '2'), 'the backup''s link shows the crew');
+select test.ok((select (action_link_do((select t from tc), 'yes')->>'ok')::boolean), 'and confirms it in one tap');
+reset role;
+select test.ok((select crew_confirmed and crew_confirmed_by = :DOUG from visits where id = test.v('wcv')), 'recorded as Doug''s answer');
+select from waiting_watch();
+select test.ok((select done_at is not null from waiting_log where kind = 'crew' and ref = test.v('wcv')), 'answered: the reminders stop');
+
+-- Routine items wait for daytime, and nothing is decided for them
+select test.ok((select bool_or(i->>'kind' = 'crew') is not true from jsonb_array_elements((select site_attention() from (select test.login(:MARIA)) z)) x, jsonb_array_elements(x->'items') i), 'the answered item is off the list');
+
+-- Busy hours: the contractor asks to come now; the location answers from the link
+set role authenticated; select test.login(:DOUG);
+select from set_busy_hours(:S121, '{"mon":[["00:00","23:59"]],"tue":[["00:00","23:59"]],"wed":[["00:00","23:59"]],"thu":[["00:00","23:59"]],"fri":[["00:00","23:59"]],"sat":[["00:00","23:59"]],"sun":[["00:00","23:59"]]}');
+select test.login(:MARIA);
+select test.put('wb', (open_po_call(:S121, (select id from issue_types where code='drain_backup'), 'Link test: busy', 'NS-9302')).id);
+select test.login(test.v('PETE'));
+select test.blocked($$select accept_call((select test.v('wb')), 'now')$$, 'Ask to come now', 'the busy-hours stop says how to ask');
+select test.ok((select (ask_busy_ok(test.v('wb'), 'Tech is around the corner')->>'ok')::boolean), 'the contractor asks to come now');
+select test.blocked($$select ask_busy_ok((select test.v('wb')))$$, 'already asked', 'once is enough');
+select test.login(:RIVAL);
+select test.blocked($$select ask_busy_ok((select test.v('wb')))$$, 'Not allowed', 'only that contractor can ask');
+select test.login(:MARIA);
+select test.ok((select bool_or(i->>'kind' = 'busy' and (i->>'waiting')::boolean and (i->>'urgent')::boolean) from jsonb_array_elements(site_attention()) x, jsonb_array_elements(x->'items') i), 'it shows as urgent and waiting on the location');
+select test.ok((select count(*) >= 1 from notifications where user_id = :MARIA and work_order_id = test.v('wb') and message like '%asks to come now, during your busy hours: Tech is around the corner%'), 'the location is asked');
+reset role;
+create temp table tb as select _action_link(:MARIA, 'busy', test.v('wb')) t; grant select on tb to anon;
+set role anon; select set_config('request.jwt.claim.sub', '', false);
+select test.ok((select (action_link_do((select t from tb), 'no', null, 'Lunch rush')->>'ok')::boolean), 'Maria says not yet, from the link');
+reset role;
+select test.ok((select busy_ask_answer = 'no' and busy_ask_answered_by = :MARIA and busy_override_at is null from work_orders where id = test.v('wb')), 'recorded, and they still can''t come');
+select test.ok((select count(*) >= 1 from notifications where work_order_id = test.v('wb') and message like '%not during their busy hours (Lunch rush)%'), 'the office hears why');
+do $$ begin perform _allow_internal(true); update work_orders set busy_ask_at = now() - interval '20 minutes' where id = test.v('wb'); perform _end_internal(); end $$;
+set role authenticated; select test.login(test.v('PETE'));
+select test.ok((select (ask_busy_ok(test.v('wb'))->>'ok')::boolean), 'they can ask again later');
+select test.login(:MARIA);
+select test.ok((select (store_allow_busy(test.v('wb'))->>'ok')::boolean), 'this time the store lets them in');
+reset role;
+select test.ok((select busy_ask_answer = 'yes' and busy_override_at is not null from work_orders where id = test.v('wb')), 'the request is answered yes');
+set role authenticated; select test.login(:DOUG);
+select from set_busy_hours(:S121, null);
+reset role;
+select set_config('app.watch_demo', '', false);
+select test.ok((select count(*) = 1 from notifications where user_id = test.v('PETE') and work_order_id = test.v('wb') and message like '%says you can come during their busy hours%'), 'the person who asked hears it, once');

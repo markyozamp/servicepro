@@ -20,6 +20,7 @@ import { useTabBadge } from '@/lib/tabBadge';
 import PoLog from '@/components/PoLog';
 import ScrollRow from '@/components/ScrollRow';
 import Presence from '@/components/Presence';
+import WaitingOnYou from '@/components/WaitingOnYou';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox, Notice } from '@/components/bits';
 
 const LIST = `id, site_id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, total_cost, store_po_number,
@@ -157,6 +158,7 @@ export default function StorePortal() {
   const goTo = (siteId, target) => {
     setWalk({ site: siteId, target, at: Date.now() });
     pickSite(siteId);
+    if (target.startsWith('call-')) { setOpen(target.slice(5)); return; }   // answered on the call itself
     let tries = 0;
     const find = () => {
       const el = document.getElementById(target);
@@ -292,6 +294,8 @@ export default function StorePortal() {
 
         <ErrorBox error={err} />
         <Notice>{msg}</Notice>
+
+        <WaitingOnYou attention={attention} siteId={validSite} sites={allSites} onGoTo={goTo} />
 
         {/* The lead says how many helpers came with him: the person on site confirms */}
         {crewAsk.filter((v) => !validSite || v.work_orders?.site_id === validSite).map((v) => (

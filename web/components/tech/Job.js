@@ -27,6 +27,24 @@ export default function Job({ job, cat, wifi, me }) {
   );
 }
 
+// Busy hours stop a visit: ask the customer to let you come now (needs a signal)
+function AskBusy({ wo }) {
+  const [state, setState] = useState('');
+  const [err, setErr] = useState('');
+  if (state === 'sent') return <div className="small chip tone-amber">Asked. You&apos;ll get an alert when they answer.</div>;
+  return (
+    <div className="row small" style={{ gap: 6 }}>
+      <button type="button" disabled={state === 'busy'} onClick={async () => {
+        setState('busy');
+        if (typeof navigator !== 'undefined' && !navigator.onLine) { setState(''); setErr('No signal. Try again when you have one, or call them.'); return; }
+        const { error } = await supabase.rpc('ask_busy_ok', { p_wo: wo.id, p_note: null });
+        if (error) { setState(''); setErr(error.message); } else setState('sent');
+      }}>Ask to come now</button>
+      {err && <span style={{ color: 'var(--red-fg)' }}>{err}</span>}
+    </div>
+  );
+}
+
 function Header({ job, wifi }) {
   const [copied, setCopied] = useState(false);
   const w = job.wo; const s = job.site;
@@ -45,6 +63,7 @@ function Header({ job, wifi }) {
       {(s.access_notes || w.entry_notes) && <div className="notice small">{[w.entry_notes, s.access_notes].filter(Boolean).join(' · ')}</div>}
       {w.window && <div className="small">🕑 <strong>Customer asks you to come:</strong> {w.window}</div>}
       {w.busy_hours && <div className="small" style={{ color: w.busy_ok || w.priority === 1 ? 'var(--ink-2)' : 'var(--red-fg)' }}>⛔ <strong>Busy hours:</strong> {w.busy_hours}{w.priority === 1 ? ' (emergency: you can go)' : w.busy_ok ? ' (the customer said you can come)' : ' — don\'t go then'}</div>}
+      {w.busy_hours && !w.busy_ok && w.priority !== 1 && job.visit?.status !== 'on_site' && <AskBusy wo={w} />}
       {job.warranties.length > 0 && (
         <div className="notice small"><strong>Warranty on this site:</strong> {job.warranties.map((x) => `${x.kind} until ${date(x.ends_on)} (${x.description})`).join('; ')}</div>
       )}
