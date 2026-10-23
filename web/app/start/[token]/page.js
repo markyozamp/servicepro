@@ -30,7 +30,7 @@ export default function Start() {
     if (!agree) return setErr('Please agree to the Terms of Service and Privacy Policy.');
     setBusy(true);
     try {
-      await supabase.auth.signOut().catch(() => {});
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
       const r = await act('start_customer', { p_token: token, p_company: f.company, p_owner_name: f.name, p_email: f.email, p_phone: f.phone,
         p_password: f.pw, p_site_name: f.site || f.company, p_address: found.address, p_zip: found.zip, p_lat: found.lat, p_lon: found.lon, p_timezone: found.timezone });
       const { error } = await supabase.auth.signInWithPassword({ email: r.email, password: f.pw });

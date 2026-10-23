@@ -3,7 +3,8 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { portalFor } from '@/lib/useProfile';
+import { portalFor, signOutLocal, isDemoEmail } from '@/lib/useProfile';
+import DemoBanner, { backToDemo } from '@/components/DemoBanner';
 import * as T from '@/lib/techStore';
 import { time, ago, PRIORITY, KIND, STATUS } from '@/lib/format';
 import Job from '@/components/tech/Job';
@@ -62,8 +63,8 @@ export default function TechApp() {
   async function signOut() {
     if (st.queue.length && !window.confirm(`${st.queue.length} change(s) have not been sent yet. Sign out anyway? They will be lost.`)) return;
     T.clearAll(); localStorage.removeItem('sp_me');
-    await supabase.auth.signOut();
-    router.replace('/');
+    await signOutLocal();
+    window.location.replace(isDemoEmail(me?.email) ? '/demo' : '/');
   }
 
   if (!me) return <div className="page muted">Loading…</div>;
@@ -80,11 +81,12 @@ export default function TechApp() {
             {(me.is_org_admin || me.can_dispatch || me.can_bill) && <button onClick={() => router.push('/office')}>Office</button>}
             {me.is_org_admin && <UpgradeButton />}
             <InstallButton />
-            <PasswordButton />
-            <button onClick={signOut}>Sign out</button>
+            {!isDemoEmail(me.email) && <PasswordButton />}
+            {isDemoEmail(me.email) ? <button onClick={signOut}>← Back to demo menu</button> : <button onClick={signOut}>Sign out</button>}
           </HeaderMenu>
         )}
       </header>
+      {isDemoEmail(me.email) && !job && <DemoBanner who={me.full_name} />}
       <SyncBar st={st} />
       {st.clock && !st.clock.ok && (
         <div className="syncbar off" style={{ background: 'var(--red-fg)' }}>

@@ -14,14 +14,20 @@ export default function Join() {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const [current, setCurrent] = useState(null); // someone already signed in on this browser
   useEffect(() => {
     act('join_info', { p_token: token }).then(setInfo).catch((e) => setErr(e.message));
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      const { data: p } = await supabase.rpc('me');
+      if (p?.id) setCurrent(p.full_name || p.email || 'someone');
+    });
   }, [token]);
 
   async function go() {
     setBusy(true); setErr('');
     try {
-      await supabase.auth.signOut().catch(() => {});
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});  // this browser only
       const r = await act('join_redeem', { p_token: token });
       const { error } = await supabase.auth.signInWithPassword({ email: r.email, password: r.password });
       if (error) throw new Error(error.message);
@@ -60,6 +66,12 @@ export default function Join() {
                 </div>
               )}
               <div className="small muted">No password: this link signs in this phone and keeps it signed in. It works once — if you change phones, ask for a new link.</div>
+              {current && (
+                <div className="notice small">
+                  <strong>{current}</strong> is signed in on this browser. Continuing signs them out <strong>of this browser only</strong> (not their other devices) and signs in{info.name ? ` ${info.name.split(' ')[0]}` : ' the new person'}.
+                  If this link is for someone else, send it to them instead of opening it here.
+                </div>
+              )}
               <button className="primary big" disabled={busy} onClick={go}>{busy ? 'Signing in…' : info.kind === 'contractor_owner' ? 'I agree — sign in on this phone' : 'Sign in on this phone'}</button>
               <div className="small muted">By signing in you agree to the <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</div>
               <div className="small muted">Tip: after signing in, use your browser's "Add to Home Screen" so Service Call Proof opens like an app.</div>

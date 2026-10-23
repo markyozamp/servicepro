@@ -1,6 +1,7 @@
 -- ServicePro v2 — end-to-end scenarios. Every check prints PASS or stops with FAIL.
 \set ON_ERROR_STOP on
 \set QUIET on
+set app.demo_guard_off = 'on';
 \pset format unaligned
 \pset tuples_only on
 
@@ -1236,3 +1237,20 @@ select test.ok((select owner_id = :'pat'::uuid from customers where id = (select
 select test.ok((select (update_team_member(:'jo', 'Store manager', '{"calls":true}', false, array[(select id from sites where name = 'M&L Seattle')], false)->>'ok')::boolean), 'Lee signs Jo out');
 reset role;
 select test.ok((select count(*) >= 1 from notifications where user_id = :'pat' and message like 'Team change:%'), 'the owner is told about team access changes');
+
+\echo '=== 56. The permanent demo is protected'
+set app.demo_guard_off = 'off';
+reset role;
+select test.ok((select (demo_snapshot()->>'ok')::boolean), 'save how the demo should look');
+set role authenticated;
+select test.login(:DOUG);
+select test.blocked($$select set_company_logo(null)$$, 'demo', 'a demo visitor can''t remove the logo');
+select test.blocked($$select update_team_member('00000000-0000-0000-0000-0000000000c1', 'x', '{"calls":true}', false, null, false)$$, 'demo', 'or sign people out');
+select test.login(:DANA);
+select test.blocked($$select set_contractor_office_phone('701-555-0000')$$, 'demo', 'or change a contractor''s details');
+reset role;
+select set_config('request.jwt.claim.sub', '', false);  -- the nightly job runs as nobody
+select _allow_internal(true); update customers set logo_data = null where name like 'Northside%'; select _end_internal();
+select test.ok((select (demo_restore()->>'ok')::boolean), 'the nightly reset runs');
+select test.ok((select logo_data is not distinct from (select data->>'logo_data' from demo_baseline where tbl = 'customers' and id = c.id::text) from customers c where name like 'Northside%'), 'and puts the demo back as it should be');
+set app.demo_guard_off = 'on';

@@ -22,7 +22,7 @@ export default function Reset() {
     if (pw !== pw2) return setErr('The two passwords don\'t match.');
     setBusy(true);
     try {
-      await supabase.auth.signOut().catch(() => {});
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
       const { data, error } = await supabase.rpc('reset_password_with_token', { p_token: token, p_password: pw });
       if (error) throw new Error(error.message);
       const { error: e2 } = await supabase.auth.signInWithPassword({ email: data.email, password: pw });

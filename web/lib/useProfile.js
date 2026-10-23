@@ -31,7 +31,7 @@ export function useProfile(portal) {
       const { data: p } = await supabase.rpc('me');
       if (!alive) return;
       if (!p || !p.id) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
         return router.replace('/?e=noprofile');
       }
       if (portal && portalFor(p) !== portal) return router.replace(portalFor(p));
@@ -50,7 +50,16 @@ export function useProfile(portal) {
   return { profile, org };
 }
 
-export async function signOut(router) {
-  await supabase.auth.signOut();
-  router.replace('/');
+export const isDemoEmail = (e) => /\.demo$/i.test(e || '');
+
+// Sign out of THIS browser only (never other devices — demo logins are shared), and leave right away even on a slow network.
+export async function signOutLocal() {
+  await Promise.race([supabase.auth.signOut({ scope: 'local' }).catch(() => {}), new Promise((r) => setTimeout(r, 1500))]);
+  try { localStorage.removeItem('sp_me'); } catch { /* fine */ }
+}
+
+export async function signOut(router, profile) {
+  const demo = isDemoEmail(profile?.email);
+  await signOutLocal();
+  window.location.replace(demo ? '/demo' : '/');
 }
