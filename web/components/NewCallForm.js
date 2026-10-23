@@ -66,18 +66,8 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
 
   async function addHome(e) {
     e.preventDefault();
-    if (askWait && !wait) { setErr('It\'s after hours: choose "Send it now" or "Wait until morning".'); return; }
-    const askWin = side === 'store' && issue?.priority !== 1;
-    if (askWin && site?.customers?.require_call_window && !win.mode) { setErr('Say when they can come: Anytime, or pick a time.'); return; }
-    if (askWin && win.mode === 'time' && !win.start) { setErr('Pick the time they can come, or choose Anytime.'); return; }
-    if (askWin && win.mode === 'time') {
-      const bad = await act('check_call_window', { p_site: f.site, p_start: new Date(win.start).toISOString(), p_end: win.end ? new Date(win.end).toISOString() : null }).catch(() => null);
-      if (bad) { setErr(bad); return; }
-    }
-    if (leased && !leaseOk) { setErr(`This unit is leased from ${leased.lease_company}. Call them, or tick the box to open a call with your contractor anyway.`); return; }
     setBusy(true); setErr('');
     try {
-      if (askWait && wait === 'morning') await act('store_hold_next_call', {});
       const s = await act('quick_customer', { p_name: home.name, p_address: home.address, p_zip: home.zip || null, p_phone: home.phone || null });
       setSites(await loadSites());
       setF((x) => ({ ...x, site: s.id, issue: '', equipment: '', contact: home.name, phone: home.phone || '' }));
@@ -133,8 +123,18 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
 
   async function submit(e) {
     e.preventDefault();
+    if (askWait && !wait) { setErr('It\'s after hours: choose "Send it now" or "Wait until morning".'); return; }
+    const askWin = side === 'store' && issue?.priority !== 1;
+    if (askWin && site?.customers?.require_call_window && !win.mode) { setErr('Say when they can come: Anytime, or pick a time.'); return; }
+    if (askWin && win.mode === 'time' && !win.start) { setErr('Pick the time they can come, or choose Anytime.'); return; }
+    if (askWin && win.mode === 'time') {
+      const bad = await act('check_call_window', { p_site: f.site, p_start: new Date(win.start).toISOString(), p_end: win.end ? new Date(win.end).toISOString() : null }).catch(() => null);
+      if (bad) { setErr(bad); return; }
+    }
+    if (leased && !leaseOk) { setErr(`This unit is leased from ${leased.lease_company}. Call them, or tick the box to open a call with your contractor anyway.`); return; }
     setBusy(true); setErr('');
     try {
+      if (askWait && wait === 'morning') await act('store_hold_next_call', {});
       let equipmentId = f.equipment === '__new' ? null : (f.equipment || null);
       if (f.equipment === '__new') {
         const r = await act('add_equipment_from_call', { p_site: f.site, p_type_code: nu.type || null, p_where: nu.where, p_make: nu.make, p_model: nu.model });
