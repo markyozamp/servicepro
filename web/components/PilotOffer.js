@@ -66,7 +66,7 @@ export default function PilotOffer({ source = 'app', current = 'verify', default
         <strong style={{ fontSize: 16 }}>Founding contractors wanted</strong>
         <div className="small">We're looking for a few contractors to pilot <strong>Base, Pro and Enterprise</strong> and help shape them before launch.
           Pilot contractors get <strong>2 years free</strong>, then <strong>50% off for as long as you're a customer</strong>.</div>
-        <div className="small"><strong>Bring a customer onto Time Verify:</strong> $100 off your next renewal for every location that signs up.</div>
+        <div className="small"><strong>Bring a customer onto Time Verify:</strong> $100 off your next renewal for every customer company that signs up.</div>
         {form ? <PilotForm source={source} defaults={defaults} /> : <div><button className="primary" onClick={() => setForm(true)}>I want to pilot this</button></div>}
       </div>
       <div className="small enhanced-note"><strong>Enhanced Time Verify for your customers, at no charge:</strong> when you're on Base or Pro, the customers you serve automatically get your bills right in their portal, matched to the call and PO, ready to download, export or forward to their accounting department.</div>

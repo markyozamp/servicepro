@@ -55,8 +55,8 @@ export default function Demo() {
 
       <section className="demo-hero">
         <h1>Know who's in your building, for how long, and what it should cost.</h1>
-        <p>Service Call Proof sits between your locations (stores, restaurants, clinics, offices, properties) and your service contractors: every visit checked in with your code, every bill checked against the time actually spent.</p>
-        <p className="small"><a href="#pilot-stores"><strong>Pilot locations wanted:</strong> stores, restaurants, clinics, offices and properties. 4 companies, free for the first year →</a></p>
+        <p>Service Call Proof sits between your locations (stores, restaurants, clinics, dental offices, banks, offices) and your service contractors: every visit checked in with your code, every bill checked against the time actually spent.</p>
+        <p className="small"><a href="#pilot-stores"><strong>Pilot locations wanted:</strong> stores, restaurants, clinics, dental offices, banks and offices. 4 companies, free for the first year →</a></p>
       </section>
 
       <section className="demo-sec">
@@ -70,7 +70,7 @@ export default function Demo() {
         <h2>Explore the whole system</h2>
         <p className="muted">One tap opens a working account in our demo companies. Click anything. The demo goes back to its starting point every 10 minutes, with a countdown at the top so you know when. Use "← Back to demo menu" at the top to come back here and try another role.</p>
         {err && <div className="error">{err}</div>}
-        <h3>Businesses and property managers</h3>
+        <h3>Businesses</h3>
         <div className="demo-cards">{STORES.map((d) => <Card key={d.email} d={d} />)}</div>
         <h3>Contractors and technicians</h3>
         <div className="demo-cards">{CONTRACTORS.map((d) => <Card key={d.email} d={d} />)}</div>
