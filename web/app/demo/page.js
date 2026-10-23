@@ -55,8 +55,8 @@ export default function Demo() {
 
       <section className="demo-hero">
         <h1>Know who's in your building, for how long, and what it should cost.</h1>
-        <p>Service Call Proof sits between your stores and your service contractors: every visit checked in with your code, every bill checked against the time actually spent.</p>
-        <p className="small"><a href="#pilot-stores"><strong>Pilot stores wanted:</strong> 4 store companies, free for the first year →</a></p>
+        <p>Service Call Proof sits between your locations (stores, restaurants, clinics, offices, properties) and your service contractors: every visit checked in with your code, every bill checked against the time actually spent.</p>
+        <p className="small"><a href="#pilot-stores"><strong>Pilot locations wanted:</strong> stores, restaurants, clinics, offices and properties. 4 companies, free for the first year →</a></p>
       </section>
 
       <section className="demo-sec">
@@ -70,7 +70,7 @@ export default function Demo() {
         <h2>Explore the whole system</h2>
         <p className="muted">One tap opens a working account in our demo companies. Click anything. The demo goes back to its starting point every 10 minutes, with a countdown at the top so you know when. Use "← Back to demo menu" at the top to come back here and try another role.</p>
         {err && <div className="error">{err}</div>}
-        <h3>Stores and property managers</h3>
+        <h3>Businesses and property managers</h3>
         <div className="demo-cards">{STORES.map((d) => <Card key={d.email} d={d} />)}</div>
         <h3>Contractors and technicians</h3>
         <div className="demo-cards">{CONTRACTORS.map((d) => <Card key={d.email} d={d} />)}</div>
@@ -78,19 +78,19 @@ export default function Demo() {
 
       <section className="demo-sec demo-cta">
         <h2>Ready to start?</h2>
-        <p>$395 per store per year. All trades, unlimited service calls, unlimited people. Your contractors use it free.</p>
+        <p>$395 per location per year. All trades, unlimited service calls, unlimited people. Your contractors use it free.</p>
         <StorePilot />
         <p className="small"><strong>Enhanced Time Verify, at no extra charge:</strong> when your contractor runs Service Call Proof Base or Pro, their bills come straight into your portal, already matched to the call and your PO. Download them, export them, or forward them to your accounting department. No mailed or emailed bills to chase.</p>
         <div className="demo-cta-row">
           <button type="button" className="primary big" disabled title="Coming soon">Get started now <span className="soon">Coming soon</span></button>
           <a className="button-like" href="mailto:sales@servicecallproof.com?subject=Service%20Call%20Proof%20questions">Questions? Talk to us</a>
         </div>
-        <p className="small muted"><strong>Are you a contractor?</strong> Contractors join free when a store invites them. Ask the stores you work for, or <a href="mailto:sales@servicecallproof.com?subject=Contractor%20interested">tell us which stores</a> and we'll reach out. Want to run your whole shop on it? <a href="#contractors">See the contractor plans and the pilot offer</a>.</p>
+        <p className="small muted"><strong>Are you a contractor?</strong> Contractors join free when a customer invites them. Ask the customers you work for, or <a href="mailto:sales@servicecallproof.com?subject=Contractor%20interested">tell us which customers</a> and we'll reach out. Want to run your whole shop on it? <a href="#contractors">See the contractor plans and the pilot offer</a>.</p>
       </section>
 
       <section className="demo-sec" id="contractors">
         <h2>For contractors: plans</h2>
-        <p className="muted">Time Verify is free when a store invites you. Base, Pro and Enterprise run your whole shop, and they're in pilot now.</p>
+        <p className="muted">Time Verify is free when a customer invites you. Base, Pro and Enterprise run your whole shop, and they're in pilot now.</p>
         <PilotOffer source="demo" current={null} />
       </section>
       <div style={{ padding: '0 16px 24px' }}><LegalFooter /></div>

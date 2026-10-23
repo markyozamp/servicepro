@@ -1,6 +1,6 @@
 'use client';
 
-// Contractor side: the customers they serve. List of accounts (stores, open calls, bills, this year's work, what needs attention),
+// Contractor side: the customers they serve. List of accounts (locations, open calls, bills, this year's work, what needs attention),
 // and one customer's page: contacts, terms, stores, equipment and past calls.
 import { useEffect, useState } from 'react';
 import { act, supabase } from '@/lib/supabase';
@@ -43,7 +43,7 @@ function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged, contrac
           </div>
         </div>
         <div className="row" style={{ gap: 6 }}>
-          <span className="chip tone-slate">{c.sites.length} store{c.sites.length === 1 ? '' : 's'}</span>
+          <span className="chip tone-slate">{c.sites.length} location{c.sites.length === 1 ? '' : 's'}</span>
           <span className="chip tone-blue">{c.open_calls} open</span>
           {c.to_bill > 0 && <span className="chip tone-amber">{c.to_bill} to bill</span>}
         </div>
@@ -74,7 +74,7 @@ function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged, contrac
       </div>}
 
       <div className="tabs" style={{ marginBottom: 0 }}>
-        <button className={show === 'stores' ? 'on' : ''} onClick={() => setShow('stores')}>Stores ({sites.length})</button>
+        <button className={show === 'stores' ? 'on' : ''} onClick={() => setShow('stores')}>Locations ({sites.length})</button>
         <button className={show === 'equipment' ? 'on' : ''} onClick={() => setShow('equipment')}>Equipment{eq ? ` (${eqShown.length})` : ''}</button>
         <button className={show === 'calls' ? 'on' : ''} onClick={() => setShow('calls')}>Past calls</button>
         {contractorId && <button className={show === 'pm' ? 'on' : ''} onClick={() => setShow('pm')}>Maintenance plans</button>}
@@ -84,14 +84,14 @@ function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged, contrac
       {show === 'stores' && (
         <div className="panel">
           <table>
-            <thead><tr><th>Store</th><th className="hide-sm">Getting in</th><th>Now</th></tr></thead>
+            <thead><tr><th>Location</th><th className="hide-sm">Getting in</th><th>Now</th></tr></thead>
             <tbody>
               {sites.map((s) => (
                 <tr key={s.site_id}>
                   <td><strong>{s.name}</strong>
                     {s.address && <div className="small"><a href={mapUrl(s.address)} target="_blank" rel="noreferrer">{s.address}</a></div>}</td>
                   <td className="hide-sm small">{s.access_notes || <span className="muted">No notes</span>}
-                    <div className="muted">{s.require_checkin ? 'Check in with the store code' : 'No check-in code'}{s.has_backup_code ? ' · backup code set' : ''}</div></td>
+                    <div className="muted">{s.require_checkin ? 'Check-in code required' : 'No check-in code'}{s.has_backup_code ? ' · backup code set' : ''}</div></td>
                   <td>{s.reasons.length ? s.reasons.map((r) => <div key={r}><span className="chip tone-red">{r}</span></div>)
                     : <span className="chip tone-green">All good</span>}
                     {s.open_calls > 0 && <div className="small muted">{s.open_calls} open call{s.open_calls === 1 ? '' : 's'}</div>}</td>
@@ -108,7 +108,7 @@ function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged, contrac
             <thead><tr><th>Unit</th><th>Make / model</th><th className="hide-sm">Serial</th></tr></thead>
             <tbody>
               {eq === null && <tr><td colSpan={3} className="muted">Loading…</td></tr>}
-              {eq && eqShown.length === 0 && <tr><td colSpan={3} className="muted">The store hasn't listed equipment yet.</td></tr>}
+              {eq && eqShown.length === 0 && <tr><td colSpan={3} className="muted">The customer hasn't listed equipment yet.</td></tr>}
               {eqShown.map((e) => (
                 <tr key={e.id}>
                   <td><strong>{e.type || 'Unit'}</strong>{e.where && <div className="small">{e.where}</div>}{sites.length > 1 && <div className="small muted">{e.site}</div>}</td>
@@ -171,12 +171,12 @@ export default function CustomerBook({ book, pick, onPick, onOpenCall, admin = f
       <table>
         <thead><tr><th>Customer</th><th className="num">Open</th><th className="num hide-sm">To bill</th><th className="num hide-sm">This year</th></tr></thead>
         <tbody>
-          {book.length === 0 && <tr><td colSpan={4} className="muted">No customers yet. When a store invites you, they show up here.</td></tr>}
+          {book.length === 0 && <tr><td colSpan={4} className="muted">No customers yet. When a customer invites you, they show up here.</td></tr>}
           {sorted.map((c) => {
             const r = reasons(c);
             return (
               <tr key={c.customer_id} className="click" onClick={() => onPick(`c:${c.customer_id}`)}>
-                <td><strong>{c.name}</strong> <span className="small muted">{c.sites.length} store{c.sites.length === 1 ? '' : 's'}</span>
+                <td><strong>{c.name}</strong> <span className="small muted">{c.sites.length} location{c.sites.length === 1 ? '' : 's'}</span>
                   {c.store_removed_at && <div><span className="chip tone-slate">They removed you {date(c.store_removed_at)}</span></div>}
                   {r.length > 0 && <div className="row" style={{ gap: 4, marginTop: 4 }}>{r.map((x) => <span key={x} className="chip tone-red">{x}</span>)}</div>}</td>
                 <td className="num">{c.open_calls}</td>

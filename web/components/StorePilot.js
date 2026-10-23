@@ -12,8 +12,8 @@ export default function StorePilot() {
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   return (
     <div className="pilot-offer stack" style={{ gap: 8 }} id="pilot-stores">
-      <strong style={{ fontSize: 17 }}>Pilot stores wanted</strong>
-      <div className="small">Time Verify is in its pilot phase. We're looking for <strong>4 store companies</strong> to use it on real service calls and help us make it better.</div>
+      <strong style={{ fontSize: 17 }}>Pilot locations wanted: stores, restaurants, clinics, offices and properties</strong>
+      <div className="small">Time Verify is in its pilot phase. We're looking for <strong>4 companies</strong> with service calls at their locations to use it on real service calls and help us make it better.</div>
       <ul className="small plan-list">
         <li><strong>Free for the first year,</strong> up to 5 locations.</li>
         <li>After that, <strong>$295 per location</strong> (instead of $395), locked for as long as you're a customer.</li>
@@ -22,7 +22,7 @@ export default function StorePilot() {
         <li>What we ask: use it on real calls with at least one of your contractors, and a short check-in call with us once a month.</li>
       </ul>
       {ok ? <div className="notice small"><strong>Thank you.</strong> We'll be in touch within a couple of business days.</div>
-        : !open ? <div><button className="primary" onClick={() => setOpen(true)}>Apply to be a pilot store</button></div> : (
+        : !open ? <div><button className="primary" onClick={() => setOpen(true)}>Apply to be a pilot</button></div> : (
         <form className="stack" style={{ gap: 6 }} onSubmit={async (e) => {
           e.preventDefault(); setBusy(true); setErr('');
           const note = [f.role && `Role: ${f.role}`, f.trades && `Trades: ${f.trades}`, f.calls && `Service calls per month: ${f.calls}`,
@@ -40,7 +40,7 @@ export default function StorePilot() {
             <label className="grow">Your name<input value={f.name} onChange={set('name')} required /></label>
           </div>
           <div className="row">
-            <label className="grow">Your role<select value={f.role} onChange={set('role')}><option value="">Choose…</option><option>Owner</option><option>Director / operations</option><option>Facilities or maintenance manager</option><option>Store manager</option><option>Other</option></select></label>
+            <label className="grow">Your role<select value={f.role} onChange={set('role')}><option value="">Choose…</option><option>Owner</option><option>Director / operations</option><option>Facilities or maintenance manager</option><option>Location manager</option><option>Other</option></select></label>
             <label style={{ flex: '0 0 130px' }}>Locations<input type="number" min="1" max="1000" value={f.locations} onChange={set('locations')} required /></label>
           </div>
           <div className="row">
@@ -54,8 +54,8 @@ export default function StorePilot() {
           <label>Your contractors (optional)<input value={f.contractors} onChange={set('contractors')} placeholder="e.g. Arctic Air for refrigeration, Prairie Plumbing" /></label>
           <label>Anything else? (optional)<input value={f.note} onChange={set('note')} /></label>
           {err && <div className="small" style={{ color: 'var(--red-fg)' }}>{err}</div>}
-          <div className="row"><button className="primary" disabled={busy}>Apply to be a pilot store</button><button type="button" onClick={() => setOpen(false)}>Cancel</button></div>
-          <div className="small muted">We pick the 4 pilot stores and contact you either way.</div>
+          <div className="row"><button className="primary" disabled={busy}>Apply to be a pilot</button><button type="button" onClick={() => setOpen(false)}>Cancel</button></div>
+          <div className="small muted">We pick the 4 pilot companies and contact you either way.</div>
         </form>
       )}
     </div>

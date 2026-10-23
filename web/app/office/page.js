@@ -229,7 +229,7 @@ export default function OfficePortal() {
                               <span className={`chip ${new Date(w.accept_due_at) < new Date() ? 'tone-red' : 'tone-amber'}`}>Accept by {dateTime(w.accept_due_at)}</span>)}
                             {w.status === 'created' && w.accepted_at && <span className="chip tone-green">{w.scheduled_start ? `Scheduled ${dateTime(w.scheduled_start)}` : 'Accepted'}</span>}
                             {w.declined_at && <span className="chip tone-slate">Declined</span>}
-                            {w.source === 'contractor' && !w.store_confirmed_at && <span className="chip tone-amber">Store hasn't confirmed</span>}
+                            {w.source === 'contractor' && !w.store_confirmed_at && <span className="chip tone-amber">Customer hasn't confirmed</span>}
                           </div>
                         )}
                         {v && <div className="small">🔧 {v.profiles?.full_name}{v.visit_no > 1 ? ` · visit ${v.visit_no}` : ''}</div>}
@@ -296,7 +296,7 @@ export default function OfficePortal() {
                     <tr key={w.id} className="click" onClick={() => setOpen(w.id)}>
                       <td><strong>#{w.number}</strong><div className="small muted">completed {date(w.completed_at)}</div><div className="small muted phone-show">{w.customers?.name} · {w.sites?.name}</div></td>
                       <td className="hide-sm">{w.customers?.name}<div className="small muted">{w.sites?.name}</div></td>
-                      <td>{d < 0 ? <span className="chip tone-red">LATE {-d} days — store notified</span>
+                      <td>{d < 0 ? <span className="chip tone-red">LATE {-d} days — customer notified</span>
                         : <span className={`chip ${d <= 2 ? 'tone-amber' : 'tone-slate'}`}>{date(w.invoice_due_at)} ({d} days)</span>}</td>
                       <td className="hide-sm">{w.mode === 'verify' ? <span className="chip tone-amber">Enter invoice (Time Verify)</span>
                         : w.invoice_ready ? <span className="chip tone-green">Ready</span> : <span className="chip tone-red">{blockingByWo[w.id] || 0} to review</span>}</td>

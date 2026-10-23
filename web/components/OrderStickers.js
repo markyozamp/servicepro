@@ -2,8 +2,10 @@
 
 // "Order printed stickers from us": for now it prepares an email to Service Call Proof (ordering in the app comes later).
 import { useState } from 'react';
+import { usePlace } from '@/lib/terms';
 
 export default function OrderStickers({ sites = [], unitsBySite = {} }) {
+  const place = usePlace();
   const [open, setOpen] = useState(false);
   const [site, setSite] = useState(sites.length === 1 ? sites[0].id : '');
   const [qty, setQty] = useState('');
@@ -16,7 +18,7 @@ export default function OrderStickers({ sites = [], unitsBySite = {} }) {
     <div className="stack" style={{ gap: 8 }}>
       <div className="order-choice">
         <div><strong>Print your own</strong><span className="small muted">Any printer on sticker paper (Avery 22806 or similar), then stick one on each unit.</span></div>
-        <div><strong>Or order them from us</strong><span className="small muted">Weatherproof, pre-printed with your units, mailed to your store. Quoted before printing.</span>
+        <div><strong>Or order them from us</strong><span className="small muted">Weatherproof, pre-printed with your units, mailed to your {place.one}. Quoted before printing.</span>
           {!open && <button type="button" className="primary" onClick={() => setOpen(true)}>Order stickers from us</button>}</div>
       </div>
       {open && (

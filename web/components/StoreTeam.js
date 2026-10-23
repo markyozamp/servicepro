@@ -6,12 +6,13 @@ import { supabase, act, q } from '@/lib/supabase';
 import { money } from '@/lib/format';
 import { ErrorBox, Notice } from './bits';
 import Info from './Info';
+import { usePlace } from '@/lib/terms';
 
 const blank = { name: '', email: '', phone: '', title: '', admin: false, calls: true, approve: true, limit: '', equipment: false, contractors: false, locations: false, team: false, company: false, all: false, sites: [] };
 const PERMS = [
   ['calls', 'Open service calls'],
   ['equipment', 'Add and change equipment'],
-  ['contractors', 'Contractors & QR (invite contractors, set rules, store PIN)'],
+  ['contractors', 'Contractors & QR (invite contractors, set rules, location PIN)'],
   ['locations', 'Locations (add and edit locations, backup code, Wi-Fi)'],
   ['team', 'Team (add and change people)'],
   ['company', 'Settings & plan (company profile, logo, plan, your data)'],
@@ -21,6 +22,7 @@ const permsOf = (p) => ({ calls: p.can_open_calls, approve: p.can_approve, equip
 const summary = (p) => (p.is_org_admin ? 'Admin: everything' : PERMS.filter(([k]) => permsOf(p)[k]).map(([, l]) => l.split(' (')[0]).join(', ') || 'View only');
 
 export default function StoreTeam({ me }) {
+  const place = usePlace();
   const [people, setPeople] = useState([]);
   const [sites, setSites] = useState([]);
   const [seats, setSeats] = useState(null);
@@ -48,7 +50,7 @@ export default function StoreTeam({ me }) {
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const link = (t) => `${window.location.origin}/join/${t}`;
-  const siteNames = (p) => (p.all_sites || p.is_org_admin ? 'All locations' : sites.filter((s) => (p.site_ids || []).includes(s.id)).map((s) => s.name).join(', ') || 'No locations');
+  const siteNames = (p) => (p.all_sites || p.is_org_admin ? `All ${place.many}` : sites.filter((s) => (p.site_ids || []).includes(s.id)).map((s) => s.name).join(', ') || `No ${place.many}`);
   const full = false; // logins are unlimited
 
   const permsJson = (f) => ({ admin: f.admin, calls: f.calls, approve: f.approve, limit: f.approve && f.limit !== '' ? String(f.limit) : '',
@@ -84,7 +86,7 @@ export default function StoreTeam({ me }) {
   return (
     <div className="stack">
       <div className="spread">
-        <h3>Your team <Info title="Your team">{`Add the people at your company who use Service Call Proof: store managers, a director of maintenance, a facilities person. Add as many people as you need; logins are included in your plan. Give everyone their own login rather than sharing one: it's free, a password change never locks others out, and you can see who did what. You choose which locations each person sees and how much they can approve. Your contractors and their technicians don't use these logins; they're free.`}</Info></h3>
+        <h3>Your team <Info title="Your team">{`Add the people at your company who use Service Call Proof: ${place.manager.toLowerCase()}s, a director of maintenance, a facilities person. Add as many people as you need; logins are included in your plan. Give everyone their own login rather than sharing one: it's free, a password change never locks others out, and you can see who did what. You choose which ${place.many} each person sees and how much they can approve. Your contractors and their technicians don't use these logins; they're free.`}</Info></h3>
         {seats && <span className="chip tone-slate">{seats.used} {seats.used === 1 ? 'person' : 'people'}</span>}
       </div>
       <ErrorBox error={err} /><Notice>{msg}</Notice>
@@ -136,7 +138,7 @@ export default function StoreTeam({ me }) {
             <>
               <div className="row">
                 <label className="grow">Name<input id="tm-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></label>
-                <label className="grow">Job title<input id="tm-title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Store manager" /></label>
+                <label className="grow">Job title<input id="tm-title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={`e.g. ${place.manager}`} /></label>
               </div>
               <div className="row">
                 <label className="grow">Email (their sign-in)<input id="tm-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required /></label>
@@ -146,10 +148,10 @@ export default function StoreTeam({ me }) {
           )}
           {form.id && <label>Job title<input id="tm-title-e" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>}
           {me.is_org_admin && <label className="row small" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={form.admin} onChange={(e) => setForm({ ...form, admin: e.target.checked, all: e.target.checked || form.all })} />
-            <strong>Admin</strong>: can do everything below, sees every location, manages your plan</label>}
+            <strong>Admin</strong>: can do everything below, sees every {place.one}, manages your plan</label>}
           {!form.admin && (
             <div className="stack" style={{ gap: 4 }}>
-              <div className="small"><strong>What can they do?</strong> <span className="muted">Everyone can see calls at their locations.</span></div>
+              <div className="small"><strong>What can they do?</strong> <span className="muted">Everyone can see calls at their {place.many}.</span></div>
               {PERMS.map(([k, label]) => (
                 <label key={k} className="row small" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={!!form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.checked })} />{label}</label>
               ))}
@@ -161,8 +163,8 @@ export default function StoreTeam({ me }) {
             <input id="tm-limit" type="number" min="0" step="any" value={form.limit} onChange={(e) => setForm({ ...form, limit: e.target.value })} placeholder="e.g. 500" /></label>}
           {!form.admin && (
             <div className="stack" style={{ gap: 4 }}>
-              <div className="small"><strong>Which locations do they see?</strong></div>
-              <label className="row small" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={form.all} onChange={(e) => setForm({ ...form, all: e.target.checked })} />All locations (including ones you add later)</label>
+              <div className="small"><strong>Which {place.many} do they see?</strong></div>
+              <label className="row small" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={form.all} onChange={(e) => setForm({ ...form, all: e.target.checked })} />All {place.many} (including ones you add later)</label>
               {!form.all && <div className="row" style={{ gap: 10 }}>
                 {sites.map((s) => (
                   <label key={s.id} className="row small" style={{ gap: 4, fontWeight: 400 }}>

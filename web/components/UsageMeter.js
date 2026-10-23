@@ -24,7 +24,7 @@ export default function UsageMeter() {
 
   return (
     <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-      <h3>Texts &amp; phone calls (fair use) <Info title="Fair use">{`Phone notifications and email are unlimited. Text messages (1 credit each) and automatic phone calls to your contractors (2 credits each) come with ${u.per_location} credits per location per year, shared across your company. That covers a small shop's normal year. Busier stores add credits as they need them: ${u.pack_credits} credits for ${money(u.pack_price)}, good to the end of the plan year. Alerts for emergency calls are never stopped.`}</Info></h3>
+      <h3>Texts &amp; phone calls (fair use) <Info title="Fair use">{`Phone notifications and email are unlimited. Text messages (1 credit each) and automatic phone calls to your contractors (2 credits each) come with ${u.per_location} credits per location per year, shared across your company. That covers a small shop's normal year. Busier locations add credits as they need them: ${u.pack_credits} credits for ${money(u.pack_price)}, good to the end of the plan year. Alerts for emergency calls are never stopped.`}</Info></h3>
 
       <div className="usebar" role="img" aria-label={`${u.used} of ${u.allowance} credits used this year`}>
         <div className={`usebar-fill${u.pct >= 90 ? ' bad' : warn ? ' warn' : ''}`} style={{ width: `${Math.min(100, u.pct)}%` }} />

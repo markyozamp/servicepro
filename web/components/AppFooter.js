@@ -14,12 +14,12 @@ const TIPS = {
     'A technician with no trip scheduled? Use "Someone\'s here we weren\'t expecting" and their office is told right away.',
   ],
   office: [
-    'Schedule every trip with the store first: they\'ll see you under "Expected today" and your tech gets the check-in code ready.',
-    'Enter your invoice against the store\'s PO: hours that match the verified time get approved faster.',
+    'Schedule every trip with the customer first: they\'ll see you under "Expected today" and your tech gets the check-in code ready.',
+    'Enter your invoice against the customer\'s PO: hours that match the verified time get approved faster.',
     'Your technicians can install the app on their phones from the menu: it works even with no signal.',
   ],
   tech: [
-    'Tap "I\'m going" before you drive: the store sees you\'re on the way and your arrival is noticed automatically.',
+    'Tap "I\'m going" before you drive: the customer sees you\'re on the way and your arrival is noticed automatically.',
     'No signal? Keep working: everything is saved on your phone and sent when you\'re back online.',
     'Going for parts? Use the parts run button so the time off site is explained on the invoice.',
   ],

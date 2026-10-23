@@ -1,5 +1,6 @@
 'use client';
 
+import { setPlaceWord } from '@/lib/terms';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from './supabase';
@@ -40,7 +41,7 @@ export function useProfile(portal) {
       const id = p.contractor_id || p.customer_id;
       if (id) {
         const { data: o } = await supabase.from(table).select('*').eq('id', id).single();
-        if (alive) setOrg(o);
+        if (alive) { if (table === 'customers') setPlaceWord(o?.place_word); setOrg(o); }
       }
     })();
     return () => { alive = false; };

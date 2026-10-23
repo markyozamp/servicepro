@@ -7,14 +7,14 @@ export default function Privacy() {
   return (
     <LegalPage title="Privacy Policy">
       <p>
-        Service Call Proof ({site}) is operated by {operator} (&ldquo;we,&rdquo; &ldquo;us&rdquo;). It helps stores, property managers,
+        Service Call Proof ({site}) is operated by {operator} (&ldquo;we,&rdquo; &ldquo;us&rdquo;). It helps businesses with locations to service (stores, restaurants, clinics, offices), property managers,
         homeowners and their service contractors keep a shared record of service calls: who was sent, when they arrived and left,
         and what was billed. This policy explains what information we collect, why, and the choices you have.
       </p>
 
       <h2>Who uses Service Call Proof</h2>
       <ul>
-        <li><strong>Customers</strong> — stores, property managers and homeowners who open service calls and check the work.</li>
+        <li><strong>Customers</strong> — businesses, property managers and homeowners who open service calls and check the work.</li>
         <li><strong>Contractors</strong> — service companies that accept calls, dispatch technicians and send invoices.</li>
         <li><strong>Technicians</strong> — the people who go on calls, using the phone app.</li>
       </ul>
@@ -28,7 +28,7 @@ export default function Privacy() {
         <li><strong>Account details:</strong> name, job title, work email, mobile number, company, and which locations or teams you belong to.</li>
         <li><strong>Service call records:</strong> PO numbers, problem descriptions, equipment, scheduled times, notes, quotes, invoices and approvals.</li>
         <li>
-          <strong>Visit times:</strong> when a technician taps &ldquo;I&rsquo;m going,&rdquo; arrives, checks in with the store&rsquo;s code,
+          <strong>Visit times:</strong> when a technician taps &ldquo;I&rsquo;m going,&rdquo; arrives, checks in with the customer&rsquo;s code,
           leaves for parts, returns and leaves the site.
         </li>
         <li>
@@ -36,12 +36,12 @@ export default function Privacy() {
           location at that moment is saved with the record so the arrival or departure can be confirmed. While a technician is on the way to
           a call with the app open, the phone compares its own position with the site to notice arrival automatically; that route is
           <strong> not</strong> saved or sent to us. <strong>We do not track technicians in the background, between calls, or after hours.</strong>{' '}
-          The store on a call sees only the nearest town to where the trip started and about how far it is, so travel billed can be checked;
+          The customer on a call sees only the nearest town to where the trip started and about how far it is, so travel billed can be checked;
           never the exact spot or a map.{' '}
           A technician can deny location access in the phone&rsquo;s settings; arrival is then confirmed by the check-in code instead.
         </li>
         <li><strong>Photos</strong> a technician chooses to take for a call, such as equipment nameplates or finished work.</li>
-        <li><strong>Visitor log entries</strong> a store adds when someone arrives who wasn&rsquo;t expected.</li>
+        <li><strong>Visitor log entries</strong> a customer adds when someone arrives who wasn&rsquo;t expected.</li>
         <li><strong>Alert settings:</strong> if you turn on phone alerts, a notification address from your browser so we can send them.</li>
         <li><strong>Technical information:</strong> sign-in records, device and browser type, and error logs needed to keep the service working and secure.</li>
       </ul>
@@ -59,7 +59,7 @@ export default function Privacy() {
       <h2>Who can see it</h2>
       <p>
         Records about a service call are shared between the customer and the contractor on that call, as the service is designed to do —
-        for example, the store sees which technician was sent and when he checked in; the contractor sees the store&rsquo;s PO and approvals.
+        for example, the customer sees which technician was sent and when he checked in; the contractor sees the customer&rsquo;s PO and approvals.
         Within each organization, what a person can see depends on the role their administrator gives them.
       </p>
       <p>We share information outside those parties only:</p>
@@ -88,7 +88,7 @@ export default function Privacy() {
 
       <h2>How long we keep it</h2>
       <p>
-        We keep service call records for as long as your organization&rsquo;s account is active, because stores and contractors rely on them for
+        We keep service call records for as long as your organization&rsquo;s account is active, because customers and contractors rely on them for
         invoices, disputes, warranties and audits. When an account closes we delete or anonymize its records within 12 months, unless the law
         requires us to keep them longer. Error and security logs are kept for a shorter time.
       </p>
@@ -96,7 +96,7 @@ export default function Privacy() {
       <h2>Security</h2>
       <p>
         Information is sent over encrypted connections and stored with access controls, so each organization sees only its own records and the
-        calls it shares. Store PINs are stored in scrambled (hashed) form, check-in codes are good for one visit only, and sign-in links work once and expire. No system is perfectly
+        calls it shares. Location PINs are stored in scrambled (hashed) form, check-in codes are good for one visit only, and sign-in links work once and expire. No system is perfectly
         secure; if we learn of a breach affecting your information, we will notify you as the law requires.
       </p>
 

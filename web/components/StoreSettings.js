@@ -7,10 +7,13 @@ import LocationSettings from './LocationSettings';
 import StoreTeam from './StoreTeam';
 import StoreEquipment from './StoreEquipment';
 import ContractorSettings from './ContractorSettings';
+import { usePlace } from '@/lib/terms';
 
 export const SETTINGS_TABS = [
   ['company', 'Settings & plan'], ['locations', 'Locations'], ['team', 'Team'], ['equipment', 'Equipment'], ['contractors', 'Contractors & QR'],
 ];
+// The Locations tab takes the customer's own word (Stores, Restaurants, Properties…)
+export const tabLabel = (k, label, place) => (k === 'locations' && place ? place.Many : label);
 
 // What this person may open (admin sees everything).
 export function storePerms(me) {
@@ -25,6 +28,7 @@ export function storePerms(me) {
 }
 
 export default function StoreSettings({ tab, setTab, onClose, me, org, onOrgChanged, hideTabs, startAdding, onLocationsChanged }) {
+  const place = usePlace();
   const can = storePerms(me);
   const allowed = SETTINGS_TABS.filter(([k]) => can[k]);
   const [own, setOwn] = useState(null);
@@ -33,9 +37,9 @@ export default function StoreSettings({ tab, setTab, onClose, me, org, onOrgChan
   const go = (x) => { setOwn(x); setTab?.(x); };
   return (
     <div className="panel panel-pad stack">
-      <div className="spread"><h2>{SETTINGS_TABS.find(([k]) => k === t)?.[1] || 'Settings'}</h2><button onClick={onClose}>Close</button></div>
+      <div className="spread"><h2>{tabLabel(t, SETTINGS_TABS.find(([k]) => k === t)?.[1], place) || 'Settings'}</h2><button onClick={onClose}>Close</button></div>
       {!hideTabs && <div className="tabs-row">
-        {allowed.map(([k, label]) => <button key={k} className={t === k ? 'on' : ''} onClick={() => go(k)}>{label}</button>)}
+        {allowed.map(([k, label]) => <button key={k} className={t === k ? 'on' : ''} onClick={() => go(k)}>{tabLabel(k, label, place)}</button>)}
       </div>}
       {t === 'company' && <CompanyPlan org={org} onSaved={onOrgChanged} />}
       {t === 'locations' && <LocationSettings startAdding={startAdding} onChanged={onLocationsChanged} />}

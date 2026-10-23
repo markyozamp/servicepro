@@ -6,14 +6,14 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
 export const CONTRACTOR_PLANS = [
-  { key: 'verify', name: 'Time Verify', tag: 'Free', who: 'Any contractor a store invites',
-    items: ['Calls from your stores', 'I\'m going / I\'m here / Leaving on the tech\'s phone', 'Check-in codes and parts runs', 'Send your bill in seconds against the store\'s PO', 'Your rates on record with each store'],
-    note: 'Free for you when your store uses Time Verify, always.' },
+  { key: 'verify', name: 'Time Verify', tag: 'Free', who: 'Any contractor a customer invites',
+    items: ['Calls from your Time Verify customers', 'I\'m going / I\'m here / Leaving on the tech\'s phone', 'Check-in codes and parts runs', 'Send your bill in seconds against the customer\'s PO', 'Your rates on record with each customer'],
+    note: 'Free for you when your customer uses Time Verify, always.' },
   { key: 'base', name: 'Base', tag: 'Coming', who: 'The 1–3 truck shop',
-    items: ['Everything in Time Verify, plus:', 'Your own customers, not just stores on Service Call Proof', 'Schedule your techs', 'Timesheets', 'Quotes, including install and project quotes sent straight to your stores to compare and approve', 'Billing from here: the bill is written for you from the verified time, your rates, trip fee and zones', 'Invoices to any customer', 'Bills go straight into your Time Verify stores\' portal: no mailing or emailing', 'Accounting: export to QuickBooks'],
+    items: ['Everything in Time Verify, plus:', 'All your own customers, not just the ones on Service Call Proof', 'Schedule your techs', 'Timesheets', 'Quotes, including install and project quotes sent straight to your customers to compare and approve', 'Billing from here: the bill is written for you from the verified time, your rates, trip fee and zones', 'Invoices to any customer', 'Bills go straight into your Time Verify customers\' portal: no mailing or emailing', 'Accounting: export to QuickBooks'],
     note: 'One flat monthly price, up to 3 technicians.' },
   { key: 'pro', name: 'Pro', tag: 'Coming', who: 'The growing shop, about 4–20 techs',
-    items: ['Everything in Base, plus:', 'Dispatch board', 'Preventive maintenance and service agreements', 'Full estimating: good / better / best project quotes your stores approve with a tap', 'An approved quote becomes the job by itself; install handoff from sales to the crew', 'Job costing: labor, parts and profit per job', 'Accounting: live sync with QuickBooks Online and Xero', 'Bring your data: import customers, equipment and agreements from ServiceTitan, Housecall Pro, Jobber and others', 'Add-on: light CRM (leads, follow-ups, agreement renewals)'],
+    items: ['Everything in Base, plus:', 'Dispatch board', 'Preventive maintenance and service agreements', 'Full estimating: good / better / best project quotes your customers approve with a tap', 'An approved quote becomes the job by itself; install handoff from sales to the crew', 'Job costing: labor, parts and profit per job', 'Accounting: live sync with QuickBooks Online and Xero', 'Bring your data: import customers, equipment and agreements from ServiceTitan, Housecall Pro, Jobber and others', 'Add-on: light CRM (leads, follow-ups, agreement renewals)'],
     note: 'Priced per active technician.' },
   { key: 'enterprise', name: 'Enterprise', tag: 'Coming', who: 'Multi-branch companies',
     items: ['Everything in Pro, plus:', 'Multiple branches', 'Full CRM and renewals', 'QR inventory: shelf and truck stock scanned to the job', 'Map-drawn service zones', 'Accounting: QuickBooks Desktop and Sage on request', 'We move your data over for you from ServiceTitan and others'],
@@ -66,10 +66,10 @@ export default function PilotOffer({ source = 'app', current = 'verify', default
         <strong style={{ fontSize: 16 }}>Founding contractors wanted</strong>
         <div className="small">We're looking for a few contractors to pilot <strong>Base, Pro and Enterprise</strong> and help shape them before launch.
           Pilot contractors get <strong>2 years free</strong>, then <strong>50% off for as long as you're a customer</strong>.</div>
-        <div className="small"><strong>Bring a store onto Time Verify:</strong> $100 off your next renewal for every store that signs up.</div>
+        <div className="small"><strong>Bring a customer onto Time Verify:</strong> $100 off your next renewal for every location that signs up.</div>
         {form ? <PilotForm source={source} defaults={defaults} /> : <div><button className="primary" onClick={() => setForm(true)}>I want to pilot this</button></div>}
       </div>
-      <div className="small enhanced-note"><strong>Enhanced Time Verify for your stores, at no charge:</strong> when you're on Base or Pro, the stores you serve automatically get your bills right in their portal, matched to the call and PO, ready to download, export or forward to their accounting department.</div>
+      <div className="small enhanced-note"><strong>Enhanced Time Verify for your customers, at no charge:</strong> when you're on Base or Pro, the customers you serve automatically get your bills right in their portal, matched to the call and PO, ready to download, export or forward to their accounting department.</div>
       <div className="plan-grid">
         {CONTRACTOR_PLANS.map((p) => (
           <div key={p.key} className={`panel panel-pad stack plan-card${p.key === current ? ' current' : ''}`} style={{ gap: 6 }}>

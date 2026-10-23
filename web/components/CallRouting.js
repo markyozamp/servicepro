@@ -40,7 +40,7 @@ export default function CallRouting({ profile, logo, onLogo }) {
 
   return (
     <div className="panel panel-pad stack" style={{ marginBottom: 16 }}>
-      <h3>Who gets the calls <Info title="Who gets the calls">The number your stores reach when they tap "Call them now" on a service call, or "Call office" when one of your people shows up unexpected. Soon you'll add an after-hours number and who's on call, and Service Call Proof will phone you automatically when a call isn't accepted in time.</Info></h3>
+      <h3>Who gets the calls <Info title="Who gets the calls">The number your customers reach when they tap "Call them now" on a service call, or "Call office" when one of your people shows up unexpected. Soon you'll add an after-hours number and who's on call, and Service Call Proof will phone you automatically when a call isn't accepted in time.</Info></h3>
       <ErrorBox error={err} /><Notice>{msg}</Notice>
       <div className="row" style={{ alignItems: 'flex-end' }}>
         <label className="grow">Office phone (business hours)<input type="tel" value={phone} disabled={!can} onChange={(e) => setPhone(e.target.value)} placeholder="701-555-0100" /></label>

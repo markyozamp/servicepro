@@ -35,22 +35,22 @@ const STORE = [
   ]],
   ['Someone shows up you weren\'t expecting', [
     'In In the building now, tap Someone\'s here we weren\'t expecting.',
-    'Enter their name and company (and plate or photo if your store requires it), then save.',
+    'Enter their name and company (and plate or photo if your location requires it), then save.',
     'Their office is told right away, and you can tap Call office to phone them.',
   ]],
   ['Add a person to your team', [
     'Tap Team on your dashboard.',
     'Tap + Add a person. Enter their name, email or mobile, and job title.',
     'Tick what they can do (open calls, approve up to an amount, equipment, contractors, locations, team, settings & plan).',
-    'Under Which locations do they see?, tick All locations or just their stores.',
+    'Under Which locations do they see?, tick All locations or just theirs.',
     'Save, then send them the sign-in link by text or email. Logins are included in your plan; add as many people as you need.',
     'Give every person their own login, and never share one. Logins are free and unlimited. With a shared login, one person changing the password locks everyone out, and you can\'t tell who approved what.',
     'Set people up with an email they\'ll keep, ideally a company email. The owner especially should use a company email the owner controls, so password resets always reach the right person.',
   ]],
-  ['Choose which stores a person sees', [
-    'Team → Edit next to the person → Which locations do they see? → tick their stores → Save.',
-    'Or by store: Settings & plan → Locations → Who sees this, tick the people → Save.',
-    'People with All locations see every store automatically, including new ones.',
+  ['Choose which locations a person sees', [
+    'Team → Edit next to the person → Which locations do they see? → tick their locations → Save.',
+    'Or by location: Settings & plan → Locations → Who sees this, tick the people → Save.',
+    'People with All locations see every one automatically, including new ones.',
   ]],
   ['Change who the admin is', [
     'Only an admin can do this. Tap Team, then Edit next to the person who should be admin.',
@@ -108,7 +108,7 @@ const STORE = [
   ['Add equipment, warranties and QR stickers', [
     'Equipment → add each unit (what it is, where it is, make, model, serial) and its warranty dates.',
     'Contractors & QR → order or print QR stickers and put one on each unit.',
-    'Set a store PIN there too. Any employee can scan a sticker, enter the PIN and report a problem.',
+    'Set a location PIN there too. Any employee can scan a sticker, enter the PIN and report a problem.',
   ]],
   ['Find a past call or export your calls', [
     'Tap 🔎 Search past calls on your dashboard.',
@@ -157,7 +157,7 @@ const CONTRACTOR = [
     'Time is verified by the check-in code and the phone\'s arrival, so bill the hours on the call to get paid fastest.',
   ]],
   ['My sign-in link doesn\'t work', [
-    'Links work once and expire after 7 days. If it says used or expired, ask the store that invited you to send a new one.',
+    'Links work once and expire after 7 days. If it says used or expired, ask the customer who invited you to send a new one.',
     'For a technician\'s link, the office sends a new one: Team → New sign-in link next to the person.',
     'Already have a password? Sign in at servicecallproof.com, or tap Forgot password?.',
   ]],
@@ -168,15 +168,15 @@ const CONTRACTOR = [
   ['Accept a new call', [
     'Open the call from Today (or the New column on the board).',
     'Tap Accept — on the way now, or pick a time and tap the schedule button.',
-    'Accept before the store\'s deadline shown on the call. Can\'t take it? Decline with a reason so the store can send it elsewhere.',
+    'Accept before the customer\'s deadline shown on the call. Can\'t take it? Decline with a reason so the customer can send it elsewhere.',
   ]],
   ['Send a technician', [
     'Open the call, pick the technician and the time, and save the trip.',
-    'The store sees them under Expected today, and the tech sees it in their app.',
+    'The customer sees them under Expected today, and the tech sees it in their app.',
   ]],
   ['Propose a maintenance plan', [
     'Customers → pick the customer → Maintenance plans → + Propose a maintenance plan.',
-    'Set the location, how often, next due date, price, about how many hours, how many days to finish once started, and the checklist. Send it; the store accepts it.',
+    'Set the location, how often, next due date, price, about how many hours, how many days to finish once started, and the checklist. Send it; the customer accepts it.',
     'Once accepted, the PM call opens by itself before each due date. Schedule the trip and finish it within the days on the plan, with the same technician if the plan says so.',
   ]],
   ['Enter your rates for a customer', [
@@ -186,22 +186,22 @@ const CONTRACTOR = [
   ]],
   ['Send your bill', [
     'Finished calls show under Bills to send (and the Billing tab).',
-    'Open the call. Tick that you agree to the labor hours shown (verified on site + travel, over the number of trips), and that your bill doesn\'t go over the PO plus anything the store approved on top. Parts are included under the PO.',
+    'Open the call. Tick that you agree to the labor hours shown (verified on site + travel, over the number of trips), and that your bill doesn\'t go over the PO plus anything the customer approved on top. Parts are included under the PO.',
     'Type your own invoice number and total, then Agree and send. About 15 seconds.',
     'Hours different? Tap "My hours are different" and say what the extra time was for. Over the PO? Ask first with Request approval for more, or send it marked over the PO.',
-    'Travel counts from where the trip really started (when your tech tapped I\'m going), not from your shop. The store sees the town it started near.',
-    'Send it before the store\'s deadline, or it shows as late to them.',
+    'Travel counts from where the trip really started (when your tech tapped I\'m going), not from your shop. The customer sees the town it started near.',
+    'Send it before the customer\'s deadline, or it shows as late to them.',
   ]],
   ['Look at one customer', [
-    'Tap the pin menu at the top left and pick a customer or one of their stores. Your whole screen shows just them.',
-    'The Customers tab shows each account\'s stores, rules, equipment and past calls.',
+    'Tap the pin menu at the top left and pick a customer or one of their locations. Your whole screen shows just them.',
+    'The Customers tab shows each account\'s locations, rules, equipment and past calls.',
   ]],
   ['Add a technician', [
     'Team (on a phone: More → Team) → add the person with their mobile number.',
     'Send them the sign-in link. They open it on their phone; no password needed.',
   ]],
   ['Set your office phone and logo', [
-    'Team → Who gets the calls → Office phone → Save. This is the number stores reach when they tap Call them now.',
+    'Team → Who gets the calls → Office phone → Save. This is the number customers reach when they tap Call them now.',
     'Your logo (company admin): Team → Your logo → Upload logo.',
   ]],
   ['Stop serving a customer', [
@@ -216,23 +216,23 @@ const TECH = [
     'Tap the menu (☰) → Install on this phone, so the app is on your home screen (iPhone: Share → Add to Home Screen).',
     'Allow location when asked. It is only saved when you tap a button or arrive at a job.',
   ]],
-  ['The store can\'t find the check-in code', [
-    'Every call has its own code. It shows on the store\'s screen when you arrive.',
-    'If nobody can find it, tap Use store backup code and ask for the store\'s backup code.',
-    'Still nothing? Tap No code available and say why. The store sees the reason on the call.',
+  ['No one on site can find the check-in code', [
+    'Every call has its own code. It shows on the customer\'s screen when you arrive.',
+    'If nobody can find it, tap Use backup code and ask for the location\'s backup code.',
+    'Still nothing? Tap No code available and say why. The customer sees the reason on the call.',
   ]],
-  ['Ask the store to approve more money', [
+  ['Ask the customer to approve more money', [
     'On the job, tap Request approval for more, describe the work and the amount, and send.',
     'Wait for the answer on your phone. Don\'t do the extra work until it says approved.',
   ]],
   ['Going for parts', [
     'Tap 🚚 Parts run before you leave. Tap at the supplier when you get there, and again when you\'re back.',
-    'The store sees it as a parts run, so the time away is explained on the bill.',
+    'The customer sees it as a parts run, so the time away is explained on the bill.',
   ]],
   ['Go on a call', [
-    'Tap the job, then I\'m going when you leave. The store sees you\'re on the way and the town you\'re starting from (never the exact spot).',
+    'Tap the job, then I\'m going when you leave. The customer sees you\'re on the way and the town you\'re starting from (never the exact spot).',
     'Tap it when you actually leave. Your drive time is counted from that tap.',
-    'When you arrive, the app notices (or tap I\'m here). Ask someone at the store for the check-in code and enter it.',
+    'When you arrive, the app notices (or tap I\'m here). Ask someone on site for the check-in code and enter it.',
     'Going for parts? Use the parts run button so the time away is explained.',
     'Done? Tap Leaving and say whether it\'s finished or needs another trip.',
   ]],
@@ -260,7 +260,7 @@ const EVERYONE = [
   ]],
 ];
 
-const GROUPS = [['store', 'Stores', STORE], ['contractor', 'Contractors', CONTRACTOR], ['tech', 'Technicians', TECH], ['all', 'Everyone', EVERYONE]];
+const GROUPS = [['store', 'Customers', STORE], ['contractor', 'Contractors', CONTRACTOR], ['tech', 'Technicians', TECH], ['all', 'Everyone', EVERYONE]];
 
 export default function Help() {
   const [who, setWho] = useState('store');

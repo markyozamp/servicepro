@@ -1,5 +1,6 @@
 'use client';
 
+import { usePlace } from '@/lib/terms';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { useProfile, isDemoEmail } from '@/lib/useProfile';
@@ -8,7 +9,7 @@ import { money, ago, dateTime, date, poLabel, PO_KIND, FLAG_LABEL } from '@/lib/
 import TopBar from '@/components/TopBar';
 import CallDetail from '@/components/CallDetail';
 import NewCallForm from '@/components/NewCallForm';
-import StoreSettings, { SETTINGS_TABS, storePerms } from '@/components/StoreSettings';
+import StoreSettings, { SETTINGS_TABS, storePerms, tabLabel } from '@/components/StoreSettings';
 import Info from '@/components/Info';
 import AppFooter from '@/components/AppFooter';
 import GettingStarted from '@/components/GettingStarted';
@@ -29,6 +30,7 @@ const ICONS = { locations: '📍', team: '👥', equipment: '🧰', contractors:
 const latest = (w) => (w.visits || []).filter((v) => v.status !== 'cancelled').sort((a, b) => b.visit_no - a.visit_no)[0];
 
 export default function StorePortal() {
+  const place = usePlace();
   const { profile, org } = useProfile('/store');
   const [calls, setCalls] = useState([]);
   const [pending, setPending] = useState([]);
@@ -192,11 +194,11 @@ export default function StorePortal() {
 
   return (
     <>
-      <TopBar profile={profile} org={org} portal={org?.kind === 'property_manager' ? 'Properties' : 'Store'} />
+      <TopBar profile={profile} org={org} portal={place.Many} />
       <main className="page stack" style={{ gap: 16 }}>
         <div className="spread">
           <div>
-            {orgLogo ? <img className="org-logo" src={orgLogo} alt={org?.name || 'Company logo'} /> : <h1>{org?.name || 'Your locations'}</h1>}
+            {orgLogo ? <img className="org-logo" src={orgLogo} alt={org?.name || 'Company logo'} /> : <h1>{org?.name || `Your ${place.many}`}</h1>}
             <div style={{ margin: '6px 0 2px' }}><LocationPicker sites={allSites} attention={attention} value={validSite} onChange={pickSite}
               canAdd={storePerms(profile).locations} onAdd={() => { setAddLoc(true); setLocked(false); setSettings('locations'); setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); }} /></div>
             <div className="muted small">{profile.title || ''}{profile.approval_limit != null ? ` · approves up to ${money(profile.approval_limit)}` : profile.can_approve ? ' · approves any amount' : ''}</div>
@@ -221,7 +223,7 @@ export default function StorePortal() {
         <nav className="navstrip" aria-label="Manage">
           {[...SETTINGS_TABS.slice(1), SETTINGS_TABS[0]].filter(([k]) => k === 'company' || storePerms(profile)[k]).map(([k, label]) => (
             <button key={k} className={settings === k ? 'on' : ''} aria-pressed={settings === k} onClick={() => openArea(k)}>
-              <span aria-hidden="true">{k === 'company' && !storePerms(profile).company ? '🔒' : ICONS[k]}</span>{label}
+              <span aria-hidden="true">{k === 'company' && !storePerms(profile).company ? '🔒' : ICONS[k]}</span>{tabLabel(k, label, place)}
             </button>
           ))}
         </nav>
@@ -240,7 +242,7 @@ export default function StorePortal() {
         </div>
 
         <button className="searchbar" onClick={() => showCalls('po')}>
-          <span aria-hidden="true">🔎</span> Search past calls <span className="muted">— by contractor, trade, location or date</span>
+          <span aria-hidden="true">🔎</span> Search past calls <span className="muted">— by contractor, trade, {place.one} or date</span>
         </button>
 
         <GettingStarted me={profile} onGo={(k) => openArea(k)} onNewCall={() => openWork('call')} />

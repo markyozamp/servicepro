@@ -238,7 +238,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
               {/* ---- Office: close-out override code for a tech who can't finish the normal way ---- */}
               {side === 'office' && d.visits.some((v) => v.status === 'on_site') && (
                 <div className="panel panel-pad spread">
-                  <div className="small">Tech on site can't take photos / check in / finish normally?<div className="muted">Give a one-time override code by phone. The store sees the reason.</div></div>
+                  <div className="small">Tech on site can't take photos / check in / finish normally?<div className="muted">Give a one-time override code by phone. The customer sees the reason.</div></div>
                   <button disabled={busy} onClick={() => {
                     const r = window.prompt('What did the technician tell you? (kept on the call)');
                     if (r && r.trim()) run('issue_closeout_code', { p_visit: d.visits.find((v) => v.status === 'on_site').id, p_reason: r.trim() },
@@ -290,7 +290,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                   <div className="small">
                     {wo.invoice_ready ? 'Ready to invoice.' : 'Resolve the review items above to invoice.'}
                     <div className={daysUntil(wo.invoice_due_at) < 0 ? '' : 'muted'} style={daysUntil(wo.invoice_due_at) < 0 ? { color: 'var(--red-fg)', fontWeight: 700 } : {}}>
-                      Invoice due {date(wo.invoice_due_at)}{daysUntil(wo.invoice_due_at) < 0 ? ' — LATE (the store has been told)' : ''}
+                      Invoice due {date(wo.invoice_due_at)}{daysUntil(wo.invoice_due_at) < 0 ? ' — LATE (the customer has been told)' : ''}
                     </div>
                   </div>
                   <button className="primary" disabled={busy || !wo.invoice_ready} onClick={() => {
@@ -361,7 +361,7 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                       <Step done={!!v.started_at} label="On the way" at={v.started_at} extra={v.status === 'en_route' && v.eta_at ? `ETA ${time(v.eta_at)}` : null} />
                       <Step done={!!v.arrived_at} label="Arrived (GPS)" at={v.arrived_at} />
                       {v.checkin_required && (
-                        <Step done={!!v.checkin_at} label={v.checkin_at ? (v.checkin_verified ? `Checked in (${v.checkin_method === 'backup_code' ? 'backup code' : 'code'})` : 'Check-in NOT verified') : 'Check-in with store'} at={v.checkin_at}
+                        <Step done={!!v.checkin_at} label={v.checkin_at ? (v.checkin_verified ? `Checked in (${v.checkin_method === 'backup_code' ? 'backup code' : 'code'})` : 'Check-in NOT verified') : 'Check-in on site'} at={v.checkin_at}
                           extra={v.checkin_person ? `met ${v.checkin_person}` : null} />
                       )}
                       <Step done={!!v.completed_at} label={v.outcome === 'parts_needed' ? 'Left — parts needed' : v.outcome === 'return_needed' ? 'Left — return needed' : v.outcome === 'quote_needed' ? 'Left — quote sent' : 'Work completed'} at={v.completed_at} />
@@ -525,7 +525,7 @@ function LateInvoice({ wo, side, busy, run }) {
   if (side === 'office') {
     return (
       <div className="late-inv stack" style={{ gap: 4 }}>
-        <strong>Your invoice is late. It was due to {wo.customers?.name || 'the store'} {date(wo.invoice_due_at)}.</strong>
+        <strong>Your invoice is late. It was due to {wo.customers?.name || 'the customer'} {date(wo.invoice_due_at)}.</strong>
         {asked && <div className="small">They {wo.bill_request_how === 'call' ? 'called you about it' : 'asked for it'} {dateTime(asked)}. Enter it now so it's off their list.</div>}
       </div>
     );

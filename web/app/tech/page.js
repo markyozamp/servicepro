@@ -192,7 +192,7 @@ function OpenCalls({ calls }) {
             setBusy(c.id); setErr('');
             try { await T.claim(c.id); } catch (e) { setErr(e.message); T.sync(); } finally { setBusy(null); }
           }}>{busy === c.id ? 'Taking it…' : "I'm going"}</button>
-          <div className="small muted">Tap when you leave. The store sees the town you're starting from, never the exact spot.</div>
+          <div className="small muted">Tap when you leave. The customer sees the town you're starting from, never the exact spot.</div>
         </div>
       ))}
     </>

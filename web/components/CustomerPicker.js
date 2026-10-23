@@ -40,13 +40,13 @@ export default function CustomerPicker({ book, value, onChange }) {
           <button role="menuitem" className={!value ? 'on' : ''} onClick={() => { onChange(''); setOpen(false); }}>
             <span>All customers</span>{hotCustomers.length > 0 && <span className="dot" />}
           </button>
-          {book.length === 0 && <div className="small muted" style={{ padding: '8px 10px' }}>No customers yet. Stores add you when they invite you.</div>}
+          {book.length === 0 && <div className="small muted" style={{ padding: '8px 10px' }}>No customers yet. Customers add you when they invite you.</div>}
           {book.map((c) => {
             const r = custReasons(c);
             return (
               <div key={c.customer_id} className="custpick-group">
                 <button role="menuitem" className={value === `c:${c.customer_id}` ? 'on' : ''} onClick={() => { onChange(`c:${c.customer_id}`); setOpen(false); }}>
-                  <span><strong>{c.name}</strong><span className="small muted">{c.sites.length} store{c.sites.length === 1 ? '' : 's'}{c.open_calls ? ` · ${c.open_calls} open` : ''}</span></span>
+                  <span><strong>{c.name}</strong><span className="small muted">{c.sites.length} location{c.sites.length === 1 ? '' : 's'}{c.open_calls ? ` · ${c.open_calls} open` : ''}</span></span>
                   {r.length > 0 && <span className="dot" />}
                 </button>
                 {c.sites.length > 1 && c.sites.map((s) => (

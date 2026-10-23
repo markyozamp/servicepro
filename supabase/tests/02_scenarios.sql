@@ -787,7 +787,7 @@ select test.ok((select status = 'on_site' and arrival_source = 'store' and arriv
   'arrival recorded from the store side (the tech is paid from now)');
 select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('tp') and flag = 'arrival_by_store'), 'flagged for the contractor');
 select test.login(test.v('TONY'));
-select test.ok((select count(*) = 1 from notifications where user_id = test.v('TONY') and message like 'The store says you are at%'), 'Tony is told to check in');
+select test.ok((select count(*) = 1 from notifications where user_id = test.v('TONY') and message like 'The customer says you are at%'), 'Tony is told to check in');
 select test.ok((select status = 'on_site' from tech_arrive(test.v('tv2'), null, 47.91, -97.049)), 'his late "I''m here" tap is harmless');
 reset role;
 do $$ begin perform _allow_internal(true); update visits set arrived_at = now() - interval '6 minutes' where id = test.v('tv2'); perform _end_internal(); end $$;
@@ -812,7 +812,7 @@ grant select on qrt to anon;
 set role anon;
 select test.ok((select qr_info((select t1 from qrt))->>'unit' like 'Walk-in freezer%'),
   'scanning the sticker shows the unit, no login');
-select test.ok((select qr_report((select t1 from qrt), '1111', null, 'Freezer warm', 'Jen')->>'error' like 'Wrong store PIN%'), 'wrong PIN does nothing');
+select test.ok((select qr_report((select t1 from qrt), '1111', null, 'Freezer warm', 'Jen')->>'error' like 'Wrong PIN%'), 'wrong PIN does nothing');
 select test.ok((select qr_report((select t1 from qrt), '2468',
   (select fz from qrt), 'Freezer at 20F', 'Jen (night crew)')->>'contractor' = 'Arctic Air Mechanical (demo)'),
   'right PIN → call opened to the refrigeration contractor');
@@ -958,7 +958,7 @@ select test.login(test.v('PETE'));
 select from submit_invoice(test.v('tp2'), 'PP-9', 210, 1.5);
 select test.login(:SAM);
 select test.ok((select count(*) = 1 from guardrail_flags where work_order_id = test.v('tp2') and flag = 'no_recorded_visit'
-  and description like '%no visit was recorded%Store rule: time not verified in Service Call Proof is not paid.'), 'invoice with no recorded visit is flagged, with the store''s rule');
+  and description like '%no visit was recorded%Customer rule: time not verified in Service Call Proof is not paid.'), 'invoice with no recorded visit is flagged, with the store''s rule');
 select test.login(:DOUG);
 select from set_unverified_rule(test.v('PRAIRIE'), 'review');
 
@@ -1203,7 +1203,7 @@ set role authenticated;
 select test.login(:'lee');
 select test.ok((select (fair_use()->>'suggested_packs')::int > 0), 'running hot, it suggests how many packs to add to finish the year');
 select test.login(:DANA);
-select test.blocked($$select fair_use()$$, 'store account', 'contractors have no meter (they''re free)');
+select test.blocked($$select fair_use()$$, 'customer account', 'contractors have no meter (they''re free)');
 reset role;
 
 \echo '=== 53. Who sees a new location'
@@ -1438,3 +1438,13 @@ select test.ok((select _billing_days(w.id) = 21 from work_orders w where w.contr
 set role authenticated;
 select test.blocked($$select set_billing_days((select test.v('PRAIRIE')), 200)$$, '1 to 90', 'the window has to make sense');
 reset role;
+
+\echo '=== 65. Each customer picks what it calls its places'
+select test.ok((select column_default like '''location''%' from information_schema.columns where table_name = 'customers' and column_name = 'place_word'), 'new accounts start with the neutral word "location"');
+set role authenticated;
+select test.login(:DOUG);
+select test.ok((select set_place_word('restaurant')->>'word' = 'restaurant'), 'the owner switches the word to restaurants');
+select test.blocked($$select set_place_word('castle')$$, 'Pick one', 'only the listed words are allowed');
+reset role;
+select test.ok((select place_word = 'restaurant' from customers where id = (select customer_id from profiles where id = :DOUG)), 'the choice is saved on the company');
+select test.ok((select qr_info((select qr_token from equipment where qr_token is not null limit 1)) ? 'place_word'), 'the QR page gets the customer''s word for its places');

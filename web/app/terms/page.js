@@ -15,7 +15,7 @@ export default function Terms() {
 
       <h2>1. What the Service does</h2>
       <p>
-        Service Call Proof lets customers (stores, property managers and homeowners) send service calls to contractors and keep a shared record
+        Service Call Proof lets customers (businesses such as stores, restaurants, clinics and offices, property managers and homeowners) send service calls to contractors and keep a shared record
         of each visit: who was scheduled, when they arrived, checked in, left for parts and left, and how the invoice compares with the time
         recorded. Our <Link href="/privacy">Privacy Policy</Link> explains how we handle information.
       </p>
@@ -58,8 +58,8 @@ export default function Terms() {
 
       <h2>6. Safety</h2>
       <p>
-        Showing who is expected and who is in the building helps stores stay aware of who is on site. It is not a security system and does not
-        replace a store&rsquo;s own check-in, key and safety procedures. In an emergency call 911.
+        Showing who is expected and who is in the building helps customers stay aware of who is on site. It is not a security system and does not
+        replace a customer&rsquo;s own check-in, key and safety procedures. In an emergency call 911.
       </p>
 
       <h2>7. Fees</h2>

@@ -7,6 +7,7 @@ import { money } from '@/lib/format';
 import { ErrorBox, Notice } from './bits';
 import UsageMeter from './UsageMeter';
 import Info from './Info';
+import { usePlace, setPlaceWord, PLACE_CHOICES } from '@/lib/terms';
 
 export const PRICE_PER_LOCATION = 395;
 export const PRICE_PER_LOGIN = 25;
@@ -22,6 +23,7 @@ function downloadCsv(name, cols, rows) {
 }
 
 export default function CompanyPlan({ org, onSaved }) {
+  const place = usePlace();
   const [f, setF] = useState({ name: org?.name || '', phone: org?.phone || '', email: org?.email || '' });
   const [n, setN] = useState({ sites: 0, seats: null });
   const [err, setErr] = useState('');
@@ -32,6 +34,7 @@ export default function CompanyPlan({ org, onSaved }) {
   const [area, setArea] = useState(org?.travel_area_miles ?? 10);
   const [areaSaved, setAreaSaved] = useState(org?.travel_area_miles ?? 10);
   const [auto, setAuto] = useState(!!org?.auto_approve_bills);
+  const [word, setWord] = useState(place.word);
 
   async function pickLogo(file) {
     setErr(''); setMsg('');
@@ -118,7 +121,20 @@ export default function CompanyPlan({ org, onSaved }) {
       </div>
 
       <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-        <h3>Travel check <Info title="Travel check">When a technician taps "I'm going", the phone notes where the trip started. On the call you see only the nearest town and about how far it is, never the exact spot or a map, and nothing between calls. If the trip started within this distance of your store, the tech was already in the area: when a bill has more hours than were verified, the call says so, so you can ask whether travel was billed from the shop.</Info></h3>
+        <h3>What you call your places <Info title="What you call your places">Pick the word your company uses: stores, restaurants, facilities, properties or homes. The app uses it on every screen for your people (&ldquo;Add a store&rdquo;, &ldquo;Store PIN&rdquo;, &ldquo;All stores&rdquo;). Your contractors and their technicians see neutral wording.</Info></h3>
+        <div className="row" style={{ alignItems: 'flex-end' }}>
+          <label style={{ maxWidth: 260 }}>We call them
+            <select id="place-word" value={word} onChange={(e) => setWord(e.target.value)}>{PLACE_CHOICES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+          <button type="button" className="primary" disabled={word === place.word} onClick={async () => {
+            setErr(''); setMsg('');
+            try { await act('set_place_word', { p_word: word }); setPlaceWord(word); setMsg('Saved. The app now uses your word.'); }
+            catch (x) { setErr(x.message); }
+          }}>Save</button>
+        </div>
+      </div>
+
+      <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+        <h3>Travel check <Info title="Travel check">When a technician taps "I'm going", the phone notes where the trip started. On the call you see only the nearest town and about how far it is, never the exact spot or a map, and nothing between calls. If the trip started within this distance of your {place.one}, the tech was already in the area: when a bill has more hours than were verified, the call says so, so you can ask whether travel was billed from the shop.</Info></h3>
         <div className="row" style={{ alignItems: 'flex-end' }}>
           <label style={{ maxWidth: 260 }}>Already in the area within (miles)
             <input type="number" min="1" max="100" step="1" value={area} onChange={(e) => setArea(e.target.value)} /></label>
@@ -171,7 +187,7 @@ export default function CompanyPlan({ org, onSaved }) {
       </div>
       <div className="stack" style={{ gap: 6, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
         <h3>How-to guide</h3>
-        <div className="small muted">Step-by-step help for everything: making a service call, your PO number, adding people, choosing who sees which store, changing the admin, adding a location or contractor, and more.</div>
+        <div className="small muted">Step-by-step help for everything: making a service call, your PO number, adding people, choosing who sees which {place.one}, changing the admin, adding a {place.one} or contractor, and more.</div>
         <div><a className="button-like" href="/help?for=store">Open the how-to guide</a></div>
       </div>
     </div>

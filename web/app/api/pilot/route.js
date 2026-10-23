@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://svaoljxdoaefdqvvshhv.supabase.co';
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_KqvxfxaerUNeBkVQvwhvZQ_HFviMsbL';
-const PLANS = { base: 'Base', pro: 'Pro', enterprise: 'Enterprise', store: 'Pilot store (Time Verify)' };
+const PLANS = { base: 'Base', pro: 'Pro', enterprise: 'Enterprise', store: 'Pilot customer (Time Verify)' };
 
 export async function POST(req) {
   const b = await req.json().catch(() => ({}));
@@ -21,7 +21,7 @@ export async function POST(req) {
   if (process.env.RESEND_API_KEY && process.env.ALERT_FROM) {
     await sendEmail({
       to: 'support@servicecallproof.com',
-      subject: b.plan === 'store' ? `Pilot store: ${b.company}` : `Pilot contractor: ${b.company} (${PLANS[b.plan] || 'any plan'})`,
+      subject: b.plan === 'store' ? `Pilot customer: ${b.company}` : `Pilot contractor: ${b.company} (${PLANS[b.plan] || 'any plan'})`,
       greeting: 'New pilot sign-up',
       lines: [
         `Company: ${b.company}`, `Name: ${b.name}`, `Email: ${b.email || '—'}`, `Phone: ${b.phone || '—'}`,

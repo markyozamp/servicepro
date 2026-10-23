@@ -20,7 +20,7 @@ export default function QuickStart() {
         <section>
           <h2>Owner / office: set up once</h2>
           <ol>
-            <li><strong>Open the sign-in link</strong> the store sent you (text or email). No password needed. Read their terms and tap <em>I agree — sign in</em>.</li>
+            <li><strong>Open the sign-in link</strong> your customer sent you (text or email). No password needed. Read their terms and tap <em>I agree — sign in</em>.</li>
             <li><strong>Add your office phone:</strong> Team → Who gets the calls → Office phone → Save.</li>
             <li><strong>Add your technicians:</strong> Team → add each tech with their mobile number → <em>Text it</em>. Each tech gets their own link.</li>
             <li><strong>Put the app on your phone:</strong> menu → <em>Install on this phone</em> (iPhone: Share → Add to Home Screen).</li>
@@ -28,7 +28,7 @@ export default function QuickStart() {
           <h2>Every call</h2>
           <ol>
             <li>A new call arrives: phone alert, email, and the <strong>Today</strong> list.</li>
-            <li><strong>Accept it</strong> before the store's deadline shown on the call: <em>on the way now</em> or a scheduled time.</li>
+            <li><strong>Accept it</strong> before the customer's deadline shown on the call: <em>on the way now</em> or a scheduled time.</li>
             <li><strong>Send a tech</strong> (or go yourself).</li>
             <li>Job done: open the call, <strong>agree to the verified hours</strong> and that you're within the PO, then type <strong>your invoice # and total</strong>. About 15 seconds.</li>
           </ol>
@@ -37,9 +37,9 @@ export default function QuickStart() {
           <h2>Technicians: on the job</h2>
           <ol>
             <li><strong>Open your own link</strong> on your phone, once. Then <em>Install</em> so it's on your home screen.</li>
-            <li>Leaving for the job? Tap <strong>I'm going</strong> when you actually leave. Your drive time counts from that tap, and the store sees the town you're starting from.</li>
-            <li>At the store, the app notices you've arrived (or tap <strong>I'm here</strong>). <strong>Ask the store for the check-in code</strong> and type it in.</li>
-            <li>Need the store to OK more money? Tap <strong>Request approval for more</strong> and wait for the answer on your phone.</li>
+            <li>Leaving for the job? Tap <strong>I'm going</strong> when you actually leave. Your drive time counts from that tap, and the customer sees the town you're starting from.</li>
+            <li>On site, the app notices you've arrived (or tap <strong>I'm here</strong>). <strong>Ask the person on site for the check-in code</strong> and type it in.</li>
+            <li>Need the customer to OK more money? Tap <strong>Request approval for more</strong> and wait for the answer on your phone.</li>
             <li>Going for parts? Tap <strong>🚚 Parts run</strong> so the time away is explained.</li>
             <li>Done? Tap <strong>Leaving</strong> and say whether the job is finished or needs another trip.</li>
           </ol>
@@ -47,7 +47,7 @@ export default function QuickStart() {
             <strong>Good to know</strong>
             <ul>
               <li>No signal? Keep going. Taps are saved and sent when you're back online.</li>
-              <li>Your location is saved only when you tap a button or arrive. The store sees the town only, never the exact spot. You're never tracked between calls.</li>
+              <li>Your location is saved only when you tap a button or arrive. The customer sees the town only, never the exact spot. You're never tracked between calls.</li>
               <li>Link expired or lost your phone? Ask your office for a new sign-in link.</li>
             </ul>
           </div>

@@ -251,8 +251,8 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
       </label>
       {verify && side === 'office' && f.site && (
         <div className="row">
-          <label className="grow">Who called? <span className="muted" style={{ fontWeight: 400 }}>(the store is asked to confirm)</span>
-            <input value={f.contact} onChange={set('contact')} required placeholder="e.g. Sam, store manager" /></label>
+          <label className="grow">Who called? <span className="muted" style={{ fontWeight: 400 }}>(the customer is asked to confirm)</span>
+            <input value={f.contact} onChange={set('contact')} required placeholder="e.g. Sam, the manager" /></label>
           <label className="grow">Their phone<input value={f.phone} onChange={set('phone')} /></label>
         </div>
       )}
@@ -288,13 +288,13 @@ export default function NewCallForm({ side, profile, onCreated, onCancel, defaul
       )}
       {!oneOff && (
         <label>
-          {side === 'office' ? "Store's PO number" : 'Your PO number'} <span className="muted" style={{ fontWeight: 400 }}>(optional — otherwise we number it for you)</span>
+          {side === 'office' ? "Customer's PO number" : 'Your PO number'} <span className="muted" style={{ fontWeight: 400 }}>(optional — otherwise we number it for you)</span>
           <input value={f.po} onChange={set('po')} />
         </label>
       )}
       <div className="small muted">
         {verify
-          ? (side === 'office' ? 'The store is asked to confirm this call. Any of your techs can take it from their phone.'
+          ? (side === 'office' ? 'The customer is asked to confirm this call. Any of your techs can take it from their phone.'
             : `${route?.contractors?.name || 'The contractor'} is alerted right away by phone alert and email, and must confirm they received it by tapping Accept${route ? ` within ${issue?.priority === 1 ? `${route.accept_emergency_min || 15} minutes` : `${Math.round((route.accept_normal_min || 120) / 60)} hours`}` : ''}. You'll see when they accepted and who, and you're alerted if they don't. Their techs check in with your code; you see the real time on site and check it against their invoice.`)
           : oneOff
           ? 'The homeowner will approve anything above the diagnosis from a link (or tell you by phone, and you record it).'

@@ -47,7 +47,7 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
         <h3>Time Verify · PO {wo.store_po_number || `PO${wo.number}`}</h3>
         <span className="small muted">{wo.contractors?.name}</span>
       </div>
-      {wo.nte != null && <div className="small">Not to exceed <strong>{money(wo.nte)}</strong> (the store's limit — checked against the invoice)</div>}
+      {wo.nte != null && <div className="small">Not to exceed <strong>{money(wo.nte)}</strong> (the limit on this call — checked against the invoice)</div>}
       {wo.reported_by_name && wo.source === 'qr' && <div className="small">Reported by <strong>{wo.reported_by_name}</strong> from the unit's QR sticker</div>}
 
       {/* Accepted? */}
@@ -63,7 +63,7 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
 
       {/* Reaching the contractor by phone (store), and what the store noted (both sides) */}
       {wo.store_phoned_at && (
-        <div className="small">📞 <strong>Store talked to them:</strong> {wo.store_phone_note} <span className="muted">— {wo.store_phoned_by_name || 'store'}, {dateTime(wo.store_phoned_at)}</span></div>
+        <div className="small">📞 <strong>Customer talked to them:</strong> {wo.store_phone_note} <span className="muted">— {wo.store_phoned_by_name || 'customer'}, {dateTime(wo.store_phoned_at)}</span></div>
       )}
       {side === 'store' && !closed && !wo.declined_at && (
         <div className={`reach${wo.priority === 1 && !wo.accepted_at ? ' urgent' : ''}`}>
@@ -98,7 +98,7 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
             <button className="primary" disabled={busy} onClick={() => run('accept_call', { p_wo: wo.id, p_when: 'now' })}>Accept — on the way now</button>
             <button disabled={busy} onClick={() => setSched({ start: '', end: '' })}>Accept — schedule a time</button>
             <button className="danger" disabled={busy} onClick={() => {
-              const r = window.prompt("Why can't you take it? (the store sees this)");
+              const r = window.prompt("Why can't you take it? (the customer sees this)");
               if (r && r.trim()) run('decline_call', { p_wo: wo.id, p_reason: r.trim() });
             }}>Can't take it</button>
           </div>
@@ -110,7 +110,7 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
       {/* Store: confirm a call the contractor entered from a phone call */}
       {side === 'store' && wo.source === 'contractor' && !wo.store_confirmed_at && (
         <div className="notice stack" style={{ gap: 6 }}>
-          <div><strong>{wo.contractors?.name} entered this call{wo.contact_name ? ` — requested by ${wo.contact_name}` : ''}.</strong> Did your store request it?
+          <div><strong>{wo.contractors?.name} entered this call{wo.contact_name ? ` — requested by ${wo.contact_name}` : ''}.</strong> Did you request it?
             {wo.store_disputed && <span className="chip tone-red" style={{ marginLeft: 6 }}>You questioned it</span>}</div>
           {isStoreAdmin && (
             <div className="row">
@@ -147,7 +147,7 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
                   <td>
                     <strong>Visit {v.visit_no} · {v.tech}</strong>
                     <div className="small muted">
-                      {v.started_at ? `left for the job ${time(v.started_at)} · ` : ''}arrived {time(v.arrived_at)}{v.arrival_by_store ? ' (recorded by the store)' : ' (GPS)'}
+                      {v.started_at ? `left for the job ${time(v.started_at)} · ` : ''}arrived {time(v.arrived_at)}{v.arrival_by_store ? ' (recorded on site)' : ' (GPS)'}
                       {v.left_at ? ` · left ${time(v.left_at)}` : ' · still on site'} · {date(v.arrived_at)}
                     </div>
                     <div className="small">On site {hm(v.onsite_min)}{v.travel_min ? ` · travel ${hm(v.travel_min)}${v.travel_counted_min ? '' : ' (not paid)'}` : ''}
@@ -192,7 +192,7 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
           <table>
             <tbody>
               <tr><td>Hours billed</td><td className="num"><strong>{h(chk.billed_h)}</strong></td></tr>
-              <tr><td>Verified (GPS + store check-in)</td><td className="num">{h(chk.billable_h)}</td></tr>
+              <tr><td>Verified (GPS + on-site check-in)</td><td className="num">{h(chk.billable_h)}</td></tr>
               {Number(chk.other_h) > 0 && <tr><td>Explained by the contractor<div className="small muted">{chk.other_reason}</div></td><td className="num">{h(chk.other_h)}</td></tr>}
               <tr><td><strong>Not explained</strong></td>
                 <td className="num"><strong style={{ color: Number(chk.unexplained_h) > 0 ? 'var(--red-fg)' : 'var(--green-fg)' }}>{Number(chk.unexplained_h) > 0 ? h(chk.unexplained_h) : 'none ✓'}</strong></td></tr>
@@ -291,15 +291,15 @@ function LightBill({ wo, chk, busy, run }) {
       </div>
       {over && (
         <div className="notice small stack" style={{ gap: 6 }}>
-          <div><strong>That&apos;s {money(total - cap)} over what this call allows.</strong> Best: ask the store first with <em>Request approval for more</em>.</div>
-          <label className="row" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={f.overOk} onChange={set('overOk')} /> Send it anyway, marked over the PO (the store will see it flagged)</label>
+          <div><strong>That&apos;s {money(total - cap)} over what this call allows.</strong> Best: ask the customer first with <em>Request approval for more</em>.</div>
+          <label className="row" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={f.overOk} onChange={set('overOk')} /> Send it anyway, marked over the PO (the customer will see it flagged)</label>
         </div>
       )}
       <div className="row">
         <button className="primary" disabled={busy || !ready}>Agree and send</button>
         {inv && <button type="button" onClick={() => setOpen(false)}>Cancel</button>}
       </div>
-      <div className="small muted">Your invoice # ties this bill to your own paperwork, so the store matches it in one step.</div>
+      <div className="small muted">Your invoice # ties this bill to your own paperwork, so the customer matches it in one step.</div>
     </form>
   );
 }
@@ -393,17 +393,17 @@ function Trips({ wo, visits, techs, office, closed, busy, run }) {
                 <label className="grow">To<input type="datetime-local" value={f.end} onChange={(e) => setF({ ...f, end: e.target.value })} /></label>
               </div>
             )}
-            <input value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Note for the store (optional), e.g. Coming back with the part" />
-            <div className="row"><button className="primary" disabled={busy}>{upcoming ? 'Reschedule — tell the store' : 'Schedule — tell the store'}</button>
+            <input value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="Note for the customer (optional), e.g. Coming back with the part" />
+            <div className="row"><button className="primary" disabled={busy}>{upcoming ? 'Reschedule — tell the customer' : 'Schedule — tell the customer'}</button>
               <button type="button" onClick={() => setF(null)}>Cancel</button></div>
-            <div className="small muted">The store sees who is coming and when, with a check-in code for this trip. The technician gets it on his phone, with a reminder that morning.</div>
+            <div className="small muted">The customer sees who is coming and when, with a check-in code for this trip. The technician gets it on his phone, with a reminder that morning.</div>
           </form>
         ) : (
           <button className={upcoming ? '' : 'primary'} onClick={() => setF({ tech: upcoming?.technician_id || '', now: false, start: '', end: '', note: '' })}>
             {upcoming ? 'Reschedule this trip' : trips.some((v) => v.arrived_at) ? 'Schedule the next trip' : 'Schedule a trip'}</button>
         )
       )}
-      {office && !closed && !upcoming && !onSite && <div className="small muted">Every trip is announced to the store before it happens. A tech can also tap "I'm going" on his phone — the store is told he's coming now.</div>}
+      {office && !closed && !upcoming && !onSite && <div className="small muted">Every trip is announced to the customer before it happens. A tech can also tap "I'm going" on his phone — the customer is told he's coming now.</div>}
     </div>
   );
 }

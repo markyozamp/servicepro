@@ -7,8 +7,10 @@ import { supabase, q } from '@/lib/supabase';
 import { useProfile } from '@/lib/useProfile';
 import { useRouter } from 'next/navigation';
 import OrderStickers from '@/components/OrderStickers';
+import { usePlace } from '@/lib/terms';
 
 export default function Stickers() {
+  const place = usePlace();
   const { profile } = useProfile('/store');
   const router = useRouter();
   const [rows, setRows] = useState([]);
@@ -43,7 +45,7 @@ export default function Stickers() {
       <div className="noprint panel panel-pad" style={{ marginBottom: 12 }}>
         <OrderStickers sites={siteList} unitsBySite={rows.reduce((a, r) => ({ ...a, [r.site_id]: (a[r.site_id] || 0) + 1 }), {})} />
       </div>
-      <div className="noprint small muted" style={{ marginBottom: 12 }}>Stick one on each unit. Employees scan it with their phone camera, enter the store PIN and pick the problem. Units not listed? Add them under Settings → Equipment, or your contractor adds them on their next visit.</div>
+      <div className="noprint small muted" style={{ marginBottom: 12 }}>Stick one on each unit. Employees scan it with their phone camera, enter the {place.one} PIN and pick the problem. Units not listed? Add them under Settings → Equipment, or your contractor adds them on their next visit.</div>
       {rows.length === 0 && !err && <div className="panel panel-pad stack noprint" style={{ maxWidth: 560 }}><strong>No equipment yet, so no stickers to print.</strong><span className="muted">Add your units under Settings → Equipment (each unit gets its own sticker), then come back here.</span><div><button onClick={() => router.push('/store?settings=equipment')}>Go to Equipment</button></div></div>}
       <div className="row" style={{ gap: 12, alignItems: 'flex-start' }}>
         {shown.map((r) => (
@@ -51,7 +53,7 @@ export default function Stickers() {
             <div style={{ fontWeight: 700 }}>Problem with this unit?</div>
             <img src={r.img} alt="QR code" width={180} height={180} />
             <div style={{ fontSize: 12 }}>{r.equipment_types?.name}{r.location_description ? ` — ${r.location_description}` : ''}</div>
-            <div style={{ fontSize: 11, color: '#666' }}>{r.sites?.name} · scan, enter store PIN</div>
+            <div style={{ fontSize: 11, color: '#666' }}>{r.sites?.name} · scan, enter {place.one} PIN</div>
           </div>
         ))}
       </div>

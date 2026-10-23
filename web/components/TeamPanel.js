@@ -8,7 +8,7 @@ import { ErrorBox, Notice } from './bits';
 function techInvite(name, link) {
   const first = (name || '').split(' ')[0];
   return `Hi ${first || 'there'}, here's your Service Call Proof sign-in. Open it on YOUR phone (it works once, no password): ${link}
-Then tap Install (in the menu) to put the app on your home screen. On jobs: tap "I'm going" when you leave, "I'm here" when you arrive, enter the store's check-in code, and "Leaving" when you're done. 1-page guide: ${typeof window !== 'undefined' ? window.location.origin : 'https://servicecallproof.com'}/quickstart`;
+Then tap Install (in the menu) to put the app on your home screen. On jobs: tap "I'm going" when you leave, "I'm here" when you arrive, enter the customer's check-in code, and "Leaving" when you're done. 1-page guide: ${typeof window !== 'undefined' ? window.location.origin : 'https://servicecallproof.com'}/quickstart`;
 }
 
 export default function TeamPanel({ profile }) {
@@ -102,8 +102,8 @@ export default function TeamPanel({ profile }) {
 
       {terms.some((t) => t.mode === 'verify') && (
         <div className="panel panel-pad stack">
-          <h2>Your terms with Time Verify stores</h2>
-          <div className="small muted">Used to work out the billable time the store expects from the verified time (your minimum per visit and billing steps).</div>
+          <h2>Your terms with Time Verify customers</h2>
+          <div className="small muted">Used to work out the billable time the customer expects from the verified time (your minimum per visit and billing steps).</div>
           {terms.filter((t) => t.mode === 'verify').map((t) => (
             <div key={t.customer_id} className="row">
               <strong className="grow">{t.customers?.name}<div className="small muted" style={{ fontWeight: 400 }}>{t.pays_travel === 'no' ? 'They do not pay travel' : t.pays_travel === 'after_hours' ? 'They pay travel after hours only' : 'They pay travel'}</div></strong>

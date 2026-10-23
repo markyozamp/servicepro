@@ -52,12 +52,12 @@ export default function ContractorStart({ me, org, book, onGo }) {
 
   const steps = [
     ['Accept your customer\'s terms', 'Done when you signed in with their link.', st.terms, () => onGo('customers')],
-    ['Add your office phone', 'The number stores reach when they tap "Call them now".', !!org?.phone, () => onGo('team')],
+    ['Add your office phone', 'The number customers reach when they tap "Call them now".', !!org?.phone, () => onGo('team')],
     ['Enter your rates', 'What you charge each customer: labor, after hours, trip charge. They see it and accept it.', st.rates, () => onGo('customers', st.firstNoRates)],
     ['Add your technicians', 'Each tech gets their own sign-in link by text. Just you? Tick "It\'s just me".', st.techs > 0 || justMe, () => onGo('team')],
     ['Your techs sign in on their phones', st.pending ? `${st.pending} sign-in link${st.pending === 1 ? '' : 's'} not opened yet.` : 'Each tech opens their link once and taps Install.', justMe || (st.techs > 0 && st.pending === 0), () => onGo('team')],
     ['Put the app on your phone', 'Menu → Install on this phone (iPhone: Share → Add to Home Screen).', installed, null],
-    ['See how a call works', 'Two minutes, hands-on: a tech checking in at a store.', sawDemo, () => { ls.set(`scp_sawhow_${cid}`, '1'); window.open('/demo', '_blank'); bump((n) => n + 1); }],
+    ['See how a call works', 'Two minutes, hands-on: a tech checking in on site.', sawDemo, () => { ls.set(`scp_sawhow_${cid}`, '1'); window.open('/demo', '_blank'); bump((n) => n + 1); }],
   ];
   const done = steps.filter((s) => s[2]).length;
 
@@ -67,8 +67,8 @@ export default function ContractorStart({ me, org, book, onGo }) {
         <button className="linkish" onClick={() => { ls.set(`scp_welcome_${cid}`, '1'); setWelcome(false); }}>Got it</button></div>
       <div>{storeText} {stores.length === 1 ? 'sends' : 'send'} you service calls here. <strong>It's free for you.</strong> Here's how every call goes:</div>
       <div className="cwel-steps">
-        <div><span className="cwel-ic">📥</span><strong>1. A call comes in</strong><span className="small muted">You get an alert. Tap Accept before the store's deadline shown on the call.</span></div>
-        <div><span className="cwel-ic">🔧</span><strong>2. Send a tech</strong><span className="small muted">They tap I'm going, then check in at the store with the store's code.</span></div>
+        <div><span className="cwel-ic">📥</span><strong>1. A call comes in</strong><span className="small muted">You get an alert. Tap Accept before the customer's deadline shown on the call.</span></div>
+        <div><span className="cwel-ic">🔧</span><strong>2. Send a tech</strong><span className="small muted">They tap I'm going, then check in on site with the location's code.</span></div>
         <div><span className="cwel-ic">🧾</span><strong>3. Send your bill</strong><span className="small muted">Agree to the verified hours, then add your invoice # and total. Bills that match get approved fastest.</span></div>
       </div>
       <div className="small"><a href="/quickstart" target="_blank" rel="noreferrer">Print the one-page quick start</a> for your techs · <a href="/help?for=contractor" target="_blank" rel="noreferrer">How-to guide</a></div>

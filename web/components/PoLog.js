@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase, q } from '@/lib/supabase';
 import { money, dateTime, FLAG_LABEL, STATUS } from '@/lib/format';
 import { ErrorBox } from './bits';
+import { usePlace } from '@/lib/terms';
 
 const COLS = [
   ['PO', (r) => r.po_number], ['Call #', (r) => r.number], ['Location', (r) => r.site_name], ['Contractor', (r) => r.contractor_name],
@@ -18,6 +19,7 @@ const COLS = [
 ];
 
 export default function PoLog({ customerId = null, siteId = null, onOpen = null } = {}) {
+  const place = usePlace();
   const [rows, setRows] = useState([]);
   const [err, setErr] = useState('');
   const [find, setFind] = useState('');
@@ -69,7 +71,7 @@ export default function PoLog({ customerId = null, siteId = null, onOpen = null 
           </select>
           {sites.length > 1 && !siteId && (
             <select value={site} onChange={(e) => setSite(e.target.value)} aria-label="Location">
-              <option value="">All locations</option>
+              <option value="">All {place.many}</option>
               {sites.map((s) => <option key={s}>{s}</option>)}
             </select>
           )}

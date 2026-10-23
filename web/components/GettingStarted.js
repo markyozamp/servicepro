@@ -3,8 +3,10 @@
 // New store accounts: a short checklist of the first things to set up. Disappears when done or dismissed.
 import { useEffect, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
+import { usePlace } from '@/lib/terms';
 
 export default function GettingStarted({ me, onGo, onNewCall }) {
+  const place = usePlace();
   const [st, setSt] = useState(null);
   const key = `scp_gs_hide_${me.customer_id}`;
   const [hidden, setHidden] = useState(true);
@@ -28,11 +30,11 @@ export default function GettingStarted({ me, onGo, onNewCall }) {
 
   if (!st || !me.is_org_admin) return null;
   const steps = [
-    ['Add your locations', 'Every store or building, with its address.', st.sites > 0 && st.mapped, () => onGo('locations')],
+    [`Add your ${place.many}`, `Every ${place.one} you have, with its address.`, st.sites > 0 && st.mapped, () => onGo('locations')],
     ['Invite your contractors', 'One for each trade. It\'s free for them.', st.cc > 0, () => onGo('contractors')],
-    ['Set your store PIN for QR stickers', 'So employees can report problems by scanning a unit.', st.pin, () => onGo('contractors')],
+    [`Set your ${place.one} PIN for QR stickers`, 'So employees can report problems by scanning a unit.', st.pin, () => onGo('contractors')],
     ['List your equipment', 'Start with the units that break most. Contractors add the rest on visits.', st.eq > 0, () => onGo('equipment')],
-    ['Add your team', 'Store managers, maintenance, a director. Logins are free and unlimited.', st.team > 1, () => onGo('team')],
+    ['Add your team', `${place.manager}s, maintenance, a director. Logins are free and unlimited.`, st.team > 1, () => onGo('team')],
     ['Open your first service call', 'See it go to your contractor and track it to the invoice.', st.calls > 0, onNewCall],
   ];
   const done = steps.filter((s) => s[2]).length;

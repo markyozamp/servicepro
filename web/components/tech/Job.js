@@ -48,12 +48,12 @@ function Header({ job, wifi }) {
       )}
       {wifi?.ssid && (
         <div className="small spread" style={{ background: 'var(--blue-bg)', color: 'var(--blue-fg)', borderRadius: 8, padding: '6px 10px' }}>
-          <span>📶 Store Wi-Fi: <strong>{wifi.ssid}</strong>{wifi.password ? <> · password <strong>{wifi.password}</strong></> : ' (no password)'}</span>
+          <span>📶 Wi-Fi: <strong>{wifi.ssid}</strong>{wifi.password ? <> · password <strong>{wifi.password}</strong></> : ' (no password)'}</span>
           {wifi.password && <button onClick={() => { navigator.clipboard?.writeText(wifi.password).then(() => setCopied(true)).catch(() => {}); }}>{copied ? 'Copied' : 'Copy'}</button>}
         </div>
       )}
       {w.mode === 'verify' && (w.nte != null || w.scheduled_start) && (
-        <div className="small">{w.nte != null && <>Store's limit: <strong>not to exceed {money(w.nte)}</strong></>}{w.nte != null && w.scheduled_start ? ' · ' : ''}
+        <div className="small">{w.nte != null && <>Customer's limit: <strong>not to exceed {money(w.nte)}</strong></>}{w.nte != null && w.scheduled_start ? ' · ' : ''}
           {w.scheduled_start && <>Scheduled {time(w.scheduled_start)}{w.scheduled_end ? `–${time(w.scheduled_end)}` : ''} {date(w.scheduled_start)}</>}</div>
       )}
       <div className="small muted">{w.mode === 'verify' ? 'PO ' : ''}{w.po_number}{w.agreement ? ` · ${w.agreement}` : ''}{w.after_hours ? ' · after hours' : ''}{job.visit.visit_no > 1 ? ` · visit ${job.visit.visit_no}` : ''}</div>
@@ -74,12 +74,12 @@ function StartDriving({ job }) {
   }
   return (
     <div className="sec">
-      {sch && <div className="notice small">Scheduled with the store: <strong>{date(sch)} {time(sch)}{job.visit.scheduled_end ? `–${time(job.visit.scheduled_end)}` : ''}</strong>. The store expects you then — if you'll be late, call your office.</div>}
+      {sch && <div className="notice small">Scheduled with the customer: <strong>{date(sch)} {time(sch)}{job.visit.scheduled_end ? `–${time(job.visit.scheduled_end)}` : ''}</strong>. The customer expects you then — if you'll be late, call your office.</div>}
       <h3>Start driving — how long until you get there?</h3>
       <div className="row" style={{ gap: 8 }}>
         {ETAS.map((n) => <button key={n} className="primary" disabled={busy} onClick={() => go(n)} style={{ flex: '1 1 30%' }}>{n} min</button>)}
       </div>
-      <div className="small muted">The store sees your arrival time and the town you're starting from — never the exact spot or a map.</div>
+      <div className="small muted">The customer sees your arrival time and the town you're starting from — never the exact spot or a map.</div>
     </div>
   );
 }
@@ -133,7 +133,7 @@ function VerifyOnSite({ job }) {
   const mins = v.arrived_at ? Math.max(0, Math.floor((Date.now() - new Date(v.arrived_at).getTime()) / 60000)) : 0;
   return (
     <>
-      <div className="meter no_limit"><strong>On site since {time(v.arrived_at)}{v.arrival_source === 'store' ? ' (recorded by the store)' : ''}</strong>
+      <div className="meter no_limit"><strong>On site since {time(v.arrived_at)}{v.arrival_source === 'store' ? ' (recorded by the customer)' : ''}</strong>
         <span className="small">{Math.floor(mins / 60)} h {mins % 60} m · time is recorded for you — nothing to type</span></div>
       {needsCheckin && <CheckIn job={job} />}
       {!needsCheckin && (run ? <PartsRunActive job={job} run={run} /> : (
@@ -165,7 +165,7 @@ function PartsRunStart({ job }) {
         T.act('tech_parts_run', { p_visit: job.visit.id, p_step: 'leave', p_id: T.uuid(), p_lat: p?.lat ?? null, p_lon: p?.lon ?? null }, { label: 'Parts run' });
         setBusy(false);
       }}>🚚 Parts run — leaving to get parts</button>
-      <div className="small muted">Records when you leave, that you were at the supplier, and when you're back (GPS). The store sees it as parts-run time.</div>
+      <div className="small muted">Records when you leave, that you were at the supplier, and when you're back (GPS). The customer sees it as parts-run time.</div>
     </div>
   );
 }
@@ -307,23 +307,23 @@ function CheckIn({ job }) {
   };
   return (
     <div className="sec">
-      <h3><span className="tick" />Check in with the store</h3>
+      <h3><span className="tick" />Check in on site</h3>
       {v.arrived_at && (() => {
         const mins = Math.floor((Date.now() - new Date(v.arrived_at).getTime()) / 60000);
         return <div className={mins >= 5 ? 'notice small' : 'small muted'}>
-          Your time started when you arrived ({time(v.arrived_at)}) — waiting {mins} min. {mins < 5 ? 'The store has been alerted.' : mins < 10 ? 'No answer, so the store\'s second contact has been alerted.' : 'Still no answer — the store\'s third contact and your office have been alerted.'}
-          {mins >= 10 && ' Still no one? Use the store backup code, or "No code available".'}
+          Your time started when you arrived ({time(v.arrived_at)}) — waiting {mins} min. {mins < 5 ? 'The customer has been alerted.' : mins < 10 ? 'No answer, so their second contact has been alerted.' : 'Still no answer — their third contact and your office have been alerted.'}
+          {mins >= 10 && ' Still no one? Use the location\'s backup code, or "No code available".'}
         </div>;
       })()}
       {mode !== 'name' ? (
         <>
-          <div className="small">{mode === 'code' ? 'Ask the store person for the 4-digit code for this call.' : 'Enter the store\'s standing backup code.'}</div>
+          <div className="small">{mode === 'code' ? 'Ask the person on site for the 4-digit code for this call.' : 'Enter the location\'s standing backup code.'}</div>
           {wrong && <div className="error"><strong>{wrong.message}</strong></div>}
           <input className="codebox" inputMode="numeric" maxLength={8} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••" />
           <button className="primary big" disabled={code.length < 4} onClick={send}>Check in</button>
           <div className="small muted">No signal? Enter it anyway — it's checked when the phone reconnects.</div>
           <div className="row" style={{ gap: 8 }}>
-            {mode === 'code' && job.site.has_backup_code && <button onClick={() => { setMode('backup'); setCode(''); }}>Use store backup code</button>}
+            {mode === 'code' && job.site.has_backup_code && <button onClick={() => { setMode('backup'); setCode(''); }}>Use backup code</button>}
             {mode === 'backup' && <button onClick={() => { setMode('code'); setCode(''); }}>Use call code</button>}
             <button onClick={() => setMode('name')}>No code available</button>
           </div>
@@ -624,7 +624,7 @@ function Finish({ job, cat, m, eqDone, me }) {
   }
   // Leaving for parts / a return / an approval still needs the basics on record.
   const leaveMissing = [];
-  if (v.checkin_required && !(v.checkin_verified || v.checkin_local)) leaveMissing.push('Check in with the store');
+  if (v.checkin_required && !(v.checkin_verified || v.checkin_local)) leaveMissing.push('Check in on site');
   if (w.kind === 'service' || w.kind === 'install') {
     if (!eqDone) leaveMissing.push('Confirm the equipment (with nameplate photo)');
     if (!kinds.has('before')) leaveMissing.push('Before photo');
@@ -645,7 +645,7 @@ function Finish({ job, cat, m, eqDone, me }) {
       {!mode && (
         <>
           {missing.length > 0 && <div className="small"><strong>Before you can complete:</strong><ul style={{ margin: '4px 0 0 18px', padding: 0 }}>{missing.map((x) => <li key={x}>{x}</li>)}</ul></div>}
-          <button className="primary big" disabled={missing.length > 0} onClick={() => window.confirm('Complete the job? The store will be told the work is done.') && finish('completed')}>✓ Job complete</button>
+          <button className="primary big" disabled={missing.length > 0} onClick={() => window.confirm('Complete the job? The customer will be told the work is done.') && finish('completed')}>✓ Job complete</button>
           {missing.length > 0 && !m.pending && !(m.limit != null && m.used > m.limit) && (
             <button onClick={() => setMode('override')}>Can't do these? Close out with override</button>
           )}
@@ -689,7 +689,7 @@ function Finish({ job, cat, m, eqDone, me }) {
       {mode === 'quote' && (
         <>
           <div className="small">The equipment is safe and you're leaving while {m.pending?.po} waits for approval. The office schedules the return once it's approved.</div>
-          <label>Note<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Unit running on backup; no answer from store" /></label>
+          <label>Note<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Unit running on backup; no answer on site" /></label>
           <button className="primary big" onClick={() => finish('quote_needed')}>Leave — waiting on approval</button>
           <button onClick={() => setMode(null)}>Back</button>
         </>
@@ -727,11 +727,11 @@ function Background({ job }) {
   );
 }
 
-const OVERRIDE_REASONS = ['Problem fixed before arrival / no problem found', 'Store closed / no access', 'Customer cancelled on arrival',
+const OVERRIDE_REASONS = ['Problem fixed before arrival / no problem found', 'Location closed / no access', 'Customer cancelled on arrival',
   'Unsafe to work / equipment not reachable', 'Camera or phone not working', 'Other'];
 
 // Close out without the usual paperwork: reason + explanation, approved by an office code (by phone)
-// or, for a company owner, their own password. Money rules still apply. The store sees the reason.
+// or, for a company owner, their own password. Money rules still apply. The customer sees the reason.
 function Override({ job, me, m, onClose }) {
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
@@ -759,15 +759,15 @@ function Override({ job, me, m, onClose }) {
   return (
     <div className="sec" style={{ borderColor: 'var(--amber-fg)' }}>
       <h3>Close out with override</h3>
-      <div className="small muted">Use this only when the normal steps can't be done. The store will see your reason and who approved it.</div>
+      <div className="small muted">Use this only when the normal steps can't be done. The customer will see your reason and who approved it.</div>
       <label>Reason
         <select value={reason} onChange={(e) => setReason(e.target.value)}>
           <option value="">Choose…</option>
           {OVERRIDE_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
         </select>
       </label>
-      <label>What happened? <span className="muted" style={{ fontWeight: 400 }}>(the store reads this)</span>
-        <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Store had reset the breaker; unit running at 36°F when I arrived" /></label>
+      <label>What happened? <span className="muted" style={{ fontWeight: 400 }}>(the customer reads this)</span>
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Staff had reset the breaker; unit running at 36°F when I arrived" /></label>
       {owner ? (
         <label>Your password (owner approval)<input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" /></label>
       ) : (

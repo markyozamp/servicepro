@@ -10,8 +10,10 @@ import AddressFinder from './AddressFinder';
 import SiteAccess from './SiteAccess';
 import Info from './Info';
 import { dateTime } from '@/lib/format';
+import { usePlace } from '@/lib/terms';
 
 export default function LocationSettings({ onClose, startAdding, onChanged }) {
+  const place = usePlace();
   const [rows, setRows] = useState([]);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
@@ -73,7 +75,7 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
     setBusy(true);
     try {
       const r = await act('add_location', { p_name: adding.name, p_address: found.address, p_zip: found.zip, p_lat: found.lat, p_lon: found.lon, p_timezone: found.timezone });
-      setMsg(`Added ${adding.name}. You now have ${r.locations} locations.`);
+      setMsg(`Added ${adding.name}. You now have ${place.count(r.locations)}.`);
       setAccess({ id: r.site_id, name: adding.name, isNew: true });
       setAdding(null); setFound(null);
       await load(); onChanged?.();
@@ -85,7 +87,7 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
     if (!navigator.geolocation) return setErr('This device cannot share its location.');
     setBusy(true);
     navigator.geolocation.getCurrentPosition(async (p) => {
-      if (p.coords.accuracy > 150) { setBusy(false); setErr(`This device only knows where it is to within about ${Math.round(p.coords.accuracy * 3.28).toLocaleString()} ft, which isn't accurate enough. Use a phone, outside at the store's entrance.`); return; }
+      if (p.coords.accuracy > 150) { setBusy(false); setErr(`This device only knows where it is to within about ${Math.round(p.coords.accuracy * 3.28).toLocaleString()} ft, which isn't accurate enough. Use a phone, outside at the ${place.one}'s entrance.`); return; }
       try {
         await act('set_site_location', { p_site: r.id, p_lat: p.coords.latitude, p_lon: p.coords.longitude });
         setMsg(`Map location saved for ${r.name} (accurate to about ${Math.round(p.coords.accuracy * 3.28)} ft).`);
@@ -97,24 +99,24 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
 
   return (
     <div className="panel panel-pad stack">
-      {onClose && <div className="spread"><h2>Location settings</h2><button onClick={onClose}>Close</button></div>}
-      <h3>Locations <Info title="Locations">Each store or building you have. Its address puts it on the map, so a technician's phone notices when they arrive, and sets its time zone for schedules and reminders. Each location costs $395 per year.</Info></h3>
+      {onClose && <div className="spread"><h2>{place.One} settings</h2><button onClick={onClose}>Close</button></div>}
+      <h3>{place.Many} <Info title={place.Many}>Each {place.one} you have. Its address puts it on the map, so a technician's phone notices when they arrive, and sets its time zone for schedules and reminders. Each one costs $395 per year.</Info></h3>
       <ErrorBox error={err} /><Notice>{msg}</Notice>
       {adding ? (
         <form className="stack" style={{ gap: 8, border: '1px solid var(--line)', borderRadius: 10, padding: 12 }} onSubmit={addLocation}>
-          <h3>Add a location</h3>
-          <label>Location name<input id="add-loc-name" value={adding.name} onChange={(e) => setAdding({ ...adding, name: e.target.value })} placeholder="e.g. M&L Market — Seattle" required /></label>
+          <h3>Add a {place.one}</h3>
+          <label>{place.One} name<input id="add-loc-name" value={adding.name} onChange={(e) => setAdding({ ...adding, name: e.target.value })} placeholder="e.g. M&L Market — Seattle" required /></label>
           <AddressFinder id="add-loc-addr" value={adding.addr} onChange={(v) => setAdding({ ...adding, addr: v })} onFound={setFound} found={found} />
-          <div className="small muted">$395 per year for this location, prorated to your renewal date. All trades, unlimited service calls.</div>
-          <div className="row"><button className="primary" disabled={busy || !found}>Add location</button><button type="button" onClick={() => { setAdding(null); setFound(null); }}>Cancel</button></div>
+          <div className="small muted">$395 per year for this {place.one}, prorated to your renewal date. All trades, unlimited service calls.</div>
+          <div className="row"><button className="primary" disabled={busy || !found}>Add {place.one}</button><button type="button" onClick={() => { setAdding(null); setFound(null); }}>Cancel</button></div>
         </form>
-      ) : <div><button onClick={() => { setAdding({ name: '', addr: '' }); setFound(null); setAccess(null); }}>+ Add a location</button> <span className="small muted">{rows.length} location{rows.length === 1 ? '' : 's'}</span></div>}
+      ) : <div><button onClick={() => { setAdding({ name: '', addr: '' }); setFound(null); setAccess(null); }}>+ Add a {place.one}</button> <span className="small muted">{place.count(rows.length)}</span></div>}
       {access?.isNew && <SiteAccess key={access.id} siteId={access.id} siteName={access.name} isNew onDone={() => setAccess(null)} />}
       {rows.map((r) => (
         <div key={r.id} className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
           {edit?.id === r.id ? (
             <form className="stack" style={{ gap: 6 }} onSubmit={saveEdit}>
-              <label>Location name<input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} required /></label>
+              <label>{place.One} name<input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} required /></label>
               <div className="small muted">Current address: {r.address}. To change it, type the new one and tap Find; leave it blank to keep it.</div>
               <AddressFinder id={`edit-addr-${r.id}`} value={edit.addr} onChange={(v) => setEdit({ ...edit, addr: v })} onFound={setEfound} found={efound} />
               <div className="row"><button className="primary" disabled={busy}>Save</button><button type="button" onClick={() => { setEdit(null); setEfound(null); }}>Cancel</button></div>
@@ -131,7 +133,7 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
             {r.lat != null ? <span className="chip tone-green">On the map · arrival detection on</span> : <span className="chip tone-amber">Not on the map yet</span>}
             <span className="small muted">{(r.timezone || '').replace('America/', '').replace('_', ' ')} time</span>
             <button disabled={busy} onClick={() => hereNow(r)}>Fine-tune map point (on site)</button>
-            <Info title="Fine-tune map point">The address already puts this location on the map. If technicians park or enter somewhere else (a back lot, a loading dock, a big property), stand at that spot with your phone and tap this, so their arrival is noticed there. Use a phone at the store; a computer only knows roughly where it is.</Info>
+            <Info title="Fine-tune map point">The address already puts this {place.one} on the map. If technicians park or enter somewhere else (a back lot, a loading dock, a big property), stand at that spot with your phone and tap this, so their arrival is noticed there. Use a phone at the {place.one}; a computer only knows roughly where it is.</Info>
           </div>
           <label>Emergency calls are approved up to ($) <span className="muted" style={{ fontWeight: 400 }}>— leave blank to approve every emergency request yourself</span>
             <input type="number" min="0" step="any" value={r.em} onChange={set(r.id, 'em')} placeholder="e.g. 1500" /></label>
@@ -147,7 +149,7 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
             <label className="row" style={{ gap: 4, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} disabled={busy} checked={!!r.visitor_require_photo} onChange={(e) => visitorRule(r, 'photo', e.target.checked)} />Photo</label>
             <Info title="Unexpected visitors">When someone shows up with no trip scheduled, your people log them with "Someone's here we weren't expecting". By default a name and company are enough; plate and photo are optional. Tick these to make them required at this location (for example a location with security rules). Leave them off if it would slow your people down.</Info>
           </div>
-          <div className="small"><strong>Backup check-in code</strong> <Info title="Backup check-in code">Every call has its own check-in code; it shows on the call and in the alert when the technician arrives, and someone at the store reads it to them. The backup code is a standing code for when that isn't possible (the person with the call's code is away, the screen is down). The technician taps "Use store backup code" and enters it; the call is marked "checked in with backup code" so you can see it was used. It's stored scrambled, so nobody can look it up, not even us. Tell it only to people at your store, and change it if it gets around.</Info>
+          <div className="small"><strong>Backup check-in code</strong> <Info title="Backup check-in code">Every call has its own check-in code; it shows on the call and in the alert when the technician arrives, and someone at the {place.one} reads it to them. The backup code is a standing code for when that isn't possible (the person with the call's code is away, the screen is down). The technician taps "Use backup code" and enters it; the call is marked "checked in with backup code" so you can see it was used. It's stored scrambled, so nobody can look it up, not even us. Tell it only to people at your {place.one}, and change it if it gets around.</Info>
             {' '}{r.backup_code_set_at ? <span className="chip tone-green">Set {dateTime(r.backup_code_set_at)}{r.backup_code_set_by_name ? ` by ${r.backup_code_set_by_name}` : ''}</span> : <span className="chip tone-amber">No backup code yet</span>}</div>
           <label>{r.backup_code_set_at ? 'Replace the backup code' : 'Set a backup code'} <span className="muted" style={{ fontWeight: 400 }}>— leave blank to keep {r.backup_code_set_at ? 'the current one' : 'none'}</span>
             <input value={r.backup} onChange={set(r.id, 'backup')} inputMode="numeric" placeholder="4–8 digits" /></label>

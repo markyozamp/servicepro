@@ -1,6 +1,7 @@
 'use client';
 
-// QR sticker on a unit: any store employee scans it, enters the store PIN, picks the problem. No login.
+// QR sticker on a unit: any employee scans it, enters the location PIN (in the customer's own word), picks the problem. No login.
+import { placeTerms } from '@/lib/terms';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { act } from '@/lib/supabase';
@@ -48,7 +49,7 @@ export default function Report() {
                 <div className="stack">
                   <div className="notice"><strong>Sent.</strong> Call #{done.number} ({done.po}) went to {done.contractor}. Your manager can follow it on Service Call Proof.</div>
                 </div>
-              ) : !d.has_pin ? <div className="error">Your store hasn't set a reporting PIN yet. Ask your manager.</div> : (
+              ) : !d.has_pin ? <div className="error">Your {placeTerms(d.place_word).one} hasn't set a reporting PIN yet. Ask your manager.</div> : (
                 <form className="stack" onSubmit={send}>
                   {err && <div className="error">{err}</div>}
                   <label>What's wrong?
@@ -59,7 +60,7 @@ export default function Report() {
                   <label>Details<textarea value={f.details} onChange={(e) => setF({ ...f, details: e.target.value })} placeholder="e.g. Reading 20°F, should be -5°F" /></label>
                   <label className="row small" style={{ gap: 6, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={f.emergency} onChange={(e) => setF({ ...f, emergency: e.target.checked })} /> Emergency (product at risk, leak, safety)</label>
                   <label>Your name<input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required /></label>
-                  <label>Store PIN<input className="codebox" inputMode="numeric" maxLength={6} value={f.pin} onChange={(e) => setF({ ...f, pin: e.target.value.replace(/\D/g, '') })} required /></label>
+                  <label>{placeTerms(d.place_word).pin}<input className="codebox" inputMode="numeric" maxLength={6} value={f.pin} onChange={(e) => setF({ ...f, pin: e.target.value.replace(/\D/g, '') })} required /></label>
                   <button className="primary big" disabled={busy || f.pin.length < 4}>{busy ? 'Sending…' : 'Report problem'}</button>
                 </form>
               )}

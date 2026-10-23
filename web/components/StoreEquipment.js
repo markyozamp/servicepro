@@ -7,10 +7,12 @@ import { supabase, act, q } from '@/lib/supabase';
 import { date, dateTime } from '@/lib/format';
 import { ErrorBox, Notice } from './bits';
 import Info from './Info';
+import { usePlace } from '@/lib/terms';
 
 const blank = (site) => ({ id: null, site, type: '', make: '', model: '', serial: '', refrigerant: '', where: '', installed: '' });
 
 export default function StoreEquipment() {
+  const place = usePlace();
   const router = useRouter();
   const [rows, setRows] = useState([]);
   const [sites, setSites] = useState([]);
@@ -88,7 +90,7 @@ export default function StoreEquipment() {
       <div className="spread">
         <h3>Equipment <Info title="Equipment">List each unit at each location: refrigeration cases, walk-ins, rooftop units, ice machines, water heaters and so on. When you open a call you pick the unit, so the history, the warranty and the right contractor follow it. Each unit gets its own QR sticker employees can scan to report a problem. You don't have to list everything on day one: your contractors add units on their visits too.</Info></h3>
         <div className="row">
-          {sites.length > 1 && <select value={site} onChange={(e) => setSite(e.target.value)}><option value="">All locations</option>{sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>}
+          {sites.length > 1 && <select value={site} onChange={(e) => setSite(e.target.value)}><option value="">All {place.many}</option>{sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>}
           <label className="row small" style={{ gap: 4, fontWeight: 400 }}><input type="checkbox" style={{ width: 'auto' }} checked={showRemoved} onChange={(e) => setShowRemoved(e.target.checked)} />Show removed</label>
           <button onClick={() => router.push('/store/stickers')}>QR stickers</button>
         </div>
@@ -130,7 +132,7 @@ export default function StoreEquipment() {
               rm?.id === r.id && (
                 <tr key={`${r.id}-r`}><td colSpan={4}>
                   <form className="row" onSubmit={remove}>
-                    <input className="grow" value={rm.reason} onChange={(e) => setRm({ ...rm, reason: e.target.value })} placeholder="Why? e.g. replaced with new unit, scrapped, moved to another store" required />
+                    <input className="grow" value={rm.reason} onChange={(e) => setRm({ ...rm, reason: e.target.value })} placeholder={`Why? e.g. replaced with new unit, scrapped, moved to another ${place.one}`} required />
                     <button className="danger" disabled={busy}>Remove unit</button><button type="button" onClick={() => setRm(null)}>Cancel</button>
                   </form>
                 </td></tr>

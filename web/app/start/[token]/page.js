@@ -1,17 +1,19 @@
 'use client';
 
-// Start link for a store that bought Service Call Proof: set up the company, the owner's login and the first location.
+// Start link for a customer that bought Service Call Proof: set up the company, the owner's login and the first location.
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase, act } from '@/lib/supabase';
 import AddressFinder from '@/components/AddressFinder';
 import { LegalFooter } from '@/components/Legal';
+import { PLACE_CHOICES, placeTerms } from '@/lib/terms';
 
 export default function Start() {
   const { token } = useParams();
   const router = useRouter();
   const [info, setInfo] = useState(null);
-  const [f, setF] = useState({ company: '', name: '', email: '', phone: '', pw: '', pw2: '', site: '', addr: '' });
+  const [f, setF] = useState({ company: '', name: '', email: '', phone: '', pw: '', pw2: '', site: '', addr: '', word: 'location' });
+  const place = placeTerms(f.word);
   const [found, setFound] = useState(null);
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -26,7 +28,7 @@ export default function Start() {
     setErr('');
     if (f.pw.length < 10) return setErr('Use a password of at least 10 characters.');
     if (f.pw !== f.pw2) return setErr('The two passwords don\'t match.');
-    if (!found) return setErr('Tap Find next to the address so we can place your location on the map.');
+    if (!found) return setErr('Tap Find next to the address so we can place it on the map.');
     if (!agree) return setErr('Please agree to the Terms of Service and Privacy Policy.');
     setBusy(true);
     try {
@@ -35,6 +37,7 @@ export default function Start() {
         p_password: f.pw, p_site_name: f.site || f.company, p_address: found.address, p_zip: found.zip, p_lat: found.lat, p_lon: found.lon, p_timezone: found.timezone });
       const { error } = await supabase.auth.signInWithPassword({ email: r.email, password: f.pw });
       if (error) throw new Error(error.message);
+      if (f.word !== 'location') await act('set_place_word', { p_word: f.word }).catch(() => {});
       router.replace('/store?welcome=1');
     } catch (e2) { setErr(e2.message); setBusy(false); }
   }
@@ -56,6 +59,9 @@ export default function Start() {
             {err && <div className="error">{err}</div>}
             <h3 style={{ marginTop: 6 }}>Your company</h3>
             <label>Company name<input id="st-company" value={f.company} onChange={set('company')} placeholder="e.g. M&L Market" required /></label>
+            <label>What do you call your places?<select id="st-word" value={f.word} onChange={set('word')}>
+              {PLACE_CHOICES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+            <div className="small muted" style={{ marginTop: -6 }}>The app uses your word everywhere: &ldquo;{place.Many}&rdquo;, &ldquo;{place.pin}&rdquo;, &ldquo;Add a {place.one}&rdquo;. You can change it later in Settings.</div>
             <h3 style={{ marginTop: 6 }}>You (the owner)</h3>
             <label>Your name<input id="st-name" value={f.name} onChange={set('name')} autoComplete="name" required /></label>
             <div className="row">
@@ -66,10 +72,10 @@ export default function Start() {
               <label className="grow">Password<input id="st-pw" type="password" value={f.pw} onChange={set('pw')} autoComplete="new-password" required /></label>
               <label className="grow">Type it again<input id="st-pw2" type="password" value={f.pw2} onChange={set('pw2')} autoComplete="new-password" required /></label>
             </div>
-            <h3 style={{ marginTop: 6 }}>Your first location</h3>
-            <label>Location name<input id="st-site" value={f.site} onChange={set('site')} placeholder="e.g. M&L Market — Main St" /></label>
+            <h3 style={{ marginTop: 6 }}>Your first {place.one}</h3>
+            <label>{place.One} name<input id="st-site" value={f.site} onChange={set('site')} placeholder="e.g. M&L Market — Main St" /></label>
             <AddressFinder id="st-addr" value={f.addr} onChange={(v) => setF({ ...f, addr: v })} onFound={setFound} found={found} />
-            <div className="small muted">$395 per location per year, all trades, unlimited service calls. Your contractors use it free.</div>
+            <div className="small muted">$395 per {place.one} per year, all trades, unlimited service calls. Your contractors use it free.</div>
             <label className="row small" style={{ gap: 6, fontWeight: 400, flexWrap: 'nowrap', alignItems: 'flex-start' }}>
               <input id="st-agree" type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ width: 'auto', marginTop: 3 }} />
               <span>I agree to the <a href="/terms" target="_blank" rel="noreferrer">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.</span>

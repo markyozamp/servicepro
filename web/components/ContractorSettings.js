@@ -9,6 +9,7 @@ import Info from './Info';
 import OrderStickers from './OrderStickers';
 import RateCard from './RateCard';
 import CompareContractors from './CompareContractors';
+import { usePlace } from '@/lib/terms';
 
 function contractorInviteEmail(name, store, url) {
   const first = (name || '').split(' ')[0];
@@ -33,6 +34,7 @@ Thanks`;
 }
 
 export default function ContractorSettings({ onClose }) {
+  const place = usePlace();
   const [org, setOrg] = useState(null);
   const [custId, setCustId] = useState(null);
   const [compare, setCompare] = useState(false);
@@ -231,9 +233,9 @@ export default function ContractorSettings({ onClose }) {
         <div className="small muted">Waiting to sign in: {links.filter((l) => !l.used_at).map((l) => `${l.contractors?.name} (${l.full_name}${new Date(l.expires_at) < new Date() ? ', link expired' : ''})`).join(', ')}</div>
       )}
 
-      <h3 style={{ marginTop: 8 }}>QR stickers on your equipment <Info title="QR stickers and store PIN">Each unit on your Equipment list gets a sticker. Any employee scans it with their phone camera, enters the store PIN below and picks the problem; the call goes to the right contractor and already knows which unit it is. The PIN keeps people outside your store from opening calls.</Info></h3>
+      <h3 style={{ marginTop: 8 }}>QR stickers on your equipment <Info title={`QR stickers and ${place.one} PIN`}>Each unit on your Equipment list gets a sticker. Any employee scans it with their phone camera, enters the {place.one} PIN below and picks the problem; the call goes to the right contractor and already knows which unit it is. The PIN keeps people outside your {place.one} from opening calls.</Info></h3>
       <OrderStickers sites={sites} />
-      <div className="small muted">Any employee scans the sticker on a unit, enters the store PIN, picks the problem — the call goes to the right contractor and knows which unit it is.</div>
+      <div className="small muted">Any employee scans the sticker on a unit, enters the {place.one} PIN, picks the problem — the call goes to the right contractor and knows which unit it is.</div>
       {sites.map((s) => (
         <div key={s.id} className="row">
           <span className="grow">{s.name} {s.has_pin ? <span className="chip tone-green">PIN set</span> : <span className="chip tone-amber">no PIN yet</span>}</span>

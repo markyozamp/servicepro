@@ -56,10 +56,10 @@ export const FLAG_LABEL = {
   checkin_unverified: 'Check-in not verified',
   billing_late: 'Bill is late',
   closeout_override: 'Closed without full documentation',
-  call_unconfirmed: 'Not confirmed by the store',
+  call_unconfirmed: 'Call not confirmed yet',
   repeat_call: 'Repeat call (30 days)',
   not_accepted: 'Not accepted',
-  arrival_by_store: 'Arrival recorded by the store',
+  arrival_by_store: 'Arrival recorded by site staff',
   invoice_unexplained: 'Hours not explained',
   invoice_over_nte: 'Over the not-to-exceed',
 };
