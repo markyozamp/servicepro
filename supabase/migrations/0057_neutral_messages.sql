@@ -11,7 +11,7 @@ declare
     ['The store has been told.', 'The customer has been told.'],
     ['did your store request it?', 'did you request it?'],
     ['— the store has not given the check-in code.', '— no one on site has given the check-in code yet.'],
-    ['on site for the store', 'on site for the check-in code'],
+    ['on site for the store''''s check-in code', 'on site for the check-in code'],
     ['Check in with the store person (enter their code).', 'Check in with the person on site (enter their code).'],
     ['Check out with the store person before leaving.', 'Check out with the person on site before leaving.'],
     ['checked in with the store', 'checked in on site'],

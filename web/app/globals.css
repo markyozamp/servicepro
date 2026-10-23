@@ -564,3 +564,6 @@ table.compare .prospect { background: var(--amber-bg); }
 
 /* A panel you just opened (new call, project quote): tinted so it stands out from the dashboard */
 .work-panel, .work-panel-wrap > .panel { background: #eef7f0; border: 1px solid #8cc79c; border-left: 5px solid var(--green-fg); box-shadow: 0 4px 18px rgba(29,107,60,.12); }
+.ft-miss.click { cursor: pointer; }
+.ft-miss.click:hover { background: #f7f9fb; }
+.temp-note { padding: 8px 10px; border-radius: 8px; background: #eef4fb; border: 1px solid #c9dcf0; }

@@ -1448,3 +1448,34 @@ select test.blocked($$select set_place_word('castle')$$, 'Pick one', 'only the l
 reset role;
 select test.ok((select place_word = 'restaurant' from customers where id = (select customer_id from profiles where id = :DOUG)), 'the choice is saved on the company');
 select test.ok((select qr_info((select qr_token from equipment where qr_token is not null limit 1)) ? 'place_word'), 'the QR page gets the customer''s word for its places');
+
+\echo '=== 66. Follow-through report for the owner'
+set role authenticated;
+select test.login(:DOUG);
+select test.ok((select (set_followthrough(true, 5, 3, null)->>'ok')::boolean), 'the owner turns on the follow-through report');
+select test.blocked($$select set_followthrough(true, 80, 3, null)$$, '1 to 50', 'the percentage has to make sense');
+select test.ok((select followthrough_report(30) ? 'by_kind'), 'the report lists what was checked, by kind');
+reset role;
+-- a flag nobody looked at for 4 days, and a bill that waited 9 days
+do $$ begin
+  perform _allow_internal(true);
+  update guardrail_flags g set triggered_at = now() - interval '4 days', store_ack_at = null, resolved_at = null
+   where g.id = (select g2.id from guardrail_flags g2 join work_orders w on w.id = g2.work_order_id
+                  where w.customer_id = (select customer_id from profiles where id = '00000000-0000-0000-0000-0000000000c3')
+                    and g2.visible_to_customer and g2.flag::text not in ('billing_late','checkin_unverified','call_unconfirmed') limit 1);
+  perform _end_internal();
+end $$;
+set role authenticated;
+select test.login(:DOUG);
+select test.ok((select (followthrough_report(30)->>'missed')::int >= 1), 'a flag left for 4 days counts as missed');
+select test.ok((select exists (select 1 from jsonb_array_elements(followthrough_report(30)->'misses') m where m->>'kind' = 'flag')), 'and it is listed with its location');
+select test.ok((select set_followthrough(true, 1, 1, null)->>'ok' = 'true'), 'the owner sets a strict limit');
+reset role;
+select followthrough_watch();
+select test.ok((select count(*) >= 1 from notifications where user_id = :DOUG and type = 'followthrough'), 'over the limit, the owner gets the weekly alert');
+select followthrough_watch();
+select test.ok((select count(*) = 1 from notifications where user_id = :DOUG and type = 'followthrough'), 'only once a week');
+set role authenticated;
+select test.login(:RIVAL);
+select test.blocked($$select set_followthrough(true, 5, 3, null)$$, 'permission', 'a contractor cannot change it');
+reset role;

@@ -8,6 +8,7 @@ import { ErrorBox, Notice } from './bits';
 import UsageMeter from './UsageMeter';
 import Info from './Info';
 import { usePlace, setPlaceWord, PLACE_CHOICES } from '@/lib/terms';
+import { FollowThroughSettings, FollowThroughReport } from './FollowThrough';
 
 export const PRICE_PER_LOCATION = 395;
 export const PRICE_PER_LOGIN = 25;
@@ -35,6 +36,7 @@ export default function CompanyPlan({ org, onSaved }) {
   const [areaSaved, setAreaSaved] = useState(org?.travel_area_miles ?? 10);
   const [auto, setAuto] = useState(!!org?.auto_approve_bills);
   const [word, setWord] = useState(place.word);
+  const [ftOpen, setFtOpen] = useState(false);
 
   async function pickLogo(file) {
     setErr(''); setMsg('');
@@ -133,6 +135,9 @@ export default function CompanyPlan({ org, onSaved }) {
         </div>
       </div>
 
+      <FollowThroughSettings org={org} onOpen={() => setFtOpen(!ftOpen)} />
+      {ftOpen && <FollowThroughReport onClose={() => setFtOpen(false)} />}
+
       <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
         <h3>Travel check <Info title="Travel check">When a technician taps "I'm going", the phone notes where the trip started. On the call you see only the nearest town and about how far it is, never the exact spot or a map, and nothing between calls. If the trip started within this distance of your {place.one}, the tech was already in the area: when a bill has more hours than were verified, the call says so, so you can ask whether travel was billed from the shop.</Info></h3>
         <div className="row" style={{ alignItems: 'flex-end' }}>
@@ -167,6 +172,7 @@ export default function CompanyPlan({ org, onSaved }) {
           <tr><td>Team logins</td><td className="num">{n.seats ? n.seats.used : '…'} people</td><td className="num">Included</td></tr>
           <tr><td><strong>Per year</strong></td><td /><td className="num"><strong>{money(total)}</strong></td></tr>
         </tbody></table>
+        <div className="small temp-note"><strong>Temperature monitoring</strong> <span className="soon">Coming soon</span> Wireless sensors in your coolers, freezers, server room or the whole {place.one} alert you and your contractor the moment it gets too hot or too cold: a furnace that quit over the weekend, a stuck heat call, a freezer that stopped. You find out Saturday night, not when you open Monday to a 45° building and have to send people home. Available when your contractor runs Service Call Proof Base or above; they install it and bill it as a monthly service.</div>
         <div className="row">
           <button type="button" onClick={() => setSoon('billing')}>Payment method &amp; invoices <span className="soon">Coming soon</span></button>
         </div>

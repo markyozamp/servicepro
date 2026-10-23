@@ -1,6 +1,7 @@
 'use client';
 
 import { usePlace } from '@/lib/terms';
+import { FollowThroughReport } from '@/components/FollowThrough';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase, act, q } from '@/lib/supabase';
 import { useProfile, isDemoEmail } from '@/lib/useProfile';
@@ -39,6 +40,7 @@ export default function StorePortal() {
   const [flags, setFlags] = useState([]);
   const [tab, setTab] = useState('open');
   const [open, setOpen] = useState(null);
+  const [ft, setFt] = useState(false);
   const [creating, setCreating] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
@@ -86,6 +88,7 @@ export default function StorePortal() {
   useEffect(() => {
     if (!profile) return;
     const sp = new URLSearchParams(window.location.search);
+    if (sp.get('report') === 'followthrough') { setFt(true); setTimeout(() => document.getElementById('followthrough')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 800); }
     const c = sp.get('call');
     if (c) setOpen(c);
     if (sp.get('settings')) setSettings(sp.get('settings'));
@@ -244,6 +247,10 @@ export default function StorePortal() {
         <button className="searchbar" onClick={() => showCalls('po')}>
           <span aria-hidden="true">🔎</span> Search past calls <span className="muted">— by contractor, trade, {place.one} or date</span>
         </button>
+        <button className="searchbar" onClick={() => { setFt(!ft); if (!ft) setTimeout(() => document.getElementById('followthrough')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80); }}>
+          <span aria-hidden="true">📋</span> Follow-through report <span className="muted">— what was missed, where, and what it cost</span>
+        </button>
+        {ft && <FollowThroughReport onClose={() => setFt(false)} onOpenCall={setOpen} />}
 
         <GettingStarted me={profile} onGo={(k) => openArea(k)} onNewCall={() => openWork('call')} />
 

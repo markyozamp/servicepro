@@ -27,7 +27,7 @@ export async function POST(req) {
   let pushed = 0; let emailed = 0;
 
   for (const n of items || []) {
-    const link = `${origin}/${n.portal}${n.work_order_id && n.portal !== 'tech' ? `?call=${n.work_order_id}` : ''}`;
+    const link = `${origin}/${n.portal}${n.work_order_id && n.portal !== 'tech' ? `?call=${n.work_order_id}` : n.type === 'followthrough' ? '?report=followthrough' : ''}`;
     if (canPush) {
       for (const s of n.push || []) {
         try {
@@ -42,7 +42,7 @@ export async function POST(req) {
     }
     if (process.env.RESEND_API_KEY && process.env.ALERT_FROM && realEmail(n.email)) {
       const r = await sendEmail({ to: n.email, subject: n.number ? `Call #${n.number}: ${n.message.slice(0, 80)}` : n.message.slice(0, 90),
-        lines: [n.message], button: { label: n.number ? `Open call #${n.number}` : 'Open Service Call Proof', url: link },
+        lines: [n.message], button: { label: n.number ? `Open call #${n.number}` : n.type === 'followthrough' ? 'Open the Follow-through report' : 'Open Service Call Proof', url: link },
         footerNote: 'You get this because of your Service Call Proof alert settings.' });
       if (r && r.ok) emailed++;
     }

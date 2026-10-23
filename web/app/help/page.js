@@ -47,6 +47,11 @@ const STORE = [
     'Give every person their own login, and never share one. Logins are free and unlimited. With a shared login, one person changing the password locks everyone out, and you can\'t tell who approved what.',
     'Set people up with an email they\'ll keep, ideally a company email. The owner especially should use a company email the owner controls, so password resets always reach the right person.',
   ]],
+  ['See what was missed (Follow-through report)', [
+    'On your dashboard, tap Follow-through report. It counts what your people were asked to do (give the check-in code, answer requests for more money, approve bills, look at flags and more) and lists anything that missed its deadline, by location, with the dollars involved.',
+    'Owner: Settings & plan → Follow-through report → tick Alert me when follow-through slips, set the limit (standard: more than 5% and at least 3 misses in 30 days), choose who gets it → Save.',
+    'The alert comes Monday mornings when you are over the limit. An emergency call where the technician waits 15 minutes or more for the code alerts you right away.',
+  ]],
   ['Choose which locations a person sees', [
     'Team → Edit next to the person → Which locations do they see? → tick their locations → Save.',
     'Or by location: Settings & plan → Locations → Who sees this, tick the people → Save.',
