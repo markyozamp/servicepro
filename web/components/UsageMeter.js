@@ -1,7 +1,7 @@
 'use client';
 
 // Fair use: texts and automatic phone calls used this plan year (pooled across the company), month by month,
-// against the even pace line; projection; suggested top-up (packs of 1/12 of the yearly allowance).
+// against the even pace line; projection; suggested top-up (packs of 100 credits).
 import { useEffect, useState } from 'react';
 import { act } from '@/lib/supabase';
 import { money, date } from '@/lib/format';
@@ -24,7 +24,7 @@ export default function UsageMeter() {
 
   return (
     <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
-      <h3>Texts &amp; phone calls (fair use) <Info title="Fair use">{`Phone notifications and email are unlimited. Text messages (1 credit each) and automatic phone calls to your contractors (2 credits each) come with ${u.per_location} credits per location per year, shared across your company. Most stores use well under half. If you run low you can add a pack (one twelfth of your yearly amount) for the rest of the year. Alerts for emergency calls are never stopped.`}</Info></h3>
+      <h3>Texts &amp; phone calls (fair use) <Info title="Fair use">{`Phone notifications and email are unlimited. Text messages (1 credit each) and automatic phone calls to your contractors (2 credits each) come with ${u.per_location} credits per location per year, shared across your company. That covers a small shop's normal year. Busier stores add credits as they need them: ${u.pack_credits} credits for ${money(u.pack_price)}, good to the end of the plan year. Alerts for emergency calls are never stopped.`}</Info></h3>
 
       <div className="usebar" role="img" aria-label={`${u.used} of ${u.allowance} credits used this year`}>
         <div className={`usebar-fill${u.pct >= 90 ? ' bad' : warn ? ' warn' : ''}`} style={{ width: `${Math.min(100, u.pct)}%` }} />
@@ -56,11 +56,11 @@ export default function UsageMeter() {
 
       <div className="row" style={{ alignItems: 'flex-end' }}>
         <label>Packs<select value={packs} onChange={(e) => setPacks(Number(e.target.value))}>
-          {[1, 2, 3, 4, 6, 12].map((n) => <option key={n} value={n}>{n} × {u.pack_credits.toLocaleString()} credits</option>)}
+          {[...new Set([1, 2, 3, 4, 5, 6, 8, 10, u.suggested_packs || 1])].sort((x, y) => x - y).map((n) => <option key={n} value={n}>{n} × {u.pack_credits.toLocaleString()} credits</option>)}
         </select></label>
         <button type="button" onClick={() => setSoon(true)}>Add {packs} pack{packs === 1 ? '' : 's'} · {money(packs * u.pack_price)} <span className="soon">Coming soon</span></button>
       </div>
-      {soon && <div className="notice small">Coming soon: add credits here by card. A pack is one twelfth of your yearly amount ({u.pack_credits.toLocaleString()} credits) for {money(u.pack_price)}, good until {date(u.renews)}. For now, contact support@servicecallproof.com.</div>}
+      {soon && <div className="notice small">Coming soon: add credits here by card. A pack is {u.pack_credits.toLocaleString()} credits for {money(u.pack_price)}, good until {date(u.renews)}. For now, contact support@servicecallproof.com.</div>}
 
       <details className="small">
         <summary>Month by month</summary>

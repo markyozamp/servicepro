@@ -1187,7 +1187,7 @@ reset role;
 \echo '=== 52. Fair use meter'
 set role authenticated;
 select test.login(:'lee');
-select test.ok((select (fair_use()->>'allowance')::int = 600 * (fair_use()->>'locations')::int), 'the yearly allowance is 600 credits per location, pooled');
+select test.ok((select (fair_use()->>'allowance')::int = 150 * (fair_use()->>'locations')::int), 'the yearly allowance is 150 credits per location (sized for a small shop), pooled');
 select test.ok((select (fair_use()->>'used')::int = 0 and jsonb_array_length(fair_use()->'months') = 12), 'nothing used yet; twelve months on the chart');
 reset role;
 select _record_usage((select customer_id from profiles where id = :'lee'), null, null, 'text', false) from generate_series(1, 30);
@@ -1195,7 +1195,7 @@ select _record_usage((select customer_id from profiles where id = :'lee'), null,
 set role authenticated;
 select test.login(:'lee');
 select test.ok((select (fair_use()->>'used')::int = 40), 'a text counts 1 and an automatic phone call counts 2');
-select test.ok((select (fair_use()->>'pack_credits')::int = (fair_use()->>'base')::int / 12), 'a top-up pack is one twelfth of the yearly allowance');
+select test.ok((select (fair_use()->>'pack_credits')::int = 100 and (fair_use()->>'pack_price')::numeric = 10), 'a top-up pack is 100 credits for $10');
 reset role;
 select _record_usage((select customer_id from profiles where id = :'lee'), null, null, 'text', false) from generate_series(1, 400);
 set role authenticated;
