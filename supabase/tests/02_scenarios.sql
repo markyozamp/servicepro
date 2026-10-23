@@ -1547,3 +1547,9 @@ create temp table lq as select qr_token t from equipment where id = :FREEZER; gr
 set role anon;
 select test.ok((select qr_info((select t from lq))->'lease'->>'company' = 'Acme Ice'), 'the QR page shows who to call');
 reset role;
+
+\echo '=== 71. The location menu lists every alert, one line each'
+set role authenticated; select test.login(:MARIA);
+select test.ok((select bool_and(jsonb_typeof(x->'items') = 'array') from jsonb_array_elements(site_attention()) x), 'each location lists its alerts one by one');
+select test.ok((select bool_and(i ? 'target' and i ? 'label') from jsonb_array_elements(site_attention()) x, jsonb_array_elements(x->'items') i), 'each alert says what it is and where it is on the page');
+reset role;

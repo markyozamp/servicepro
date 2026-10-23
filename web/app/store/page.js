@@ -148,6 +148,20 @@ export default function StorePortal() {
   }, [profile]);
   const showCalls = (t) => { setTab(t); setTimeout(() => document.getElementById('calls')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); };
   const pickSite = (id) => { setSiteF(id); try { localStorage.setItem(`scp_site_${profile.customer_id}`, id); } catch { /* fine */ } };
+  // From the location menu: go to that location, scroll to the alert and highlight it
+  const goTo = (siteId, target) => {
+    pickSite(siteId);
+    let tries = 0;
+    const find = () => {
+      const el = document.getElementById(target);
+      if (!el) { if (tries++ < 15) setTimeout(find, 150); return; }
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.querySelectorAll('.attn-flash').forEach((x) => x.classList.remove('attn-flash'));
+      el.classList.add('attn-flash');
+      setTimeout(() => el.classList.remove('attn-flash'), 4500);
+    };
+    setTimeout(find, 120);
+  };
 
   // Browser tab: number of things waiting on this store, flashing when a technician is at the door.
   const waitingCount = pending.length + calls.filter((c) => c.status === 'completed' && c.invoice_due_at && new Date(c.invoice_due_at) < new Date()).length + door.length;
@@ -206,7 +220,7 @@ export default function StorePortal() {
         <div className="spread">
           <div>
             {orgLogo ? <img className="org-logo" src={orgLogo} alt={org?.name || 'Company logo'} /> : <h1>{org?.name || `Your ${place.many}`}</h1>}
-            <div style={{ margin: '6px 0 2px' }}><LocationPicker sites={allSites} attention={attention} value={validSite} onChange={pickSite}
+            <div style={{ margin: '6px 0 2px' }}><LocationPicker sites={allSites} attention={attention} value={validSite} onChange={pickSite} onGoTo={goTo}
               canAdd={storePerms(profile).locations} onAdd={() => { setAddLoc(true); setLocked(false); setSettings('locations'); setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); }} /></div>
             <div className="muted small">{profile.title || ''}{profile.approval_limit != null ? ` · approves up to ${money(profile.approval_limit)}` : profile.can_approve ? ' · approves any amount' : ''}</div>
           </div>
@@ -263,7 +277,7 @@ export default function StorePortal() {
 
         {/* The lead says how many helpers came with him: the person on site confirms */}
         {crewAsk.filter((v) => !validSite || v.work_orders?.site_id === validSite).map((v) => (
-          <div key={`crew-${v.id}`} className="panel panel-pad spread" style={{ borderColor: '#e6c98a', background: '#fffcf3' }}>
+          <div key={`crew-${v.id}`} id={`crew-${v.id}`} className="panel panel-pad spread" style={{ borderColor: '#e6c98a', background: '#fffcf3' }}>
             <span><strong>{v.profiles?.full_name}</strong> says he has <strong>{v.crew_helpers === 1 ? '1 helper' : `${v.crew_helpers} helpers`}</strong>{v.crew_names ? ` (${v.crew_names})` : ''} with him at {v.work_orders?.sites?.name} (call #{v.work_orders?.number}). Is that right?</span>
             <span className="row" style={{ gap: 6 }}>
               <button className="primary" onClick={async () => { try { await act('store_confirm_crew', { p_visit: v.id, p_ok: true }); load(); } catch (x) { setErr(x.message); } }}>Yes</button>
@@ -276,7 +290,7 @@ export default function StorePortal() {
         {fdoor.map((v) => {
           const mins = Math.floor((Date.now() - new Date(v.arrived_at).getTime()) / 60000);
           return (
-            <div key={v.id} className="doorbell">
+            <div key={v.id} id={`door-${v.id}`} className="doorbell">
               <div className="stack" style={{ gap: 4 }}>
                 <strong style={{ fontSize: 18 }}>Technician at the door — waiting {mins < 1 ? 'less than a minute' : `${mins} min`}</strong>
                 <span>{v.profiles?.full_name} is at {v.work_orders?.sites?.name}{v.work_orders?.unit ? `, unit ${v.work_orders.unit}` : ''} for call #{v.work_orders?.number}. <strong>Labor time is running</strong> — please meet them and give this code.</span>
@@ -316,7 +330,7 @@ export default function StorePortal() {
 
         {/* Calls a contractor entered from a phone call — confirm your store asked for them */}
         {calls.filter((c) => c.source === 'contractor' && c.mode === 'verify' && !c.store_confirmed_at && !['cancelled'].includes(c.status)).map((c) => (
-          <div key={c.id} className="panel panel-pad spread" style={{ borderColor: '#e6c98a', background: '#fffcf3' }}>
+          <div key={c.id} id={`confirm-${c.id}`} className="panel panel-pad spread" style={{ borderColor: '#e6c98a', background: '#fffcf3' }}>
             <div className="stack" style={{ gap: 4 }}>
               <div className="row" style={{ gap: 8 }}><span className="chip tone-amber">{c.store_disputed ? 'You questioned this' : 'Please confirm'}</span>
                 <strong>Call #{c.number} · {c.sites?.name}</strong></div>
@@ -328,7 +342,7 @@ export default function StorePortal() {
 
         {/* Time Verify calls not accepted in time */}
         {calls.filter((c) => c.mode === 'verify' && c.status === 'created' && ((!c.accepted_at && c.accept_due_at && new Date(c.accept_due_at) < new Date()) || c.declined_at)).map((c) => (
-          <div key={c.id} className="panel panel-pad spread" style={{ borderColor: '#e6b3ab', background: '#fffaf9' }}>
+          <div key={c.id} id={`nacc-${c.id}`} className="panel panel-pad spread" style={{ borderColor: '#e6b3ab', background: '#fffaf9' }}>
             <div><span className="chip tone-red">{c.declined_at ? 'Declined' : 'Not accepted'}</span> <strong>Call #{c.number} · {c.sites?.name}</strong> — {c.contractors?.name} {c.declined_at ? "can't take it" : 'has not accepted it yet'}.</div>
             <button onClick={() => setOpen(c.id)}>What to do</button>
           </div>
@@ -344,7 +358,7 @@ export default function StorePortal() {
         {/* Approvals */}
         <span id="approvals" className="anchor" />
         {fpending.map((a) => (
-          <div key={a.id} className="panel panel-pad spread" style={{ borderColor: '#e6b3ab', background: '#fffaf9' }}>
+          <div key={a.id} id={`appr-${a.id}`} className="panel panel-pad spread" style={{ borderColor: '#e6b3ab', background: '#fffaf9' }}>
             <div className="stack" style={{ gap: 4 }}>
               <div className="row" style={{ gap: 8 }}>
                 {a.owner_status === 'pending'
@@ -375,7 +389,7 @@ export default function StorePortal() {
               <h3 style={{ color: 'var(--amber-fg)' }}>Flagged for your review</h3>
               <div className="small muted" style={{ marginBottom: 4 }}>Open a call to see why. Tap "Got it" on each item once you've looked at it.</div>
               {byCall.map((c) => (
-                <div key={c.id} className="spread small click" style={{ padding: '6px 0', cursor: 'pointer', gap: 10 }} onClick={() => setOpen(c.id)}>
+                <div key={c.id} id={`flag-${c.id}`} className="spread small click" style={{ padding: '6px 0', cursor: 'pointer', gap: 10 }} onClick={() => setOpen(c.id)}>
                   <span>Call #{c.wo?.number} · {c.wo?.sites?.name}: {[...new Set(c.items.map((f) => FLAG_LABEL[f.flag] || f.flag))].join(', ')}</span>
                   <strong style={{ whiteSpace: 'nowrap' }}>Review →</strong>
                 </div>
@@ -396,7 +410,7 @@ export default function StorePortal() {
             <h3 style={{ color: 'var(--red-fg)' }}>Contractor invoices not received</h3>
             <div className="small muted" style={{ marginBottom: 4 }}>The work is done, but the contractor hasn't sent you their invoice yet. Open a call to ask them for it.</div>
             {late.map((c) => (
-              <div key={c.id} className="spread small click" style={{ padding: '6px 0', cursor: 'pointer', gap: 10 }} onClick={() => setOpen(c.id)}>
+              <div key={c.id} id={`late-${c.id}`} className="spread small click" style={{ padding: '6px 0', cursor: 'pointer', gap: 10 }} onClick={() => setOpen(c.id)}>
                 <span>Call #{c.number} · {c.sites?.name} · completed {date(c.completed_at)}. <strong>{c.contractors?.name || 'The contractor'}'s invoice was due to you {date(c.invoice_due_at)}</strong>; you haven't received it.
                   {c.bill_requested_at ? <span className="muted"> You asked for it {date(c.bill_requested_at)}.</span> : ''}</span>
                 <strong style={{ whiteSpace: 'nowrap' }}>{c.mode === 'verify' ? 'Ask for it →' : `about ${money(c.total_cost)} →`}</strong>

@@ -587,3 +587,16 @@ table.compare .prospect { background: var(--amber-bg); }
 .demo-extras { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
 .demo-free-line { font-size: 16px; padding: 12px 14px; border-radius: 10px; background: var(--green-bg); }
 .sim-chip.red { background: #b3261e; color: #fff; letter-spacing: .01em; }
+/* Location menu: every alert on its own line; tapping one jumps to it and highlights it */
+.locpick-site { display: flex; flex-direction: column; }
+.locpick-site > button { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; border: 0; background: transparent; padding: 9px 10px; border-radius: 8px; }
+.locpick-site > button > span:first-child { display: flex; flex-direction: column; gap: 2px; }
+.locpick-site > button:hover, .locpick-site > button.on { background: var(--brand-soft); }
+.locpick-menu .dot { width: 10px; height: 10px; border-radius: 50%; background: #d93025; flex: 0 0 auto; }
+.locpick-alerts { margin: 0 0 6px 0; padding: 0 6px 0 30px; display: flex; flex-direction: column; gap: 2px; }
+.locpick-alerts li { font-size: 13px; color: var(--red-fg); }
+.locpick-alerts button { border: 0; background: none; padding: 4px 6px; text-align: left; color: var(--ink); font-size: 13px; border-radius: 6px; width: 100%; }
+.locpick-alerts button:hover { background: #fdecea; }
+.locpick-menu { max-height: min(70vh, 640px); overflow-y: auto; }
+@keyframes attnflash { 0% { box-shadow: 0 0 0 0 rgba(217, 48, 37, .0); } 15% { box-shadow: 0 0 0 4px rgba(217, 48, 37, .55); } 100% { box-shadow: 0 0 0 0 rgba(217, 48, 37, 0); } }
+.attn-flash { animation: attnflash 1.2s ease-out 3; outline: 3px solid #d93025; outline-offset: 2px; border-radius: 10px; scroll-margin-top: 90px; }

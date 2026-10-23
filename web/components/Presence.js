@@ -91,7 +91,7 @@ export default function Presence({ onOpen, refreshKey, siteId }) {
   };
 
   return (
-    <div className="panel panel-pad stack" style={{ gap: 10 }}>
+    <div className="panel panel-pad stack" id="presence" style={{ gap: 10 }}>
       <ErrorBox error={err} /><Notice>{msg}</Notice>
       <div className="spread">
         <h3>In the building now {inside.length > 0 && <span className="chip tone-green">{inside.length}</span>}</h3>
@@ -148,7 +148,7 @@ export default function Presence({ onOpen, refreshKey, siteId }) {
         <div className="stack" style={{ gap: 4 }}>
           <div className="small" style={{ color: visitors.some((x) => !x.resolved_at) ? 'var(--red-fg)' : 'var(--muted, #777)', fontWeight: 700 }}>Unscheduled today</div>
           {visitors.map((x) => (
-            <div key={x.id} className={`spread small${x.resolved_at ? ' muted' : ''}`} style={{ gap: 8 }}>
+            <div key={x.id} id={`visitor-${x.id}`} className={`spread small${x.resolved_at ? ' muted' : ''}`} style={{ gap: 8 }}>
               <span>{x.visitor_name} ({x.company}) at {x.sites?.name}, {dateTime(x.recorded_at)}{x.vehicle_plate ? ` · plate ${x.vehicle_plate}` : ''}{x.note ? ` · ${x.note}` : ''}
                 {x.resolved_at && <> · <strong style={{ color: 'var(--green-fg)' }}>✓ taken care of {dateTime(x.resolved_at)}</strong></>}</span>
               <span className="row" style={{ gap: 6 }}>
