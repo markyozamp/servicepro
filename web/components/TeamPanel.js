@@ -43,16 +43,17 @@ export default function TeamPanel({ profile }) {
       <div className="panel panel-pad stack">
         <h2>Your team</h2>
         <ErrorBox error={err} /><Notice>{msg}</Notice>
-        <table><tbody>
+        <div className="tablewrap"><table><tbody>
           {people.map((p) => (
             <tr key={p.id}>
-              <td><strong>{p.full_name}</strong><div className="small muted">{[p.is_org_admin && 'owner', p.can_dispatch && 'office', p.is_technician && 'technician'].filter(Boolean).join(' · ')}</div></td>
-              <td className="small">{p.phone || ''}{p.email && !p.email.endsWith('servicepro.app') ? <div className="muted">{p.email}</div> : null}</td>
+              <td><strong>{p.full_name}</strong><div className="small muted">{[p.is_org_admin && 'owner', p.can_dispatch && 'office', p.is_technician && 'technician'].filter(Boolean).join(' · ')}</div>
+                <div className="small phone-show">{p.phone || ''}</div></td>
+              <td className="small hide-sm">{p.phone || ''}{p.email && !p.email.endsWith('servicepro.app') ? <div className="muted">{p.email}</div> : null}</td>
               <td className="num">{admin && p.id !== profile.id && (
                 <button disabled={busy} onClick={() => run('new_signin_link', { p_profile: p.id }, (tok) => setSent({ token: tok, name: p.full_name, phone: p.phone, email: p.email }))}>New sign-in link</button>)}</td>
             </tr>
           ))}
-        </tbody></table>
+        </tbody></table></div>
         {sent && (
           <div className="notice stack" style={{ gap: 6 }}>
             <div>Send this sign-in link to <strong>{sent.name}</strong>. It works once, on the phone they open it on, for 7 days. No password.</div>
