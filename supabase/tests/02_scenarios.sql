@@ -1204,3 +1204,15 @@ select test.ok((select (fair_use()->>'suggested_packs')::int > 0), 'running hot,
 select test.login(:DANA);
 select test.blocked($$select fair_use()$$, 'store account', 'contractors have no meter (they''re free)');
 reset role;
+
+\echo '=== 53. Who sees a new location'
+select _allow_internal(true); update profiles set active = true where id = :'jo'; select _end_internal();
+set role authenticated;
+select test.login(:'lee');
+select test.ok((select (add_location('M&L Tacoma', '1 Pacific Ave, Tacoma, WA', '98402', 47.25, -122.44, 'America/Los_Angeles')->>'ok')::boolean), 'owner adds a third location');
+select test.ok((select bool_or((x->>'automatic')::boolean) and bool_or(not (x->>'sees')::boolean) from jsonb_array_elements(site_access((select id from sites where name = 'M&L Tacoma'))) x), 'it lists who sees it automatically and who doesn''t yet');
+select test.ok((select (set_site_access((select id from sites where name = 'M&L Tacoma'), array[:'jo'::uuid])->>'ok')::boolean), 'the owner gives the Seattle manager the new store too');
+select test.ok((select profile_sees_site(:'jo', (select id from sites where name = 'M&L Tacoma')) and profile_sees_site(:'jo', (select id from sites where name = 'M&L Seattle'))), 'Jo now sees Seattle and Tacoma');
+select from set_site_access((select id from sites where name = 'M&L Tacoma'), '{}');
+select test.ok((select not profile_sees_site(:'jo', (select id from sites where name = 'M&L Tacoma')) and profile_sees_site(:'jo', (select id from sites where name = 'M&L Seattle'))), 'unticking takes away only that store');
+reset role;

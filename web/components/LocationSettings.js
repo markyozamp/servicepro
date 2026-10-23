@@ -7,6 +7,7 @@ import { supabase, act, q } from '@/lib/supabase';
 import { money } from '@/lib/format';
 import { ErrorBox, Notice } from './bits';
 import AddressFinder from './AddressFinder';
+import SiteAccess from './SiteAccess';
 import Info from './Info';
 import { dateTime } from '@/lib/format';
 
@@ -19,6 +20,7 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
   const [found, setFound] = useState(null);
   const [edit, setEdit] = useState(null);
   const [efound, setEfound] = useState(null);
+  const [access, setAccess] = useState(null); // { id, name, isNew }
 
   async function load() {
     try {
@@ -72,6 +74,7 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
     try {
       const r = await act('add_location', { p_name: adding.name, p_address: found.address, p_zip: found.zip, p_lat: found.lat, p_lon: found.lon, p_timezone: found.timezone });
       setMsg(`Added ${adding.name}. You now have ${r.locations} locations.`);
+      setAccess({ id: r.site_id, name: adding.name, isNew: true });
       setAdding(null); setFound(null);
       await load(); onChanged?.();
     } catch (x) { setErr(x.message); } finally { setBusy(false); }
@@ -105,7 +108,8 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
           <div className="small muted">$395 per year for this location, prorated to your renewal date. All trades, unlimited service calls.</div>
           <div className="row"><button className="primary" disabled={busy || !found}>Add location</button><button type="button" onClick={() => { setAdding(null); setFound(null); }}>Cancel</button></div>
         </form>
-      ) : <div><button onClick={() => { setAdding({ name: '', addr: '' }); setFound(null); }}>+ Add a location</button> <span className="small muted">{rows.length} location{rows.length === 1 ? '' : 's'}</span></div>}
+      ) : <div><button onClick={() => { setAdding({ name: '', addr: '' }); setFound(null); setAccess(null); }}>+ Add a location</button> <span className="small muted">{rows.length} location{rows.length === 1 ? '' : 's'}</span></div>}
+      {access?.isNew && <SiteAccess key={access.id} siteId={access.id} siteName={access.name} isNew onDone={() => setAccess(null)} />}
       {rows.map((r) => (
         <div key={r.id} className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 12 }}>
           {edit?.id === r.id ? (
@@ -117,8 +121,12 @@ export default function LocationSettings({ onClose, startAdding, onChanged }) {
             </form>
           ) : (
             <div className="spread"><div><strong>{r.name}</strong> <span className="small muted">{r.address}</span></div>
-              <button onClick={() => { setEdit({ id: r.id, name: r.name, addr: '' }); setEfound(null); }}>Edit name / address</button></div>
+              <div className="row" style={{ gap: 6 }}>
+                <button onClick={() => setAccess(access?.id === r.id && !access.isNew ? null : { id: r.id, name: r.name, isNew: false })}>Who sees this</button>
+                <button onClick={() => { setEdit({ id: r.id, name: r.name, addr: '' }); setEfound(null); }}>Edit name / address</button>
+              </div></div>
           )}
+          {access?.id === r.id && !access.isNew && <SiteAccess key={`a-${r.id}`} siteId={r.id} siteName={r.name} onDone={() => setAccess(null)} />}
           <div className="row" style={{ gap: 8, alignItems: 'center' }}>
             {r.lat != null ? <span className="chip tone-green">On the map · arrival detection on</span> : <span className="chip tone-amber">Not on the map yet</span>}
             <span className="small muted">{(r.timezone || '').replace('America/', '').replace('_', ' ')} time</span>
