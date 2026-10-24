@@ -14,6 +14,7 @@ import { useTabBadge } from '@/lib/tabBadge';
 import CustomerPicker, { pickMatch } from '@/components/CustomerPicker';
 import CustomerBook from '@/components/CustomerBook';
 import CallRouting from '@/components/CallRouting';
+import InvoiceNumbering from '@/components/InvoiceNumbering';
 import OfficeToday from '@/components/OfficeToday';
 import ScrollRow from '@/components/ScrollRow';
 import ContractorStart from '@/components/ContractorStart';
@@ -259,7 +260,7 @@ export default function OfficePortal() {
           </div>
         )}
 
-        {tab === 'team' && <><CallRouting profile={profile} logo={logo} onLogo={setLogoOverride} /><TeamPanel profile={profile} /></>}
+        {tab === 'team' && <><CallRouting profile={profile} logo={logo} onLogo={setLogoOverride} />{(org?.level || 'verify') !== 'verify' && <InvoiceNumbering profile={profile} />}<TeamPanel profile={profile} /></>}
 
         {tab === 'customers' && <CustomerBook book={book} pick={validPick} onPick={setCpick} onOpenCall={setOpen} admin={!!profile.is_org_admin} onChanged={load} contractorId={profile.contractor_id} canRates={!!(profile.is_org_admin || profile.can_dispatch)} />}
 

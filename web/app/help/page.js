@@ -239,6 +239,14 @@ const CONTRACTOR = [
     'Travel counts from where the trip really started (when your tech tapped I\'m going), not from your shop. The customer sees the town it started near.',
     'Send it before the customer\'s deadline, or it shows as late to them.',
   ]],
+  ['Base: the bill is written for you', [
+    'On Base, open a finished call: the bill is already built from the record. Verified labor at your rates for that customer (regular, after hours, helper), a trip charge per trip, parts used, a PM\'s flat price.',
+    'Change any line, + Part or + Other line to add, ↻ Rebuild from the record to start over (lines you added stay).',
+    'Check the invoice #, then Send the bill. It gets the same check as always: labor vs verified, the PO limit, auto-approve.',
+    'Preview / print opens the bill to print or save as a PDF. The customer can open the same copy from the call.',
+    'Set how bills are numbered: Team → Invoice numbers (e.g. "PP-" and the next number).',
+    'Missing a rate? Put your rates for that customer on the rate card so they fill in next time.',
+  ]],
   ['Look at one customer', [
     'Tap the pin menu at the top left and pick a customer or one of their locations. Your whole screen shows just them.',
     'The Customers tab shows each account\'s locations, rules, equipment and past calls.',

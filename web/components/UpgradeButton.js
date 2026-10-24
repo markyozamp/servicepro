@@ -16,7 +16,7 @@ export default function UpgradeButton({ profile, org }) {
           <aside className="drawer" role="dialog" aria-label="Upgrade your plan" style={{ width: 'min(560px, 100vw)', color: 'var(--ink)' }}>
             <div className="drawer-head spread"><h2 style={{ margin: 0 }}>Upgrade your plan</h2><button onClick={() => setOpen(false)}>Close</button></div>
             <div className="drawer-body">
-              <PilotOffer source="app" defaults={{ company: org?.name, name: profile?.full_name, email: profile?.email, phone: profile?.phone }} />
+              <PilotOffer source="app" current={org?.level || 'verify'} defaults={{ company: org?.name, name: profile?.full_name, email: profile?.email, phone: profile?.phone }} />
             </div>
           </aside>
         </>,

@@ -1703,3 +1703,37 @@ select from set_busy_hours(:S121, null);
 reset role;
 select set_config('app.watch_demo', '', false);
 select test.ok((select count(*) = 1 from notifications where user_id = test.v('PETE') and work_order_id = test.v('wb') and message like '%says you can come during their busy hours%'), 'the person who asked hears it, once');
+
+\echo '=== 75. Base: we write the bill for you'
+reset role;
+select _allow_internal(true); update call_invoices set status = 'submitted' where work_order_id = test.v('tw'); select _end_internal();
+select test.login(test.v('PETE'));
+select test.blocked($$select bill_draft((select test.v('tw')))$$, 'come with Base', 'on Time Verify the bill isn''t written for you');
+update contractors set level = 'base' where id = test.v('PRAIRIE');
+select test.ok((select jsonb_array_length(bill_draft(test.v('tw'))->'lines') >= 1), 'on Base the bill is built from the record');
+select test.ok((select (s->>'labor_h')::numeric = (s->>'verified_h')::numeric from bill_draft(test.v('tw')) s), 'labor on the bill = the verified hours');
+select test.ok((select x->>'description' = 'Trip charge' and (x->>'qty')::int = (invoice_check(test.v('tw'))->>'trips')::int
+  from jsonb_array_elements(bill_draft(test.v('tw'))->'lines') x where x->>'kind' = 'trip'), 'one trip charge per trip');
+select test.ok((select not (s->>'missing_rates')::boolean and (s->>'total')::numeric > 0 from bill_draft(test.v('tw')) s), 'every line has a rate');
+select test.ok((select set_invoice_numbering('PP-', 2001)->>'next' = 'PP-2001'), 'the contractor sets their invoice numbering');
+select test.ok((select (rebuild_bill(test.v('tw'))->>'suggested_no') = 'PP-2001'), 'and the next number is suggested');
+create temp table bt as select (bill_draft(test.v('tw'))->>'total')::numeric t0, bill_draft(test.v('tw'))->'lines' l0;
+select test.ok((select (save_bill(test.v('tw'), (select l0 from bt) || '[{"kind":"part","description":"Drain cleanout cap","qty":2,"unit":"ea","rate":21.25}]'::jsonb, 'PP-2001', 'Thank you')->>'total')::numeric
+  = (select t0 from bt) + 42.50), 'the contractor adds a part line; the total follows');
+select test.ok((select (rebuild_bill(test.v('tw'))->'lines') @> '[{"description":"Drain cleanout cap"}]'), 'rebuilding from the record keeps the lines they added');
+select test.ok((select (save_bill(test.v('tw'), (select jsonb_agg(case when x->>'kind' = 'labor' then jsonb_set(x, '{qty}', to_jsonb((x->>'qty')::numeric + 1)) else x end)
+  from jsonb_array_elements(bill_draft(test.v('tw'))->'lines') x), 'PP-2001')->>'labor_h')::numeric > (bill_draft(test.v('tw'))->>'verified_h')::numeric), 'they can bill more labor');
+select test.blocked($$select send_built_bill((select test.v('tw')), null, true)$$, 'what the extra time', 'but more than verified needs a reason');
+select from rebuild_bill(test.v('tw'));
+select from save_bill(test.v('tw'), (select jsonb_agg(x) from jsonb_array_elements(bill_draft(test.v('tw'))->'lines') x
+  where not (x->>'kind' = 'labor' and x->>'auto' = 'false')), 'PP-2001', 'Thank you');
+select test.ok((select (send_built_bill(test.v('tw'), null, true)->'invoice'->>'built')::boolean), 'sent: it goes through the bill check, itemized');
+select test.ok((select built and jsonb_array_length(lines) >= 2 and invoice_number = 'PP-2001' and agreed_hours from call_invoices where work_order_id = test.v('tw')), 'the lines stay with the invoice, hours agreed');
+select test.ok((select next_invoice_no = 2002 from contractors where id = test.v('PRAIRIE')), 'the next invoice number moves on');
+select test.login(:MARIA);
+select test.ok((select jsonb_array_length(bill_view(test.v('tw'))->'lines') >= 2 and not (bill_view(test.v('tw'))->>'draft')::boolean
+  and jsonb_array_length(bill_view(test.v('tw'))->'visits') >= 1), 'the store opens the printable bill, with the verified visits on it');
+select test.login(:RIVAL);
+select test.blocked($$select bill_view((select test.v('tw')))$$, 'Not allowed', 'nobody else can see it');
+select test.blocked($$select set_contractor_level((select test.v('PRAIRIE')), 'pro')$$, 'Not allowed', 'only the platform admin changes a level');
+update contractors set level = 'verify' where id = test.v('PRAIRIE');

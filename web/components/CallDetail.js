@@ -7,7 +7,7 @@ import { money, dateTime, time, date, FLAG_LABEL, PRIORITY, KIND, PO_KIND, poLab
 import { StatusChip, PriorityChip, KindChip, ErrorBox, Notice } from './bits';
 import { VerifyPanel, TechHereButton } from './TimeVerify';
 
-const WO = `*, sites(name, address, access_notes, timezone, property_type, busy_hours), customers(name, kind, phone), contractors(name, phone, after_hours_phone),
+const WO = `*, sites(name, address, access_notes, timezone, property_type, busy_hours), customers(name, kind, phone), contractors(name, phone, after_hours_phone, level),
   equipment(id, manufacturer, model, serial, refrigerant, location_description, equipment_types(name)),
   repair_types(name), agreements(name, coverage, response_emergency_min, response_normal_min), issue_types(name)`;
 

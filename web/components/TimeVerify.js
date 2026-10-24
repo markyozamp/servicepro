@@ -7,6 +7,7 @@ import { supabase, act, q } from '@/lib/supabase';
 import { money, dateTime, time, date, ago } from '@/lib/format';
 import { busySummary, busyNow } from '@/lib/busy';
 import RateCard from './RateCard';
+import BillBuilder from './BillBuilder';
 
 const h = (n) => (n == null ? '—' : `${Number(n).toFixed(2)} h`);
 const hm = (m) => `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} m`;
@@ -259,6 +260,7 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
               {' · '}{chk.trips} trip{chk.trips === 1 ? '' : 's'}</div>
           )}
           {inv.auto_approved && <div className="small"><span className="chip tone-green">Approved automatically</span> <span className="muted">it matched: hours agreed, within the PO</span></div>}
+          {inv.built && <div className="small"><span className="chip tone-green">Itemized</span> <span className="muted">built from the verified record · </span><a href={`/bill/${wo.id}`} target="_blank" rel="noreferrer">View or print the bill (PDF)</a></div>}
           {billingStore && inv.status !== 'approved' && (
             <div className="row">
               <button className="primary" disabled={busy} onClick={() => run('store_review_invoice', { p_wo: wo.id, p_ok: true })}>Approve invoice</button>
@@ -291,7 +293,12 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
 }
 
 function InvoiceForm({ wo, chk, side, busy, run }) {
+  const [light, setLight] = useState(false);
   if (side !== 'office') return <StoreInvoiceForm wo={wo} chk={chk} busy={busy} run={run} />;
+  // Base and up: the bill is written for them (they can still just enter their own total)
+  if ((wo.contractors?.level || 'verify') !== 'verify' && !light) {
+    return <BillBuilder wo={wo} busy={busy} onLight={() => setLight(true)} onSent={() => run('invoice_check', { p_wo: wo.id })} />;
+  }
   return <LightBill wo={wo} chk={chk} busy={busy} run={run} />;
 }
 
