@@ -22,8 +22,51 @@ export default function Job({ job, cat, wifi, me }) {
       {v.status === 'en_route' && <Driving job={job} />}
       {v.status === 'on_site' && (w.mode === 'verify' ? <VerifyOnSite job={job} /> : <OnSite job={job} cat={cat} m={m} me={me} />)}
       {v.status === 'done' && <Done job={job} />}
+      {w.flat && ['on_site', 'done'].includes(v.status) && <FlatTasks wo={w} />}
       <Background job={job} />
     </main>
+  );
+}
+
+// Flat-rate customer: pick the tasks you did from your price book (needs a signal). The bill is these tasks.
+function FlatTasks({ wo }) {
+  const [tasks, setTasks] = useState(null);
+  const [book, setBook] = useState(null);
+  const [find, setFind] = useState('');
+  const [err, setErr] = useState('');
+  const call = async (fn, args) => {
+    setErr('');
+    if (typeof navigator !== 'undefined' && !navigator.onLine) { setErr('No signal. Add the tasks when you have one, or the office adds them on the bill.'); return null; }
+    const { data, error } = await supabase.rpc(fn, args);
+    if (error) { setErr(error.message); return null; }
+    return data;
+  };
+  useEffect(() => { call('call_tasks', { p_wo: wo.id }).then((d) => d && setTasks(d)); }, [wo.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const total = (tasks || []).reduce((t, x) => t + Number(x.amount || 0), 0);
+  const list = (book || []).filter((i) => !find || `${i.code || ''} ${i.name} ${i.category || ''}`.toLowerCase().includes(find.toLowerCase())).slice(0, 30);
+  return (
+    <div className="sec">
+      <h3>Tasks done (flat rate)</h3>
+      {(tasks || []).map((x) => (
+        <div key={x.id} className="row spread small" style={{ gap: 6 }}>
+          <span>{Number(x.qty) !== 1 ? `${Number(x.qty)} × ` : ''}{x.name}</span>
+          <span className="row" style={{ gap: 6 }}>{money(x.amount)}<button type="button" className="linkbtn" aria-label="Remove task" onClick={async () => { const d = await call('remove_call_task', { p_task: x.id }); if (d) setTasks(d); }}>✕</button></span>
+        </div>
+      ))}
+      {tasks && tasks.length > 0 && <div className="small"><strong>Total {money(total)}</strong></div>}
+      {tasks && tasks.length === 0 && <div className="small muted">No tasks yet.</div>}
+      {book ? (
+        <div className="stack" style={{ gap: 6 }}>
+          <input value={find} onChange={(e) => setFind(e.target.value)} placeholder="Find a task" />
+          {list.map((i) => (
+            <button key={i.id} type="button" className="big" style={{ textAlign: 'left' }} onClick={async () => { const d = await call('add_call_task', { p_wo: wo.id, p_item: i.id, p_qty: 1 }); if (d) { setTasks(d); setFind(''); } }}>
+              + {i.code ? `${i.code} ` : ''}{i.name}</button>
+          ))}
+          {!list.length && <div className="small muted">No task matches.</div>}
+        </div>
+      ) : <button type="button" className="big" onClick={async () => { const d = await call('price_book', {}); if (d) setBook(d); }}>+ Add a task</button>}
+      {err && <div className="small" style={{ color: 'var(--red-fg)' }}>{err}</div>}
+    </div>
   );
 }
 

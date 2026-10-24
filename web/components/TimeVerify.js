@@ -242,6 +242,13 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
             <h3>Invoice {inv.number}</h3>
             <span className={`chip ${inv.status === 'approved' ? 'tone-green' : inv.status === 'disputed' ? 'tone-red' : 'tone-amber'}`}>{inv.status === 'submitted' ? 'to review' : inv.status}</span>
           </div>
+          {inv.flat ? (
+            <table><tbody>
+              <tr><td>Flat-rate bill<div className="small muted">priced from {office ? 'your' : 'their'} price book; hours aren&apos;t billed</div></td><td className="num"><strong>{money(inv.total)}</strong></td></tr>
+              <tr><td>Verified time on site, for reference{Number(chk.helper_billable_h) > 0 ? <div className="small muted">tech {h(chk.tech_billable_h)} + helpers {h(chk.helper_billable_h)}</div> : null}</td><td className="num">{h(chk.billable_h)}</td></tr>
+              {chk.cap != null && <tr><td>This call allows</td><td className="num"><span style={chk.over_nte ? { color: 'var(--red-fg)' } : {}}>{money(chk.cap)}</span>{chk.over_nte && <div className="small" style={{ color: 'var(--red-fg)' }}>over by {money(chk.over_nte_by)}</div>}</td></tr>}
+            </tbody></table>
+          ) : (
           <table>
             <tbody>
               <tr><td>Hours billed</td><td className="num"><strong>{h(chk.billed_h)}</strong></td></tr>
@@ -254,7 +261,8 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
                 <td className="num"><strong style={chk.over_nte ? { color: 'var(--red-fg)' } : {}}>{money(inv.total)}</strong>{chk.over_nte && <div className="small" style={{ color: 'var(--red-fg)' }}>over by {money(chk.over_nte_by)}</div>}</td></tr>
             </tbody>
           </table>
-          {inv.side === 'contractor' && inv.agreed_hours != null && (
+          )}
+          {inv.side === 'contractor' && inv.agreed_hours != null && !inv.flat && (
             <div className="small">{inv.agreed_hours ? '✓ Contractor agreed to the verified hours' : '✎ Contractor billed different hours (see above)'}
               {' · '}{chk.cap == null ? 'no PO limit' : inv.agreed_cap ? '✓ within the PO' : '⚠ sent over the PO'}
               {' · '}{chk.trips} trip{chk.trips === 1 ? '' : 's'}</div>

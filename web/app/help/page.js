@@ -247,6 +247,12 @@ const CONTRACTOR = [
     'Set how bills are numbered: Team → Invoice numbers (e.g. "PP-" and the next number).',
     'Missing a rate? Put your rates for that customer on the rate card so they fill in next time.',
   ]],
+  ['Flat rate: your price book', [
+    'Team → Price book. Add tasks (+ Task) with one price that covers labor and parts, or Import from a spreadsheet (save it as CSV with columns code, name, price, category).',
+    'Pick a customer to set Bill them: Hourly or Flat rate, and to give them their own prices (leave blank for the book price).',
+    'On a flat-rate call your tech taps + Add a task on the phone and picks what was done. The office can add more on the bill (+ From price book).',
+    'The bill is the tasks. Hours aren\'t billed or checked, but the customer still sees the verified time on site for reference. The PO limit still applies.',
+  ]],
   ['Look at one customer', [
     'Tap the pin menu at the top left and pick a customer or one of their locations. Your whole screen shows just them.',
     'The Customers tab shows each account\'s locations, rules, equipment and past calls.',

@@ -58,7 +58,7 @@ export default function Bill() {
         </table>
         {(b.visits || []).length > 0 && (
           <div className="small stack" style={{ gap: 4 }}>
-            <strong>Time on site, verified</strong>
+            <strong>Time on site, verified{b.flat ? ' (flat-rate bill: shown for reference)' : ''}</strong>
             {b.visits.map((v, i) => (
               <div key={i}>{v.tech}: arrived {dateTime(v.arrived)}{v.left ? `, left ${dateTime(v.left)}` : ''} ({hm(v.onsite_min)} on site){v.verified ? ', checked in with the store’s code' : ''}{Number(v.helpers) > 0 ? `, ${v.helpers} helper${Number(v.helpers) > 1 ? 's' : ''}` : ''}</div>
             ))}

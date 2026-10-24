@@ -1737,3 +1737,37 @@ select test.login(:RIVAL);
 select test.blocked($$select bill_view((select test.v('tw')))$$, 'Not allowed', 'nobody else can see it');
 select test.blocked($$select set_contractor_level((select test.v('PRAIRIE')), 'pro')$$, 'Not allowed', 'only the platform admin changes a level');
 update contractors set level = 'verify' where id = test.v('PRAIRIE');
+
+\echo '=== 76. Flat-rate contractors: a price book'
+reset role;
+update contractors set level = 'base' where id = test.v('PRAIRIE');
+select test.login(test.v('PETE'));
+select test.put('pb1', (save_price_item(null, 'Clear main drain', 325, 'D-100', 'Drains')->>'id')::uuid);
+select test.blocked($$select save_price_item(null, '', 10)$$, 'name', 'a task needs a name');
+select test.ok((select (import_price_book('[{"code":"D-100","name":"Clear main drain","price":"$335"},{"code":"F-200","name":"Replace faucet cartridge","price":"189","category":"Fixtures"},{"name":"No price"}]'::jsonb))
+  @> '{"added":1,"updated":1,"skipped":1}'), 'a spreadsheet import adds new tasks and updates by code');
+select test.ok((select (x->>'price')::numeric = 335 from jsonb_array_elements(price_book()) x where x->>'code' = 'D-100'), 'the import updated the price');
+select test.ok((select (set_customer_price(test.v('pb1'), (select customer_id from sites where id = :S121), 300)->>'ok')::boolean), 'a special price for one customer');
+select test.ok((select (x->>'price')::numeric = 300 and (x->>'book_price')::numeric = 335 from jsonb_array_elements(price_book((select customer_id from sites where id = :S121))) x where x->>'code' = 'D-100'),
+  'that customer sees their price');
+select test.ok((select (set_billing_method((select customer_id from sites where id = :S121), 'flat')->>'method') = 'flat'), 'the contractor bills this customer flat rate');
+reset role;
+select test.ok((select count(*) >= 1 from notifications n join profiles p on p.id = n.user_id where p.customer_id = (select customer_id from sites where id = :S121)
+  and n.message like '%now bills you flat rate%'), 'the customer is told');
+select test.login(test.v('PETE'));
+select test.ok((select jsonb_array_length(add_call_task(test.v('tw'), test.v('pb1'), 1)) = 1), 'a task done on the call, at this customer''s price');
+select test.ok((select (x->>'price')::numeric = 300 from jsonb_array_elements(call_tasks(test.v('tw'))) x limit 1), 'priced for the customer');
+select test.ok((select (rebuild_bill(test.v('tw'))->'lines') @> '[{"kind":"task","amount":300}]' and not ((rebuild_bill(test.v('tw'))->'lines') @> '[{"kind":"labor"}]')),
+  'the flat-rate bill is the tasks, no hourly labor');
+select from save_bill(test.v('tw'), (select jsonb_agg(x) from jsonb_array_elements(bill_draft(test.v('tw'))->'lines') x where x->>'kind' in ('task', 'flat')), 'PP-3001');
+select test.ok((select (send_built_bill(test.v('tw'), null, true)->'invoice'->>'flat')::boolean), 'sent with no hours check: marked flat rate');
+select test.ok((select flat and total = 300 from call_invoices where work_order_id = test.v('tw')), 'the invoice is the flat price');
+select test.login(:MARIA);
+select test.ok((select (bill_view(test.v('tw'))->>'flat')::boolean and jsonb_array_length(bill_view(test.v('tw'))->'visits') >= 1), 'the store sees it is flat rate, with the verified time for reference');
+select test.blocked($$select price_book()$$, 'Not allowed', 'a store can''t read the contractor''s whole price book');
+select test.login(:RIVAL);
+select test.blocked($$select add_call_task((select test.v('tw')), (select test.v('pb1')))$$, 'Not allowed', 'another contractor can''t add tasks');
+select test.login(test.v('PETE'));
+select from set_billing_method((select customer_id from sites where id = :S121), 'hourly');
+reset role;
+update contractors set level = 'verify' where id = test.v('PRAIRIE');
