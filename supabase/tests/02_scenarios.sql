@@ -1893,3 +1893,17 @@ reset role;
 select test.ok((select q.decided_name = 'Rita Lund (by link)' and w.id is not null and w.contractor_id = :ARCTIC from quotes q join work_orders w on w.id = q.work_order_id where q.id = test.v('q3')),
   'recorded with their name, and the job is open');
 update contractors set level = 'verify' where id = :ARCTIC;
+
+\echo '=== 80. Bills to QuickBooks (export file)'
+set role authenticated;
+select test.login(:DANA);
+select test.blocked($$select invoice_export()$$, 'comes with Base', 'exporting is a Base feature');
+reset role; update contractors set level = 'base' where id = :ARCTIC; set role authenticated;
+select test.login(:DANA);
+select test.ok((select bool_or(x->>'invoice_number' = 'AA-5001' and jsonb_array_length(x->'lines') = 2) from jsonb_array_elements(invoice_export()) x), 'the bills the app wrote are ready to export, with their lines');
+select test.ok((select mark_invoices_exported(array[test.v('ow')]::uuid[]) = 1), 'downloaded bills are marked');
+select test.ok((select not coalesce(bool_or(x->>'invoice_number' = 'AA-5001'), false) from jsonb_array_elements(invoice_export()) x), 'and don''t come out twice');
+select test.ok((select bool_or(x->>'invoice_number' = 'AA-5001') from jsonb_array_elements(invoice_export(null, null, false)) x), 'unless you ask for all of them');
+select test.login(:PAT);
+select test.blocked($$select invoice_export()$$, 'owner or billing', 'dispatch can''t export');
+reset role; update contractors set level = 'verify' where id = :ARCTIC;

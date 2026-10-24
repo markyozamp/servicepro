@@ -19,6 +19,7 @@ import PriceBook from '@/components/PriceBook';
 import TechSchedule from '@/components/TechSchedule';
 import Timesheets from '@/components/Timesheets';
 import OfficeQuotes from '@/components/OfficeQuotes';
+import AccountingExport from '@/components/AccountingExport';
 import OfficeToday from '@/components/OfficeToday';
 import ScrollRow from '@/components/ScrollRow';
 import ContractorStart from '@/components/ContractorStart';
@@ -297,6 +298,7 @@ export default function OfficePortal() {
           </div>
         )}
 
+        {tab === 'billing' && (org?.level || 'verify') !== 'verify' && (profile.is_org_admin || profile.can_bill) && <AccountingExport />}
         {tab === 'billing' && (
           <div className="panel tablewrap">
             <table>

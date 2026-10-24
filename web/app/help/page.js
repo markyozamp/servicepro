@@ -247,6 +247,12 @@ const CONTRACTOR = [
     'Set how bills are numbered: Team → Invoice numbers (e.g. "PP-" and the next number).',
     'Missing a rate? Put your rates for that customer on the rate card so they fill in next time.',
   ]],
+  ['Send bills to QuickBooks (Base)', [
+    'Office → Billing → Send bills to QuickBooks (owner or billing). Pick dates if you like, then Find bills. Only bills not sent yet, unless you untick it.',
+    'QuickBooks Online: download QuickBooks Online (CSV), then in QuickBooks: Settings → Import data → Invoices. Up to 100 invoices per file. It doesn\'t work if sales tax is turned on in your QuickBooks.',
+    'QuickBooks Desktop: open "QuickBooks Desktop instead", enter your receivables and income account names, download the .iif, then File → Utilities → Import → IIF Files.',
+    'Each bill is marked once downloaded, so it doesn\'t go in twice. Customer list (CSV) helps you add new customers to QuickBooks first.',
+  ]],
   ['Quotes for installs and projects', [
     'Store: + New service call area → Install / project quote → + Ask for quotes. Pick the location, say what you want quoted, tick the contractors, set a date.',
     'Their quotes come in side by side with every line. Approve: make it the job opens a call to that contractor with the quote total as the limit; the others are told they weren\'t chosen. No thanks asks why, so they can adjust.',
