@@ -22,13 +22,13 @@ ${footerNote ? `<p style="margin:12px 0 0;font-size:12px;color:#5b6b7a">${esc(fo
   return { text, html };
 }
 
-export async function sendEmail({ to, subject, ...content }) {
+export async function sendEmail({ to, subject, replyTo, ...content }) {
   if (!process.env.RESEND_API_KEY || !process.env.ALERT_FROM) return { ok: false, status: 503, detail: 'Email is not set up' };
   const { text, html } = buildEmail(content);
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: process.env.ALERT_FROM, to, subject, text, html, reply_to: 'support@servicecallproof.com' }),
+    body: JSON.stringify({ from: process.env.ALERT_FROM, to, subject, text, html, reply_to: replyTo || 'support@servicecallproof.com' }),
   }).catch(() => null);
   return { ok: !!(r && r.ok), status: r?.status, detail: r && !r.ok ? (await r.text()).slice(0, 300) : undefined };
 }

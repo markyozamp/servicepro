@@ -263,7 +263,7 @@ export default function OfficePortal() {
 
         {tab === 'team' && <><CallRouting profile={profile} logo={logo} onLogo={setLogoOverride} />{(org?.level || 'verify') !== 'verify' && <><InvoiceNumbering profile={profile} /><PriceBook profile={profile} /></>}<TeamPanel profile={profile} /></>}
 
-        {tab === 'customers' && <CustomerBook book={book} pick={validPick} onPick={setCpick} onOpenCall={setOpen} admin={!!profile.is_org_admin} onChanged={load} contractorId={profile.contractor_id} canRates={!!(profile.is_org_admin || profile.can_dispatch)} />}
+        {tab === 'customers' && <CustomerBook book={book} pick={validPick} onPick={setCpick} onOpenCall={setOpen} admin={!!profile.is_org_admin} onChanged={load} contractorId={profile.contractor_id} canRates={!!(profile.is_org_admin || profile.can_dispatch)} base={(org?.level || 'verify') !== 'verify'} canAdd={!!(profile.is_org_admin || profile.can_dispatch)} />}
 
         {tab === 'pm' && (
           <div className="panel tablewrap">

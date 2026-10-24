@@ -6,6 +6,7 @@ import { supabase, act, q } from '@/lib/supabase';
 import { money, dateTime, time, date, FLAG_LABEL, PRIORITY, KIND, PO_KIND, poLabel, daysUntil } from '@/lib/format';
 import { StatusChip, PriorityChip, KindChip, ErrorBox, Notice } from './bits';
 import { VerifyPanel, TechHereButton } from './TimeVerify';
+import OwnBill from './OwnBill';
 
 const WO = `*, sites(name, address, access_notes, timezone, property_type, busy_hours), customers(name, kind, phone), contractors(name, phone, after_hours_phone, level),
   equipment(id, manufacturer, model, serial, refrigerant, location_description, equipment_types(name)),
@@ -285,7 +286,10 @@ export default function CallDetail({ id, side, techs = [], profile, onClose, onC
                   </div>
                 </div>
               )}
-              {side === 'office' && wo.status === 'completed' && wo.mode !== 'verify' && (
+              {side === 'office' && ['completed', 'invoiced'].includes(wo.status) && wo.mode !== 'verify' && (wo.contractors?.level || 'verify') !== 'verify' && (
+                <OwnBill wo={wo} busy={busy} onChanged={() => run('invoice_check', { p_wo: wo.id })} />
+              )}
+              {side === 'office' && wo.status === 'completed' && wo.mode !== 'verify' && (wo.contractors?.level || 'verify') === 'verify' && (
                 <div className="panel panel-pad spread">
                   <div className="small">
                     {wo.invoice_ready ? 'Ready to invoice.' : 'Resolve the review items above to invoice.'}

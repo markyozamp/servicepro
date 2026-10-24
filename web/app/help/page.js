@@ -247,6 +247,12 @@ const CONTRACTOR = [
     'Set how bills are numbered: Team → Invoice numbers (e.g. "PP-" and the next number).',
     'Missing a rate? Put your rates for that customer on the rate card so they fill in next time.',
   ]],
+  ['Your own customers (Base)', [
+    'Customers → + Add a customer: a business or a homeowner, with their first location and the email for bills. They don\'t need a login.',
+    'On their page: Edit details, + Location for more locations.',
+    'Make calls for them the usual way (+ New call). When the work is done, open the call: the bill is written for you. Send the bill emails them a link to it (print or save as a PDF).',
+    'Then Mark paid when the money comes in, or Email it again (to them or someone else, like their bookkeeper).',
+  ]],
   ['Flat rate: your price book', [
     'Team → Price book. Add tasks (+ Task) with one price that covers labor and parts, or Import from a spreadsheet (save it as CSV with columns code, name, price, category).',
     'Pick a customer to set Bill them: Hourly or Flat rate, and to give them their own prices (leave blank for the book price).',

@@ -51,7 +51,19 @@ export async function POST(req) {
       if (r && r.ok) emailed++;
     }
   }
-  return Response.json({ taken: (items || []).length, pushed, emailed });
+  // Emails to people without a login (e.g. a contractor's own customer getting their bill)
+  let direct = 0;
+  if (process.env.RESEND_API_KEY && process.env.ALERT_FROM) {
+    const { data: mails } = await db.rpc('email_take', { p_key: key, p_limit: 50 });
+    for (const e of mails || []) {
+      if (!realEmail(e.to)) continue;
+      const r = await sendEmail({ to: e.to, subject: e.subject, lines: e.lines || [], replyTo: e.reply_to || undefined,
+        button: e.button?.path ? { label: e.button.label, url: `${origin}${e.button.path}` } : undefined,
+        footerNote: 'Sent for your contractor by Service Call Proof. Reply to this email to reach them.' });
+      if (r && r.ok) direct++;
+    }
+  }
+  return Response.json({ taken: (items || []).length, pushed, emailed, direct });
 }
 
 // Check that email delivery works: POST ?test=email with the outbox key and {"to": "..."}.

@@ -9,6 +9,7 @@ import PoLog from './PoLog';
 import RateCard from './RateCard';
 import PmPlans from './PmPlans';
 import { ErrorBox } from './bits';
+import { AddMyCustomer, MyCustomerPanel } from './MyCustomer';
 
 const mins = (m) => (m == null ? '—' : m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`);
 const TRAVEL = { yes: 'Pays travel time', no: 'Does not pay travel time', after_hours: 'Pays travel after hours only' };
@@ -53,6 +54,7 @@ function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged, contrac
         <div className="notice">{c.name} took you off their contractor list on {date(c.store_removed_at)}. They can't send you new calls. Your past calls with them are still here.</div>
       )}
 
+      {c.managed ? <MyCustomerPanel c={c} onChanged={onChanged} /> : (
       <div className="panel" style={{ padding: 14 }}>
         <div className="small" style={{ fontWeight: 700, marginBottom: 6 }}>Their terms with you</div>
         <div className="row small" style={{ gap: 6 }}>
@@ -68,6 +70,7 @@ function CustomerPage({ c, siteId, onBack, onOpenCall, admin, onChanged, contrac
         {!t.terms_accepted_at && <div className="small" style={{ color: 'var(--red-fg)', marginTop: 6 }}>You haven't accepted their terms yet.</div>}
         <div className="small muted" style={{ marginTop: 6 }}>This year: {c.calls_ytd} call{c.calls_ytd === 1 ? '' : 's'} · {money(c.billed_ytd)} invoiced</div>
       </div>
+      )}
 
       {contractorId && <div className="panel" style={{ padding: 14 }}>
         <RateCard customerId={c.customer_id} contractorId={contractorId} side="contractor" canEdit={canRates} />
@@ -157,7 +160,8 @@ function RemovedCustomers({ onChanged }) {
   );
 }
 
-export default function CustomerBook({ book, pick, onPick, onOpenCall, admin = false, onChanged = () => {}, contractorId, canRates = false }) {
+export default function CustomerBook({ book, pick, onPick, onOpenCall, admin = false, onChanged = () => {}, contractorId, canRates = false, base = false, canAdd = false }) {
+  const [adding, setAdding] = useState(false);
   const custId = pick?.startsWith('c:') ? pick.slice(2) : pick?.startsWith('s:') ? book.find((c) => c.sites.some((s) => s.site_id === pick.slice(2)))?.customer_id : null;
   const siteId = pick?.startsWith('s:') ? pick.slice(2) : null;
   const one = custId && book.find((c) => c.customer_id === custId);
@@ -167,6 +171,9 @@ export default function CustomerBook({ book, pick, onPick, onOpenCall, admin = f
   const sorted = [...book].sort((a, b) => reasons(b).length - reasons(a).length || a.name.localeCompare(b.name));
   return (
     <>
+    {canAdd && (base ? (adding ? <AddMyCustomer onCancel={() => setAdding(false)} onAdded={(r) => { setAdding(false); onChanged(); setTimeout(() => onPick(`c:${r.customer_id}`), 400); }} />
+      : <div className="row"><button onClick={() => setAdding(true)}>+ Add a customer</button><span className="small muted">Your own customers: businesses or homeowners, with their bills emailed to them.</span></div>)
+      : <div className="small muted">Adding your own customers (not just the ones who invited you) comes with Base. See ⬆ Upgrade.</div>)}
     <div className="panel">
       <table>
         <thead><tr><th>Customer</th><th className="num">Open</th><th className="num hide-sm">To bill</th><th className="num hide-sm">This year</th></tr></thead>
@@ -176,7 +183,7 @@ export default function CustomerBook({ book, pick, onPick, onOpenCall, admin = f
             const r = reasons(c);
             return (
               <tr key={c.customer_id} className="click" onClick={() => onPick(`c:${c.customer_id}`)}>
-                <td><strong>{c.name}</strong> <span className="small muted">{c.sites.length} location{c.sites.length === 1 ? '' : 's'}</span>
+                <td><strong>{c.name}</strong> <span className="small muted">{c.sites.length} location{c.sites.length === 1 ? '' : 's'}</span>{c.managed && <span className="chip tone-slate" style={{ marginLeft: 6 }}>your customer</span>}
                   {c.store_removed_at && <div><span className="chip tone-slate">They removed you {date(c.store_removed_at)}</span></div>}
                   {r.length > 0 && <div className="row" style={{ gap: 4, marginTop: 4 }}>{r.map((x) => <span key={x} className="chip tone-red">{x}</span>)}</div>}</td>
                 <td className="num">{c.open_calls}</td>
