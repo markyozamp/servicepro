@@ -1526,7 +1526,7 @@ do $$ begin perform set_config('app.override', 'on', true); perform _allow_inter
   update visits set started_at = now() - interval '80 minutes', arrived_at = now() - interval '60 minutes',
          crew_log = jsonb_build_array(jsonb_build_object('at', now() - interval '60 minutes', 'helpers', 1)) where id = test.v('cv');
   perform _end_internal(); end $$;
-select test.ok((select (_verified(test.v('ah1'))->>'helper_billable_h')::numeric >= 1), 'an hour of helper time is verified');
+select test.ok((select (_verified(test.v('ah1'))->>'helper_h')::numeric >= 1 and (_verified(test.v('ah1'))->>'helper_billable_h')::numeric = 0), 'the lead''s headcount records an hour of helper time, but it isn''t verified (the helper didn''t check in himself)');
 select test.ok((select (_verified(test.v('ah1'))->>'billable_h')::numeric = (_verified(test.v('ah1'))->>'tech_billable_h')::numeric + (_verified(test.v('ah1'))->>'helper_billable_h')::numeric), 'billable hours = tech + helper');
 set role authenticated; select test.login(:MARIA);
 select test.ok((select (store_confirm_crew(test.v('cv'), false)->>'ok')::boolean), 'the store says the count isn''t right');
@@ -1723,6 +1723,8 @@ select test.ok((select (save_bill(test.v('tw'), (select l0 from bt) || '[{"kind"
 select test.ok((select (rebuild_bill(test.v('tw'))->'lines') @> '[{"description":"Drain cleanout cap"}]'), 'rebuilding from the record keeps the lines they added');
 select test.ok((select (save_bill(test.v('tw'), (select jsonb_agg(case when x->>'kind' = 'labor' then jsonb_set(x, '{qty}', to_jsonb((x->>'qty')::numeric + 1)) else x end)
   from jsonb_array_elements(bill_draft(test.v('tw'))->'lines') x), 'PP-2001')->>'labor_h')::numeric > (bill_draft(test.v('tw'))->>'verified_h')::numeric), 'they can bill more labor');
+select test.blocked($$select send_built_bill((select test.v('tw')), null, true)$$, 'Set up your rates', 'no bill goes out until the contractor has set his own rates');
+update contractors set rates_confirmed_at = now() where id in (test.v('PRAIRIE'), '10000000-0000-0000-0000-000000000001');
 select test.blocked($$select send_built_bill((select test.v('tw')), null, true)$$, 'what the extra time', 'but more than verified needs a reason');
 select from rebuild_bill(test.v('tw'));
 select from save_bill(test.v('tw'), (select jsonb_agg(x) from jsonb_array_elements(bill_draft(test.v('tw'))->'lines') x
@@ -2156,3 +2158,82 @@ select test.ok((select (mark_bill_paid(test.v('pw'), true, 'cash at the counter'
 reset role;
 select test.ok((select amount_paid = total and paid_at is not null from call_invoices where work_order_id = test.v('pw')), 'paid in full');
 update contractors set level = 'verify', remind_unpaid = false where id = :ARCTIC;
+
+\echo '=== 85. Your rates: roles, overtime, tiered parts, guardrails, his own confirmation'
+reset role; update contractors set level = 'base' where id = :ARCTIC; set role authenticated;
+select test.login(:PAT);
+select test.blocked($$select save_rates('{"lead":125}', true)$$, 'owner or billing', 'only the owner or billing sets the rates');
+select test.ok((select jsonb_typeof(my_rates()->'team') = 'null'), 'dispatch doesn''t see what people are paid');
+select test.login(:DANA);
+select test.blocked($$select save_rates('{"lead":125}', false)$$, 'I set these rates myself', 'saving needs his own confirmation');
+select test.blocked($$select save_rates('{"lead":15}', true)$$, 'Double-check', 'a probable typo ($15 an hour) needs a second look');
+select test.blocked($$select save_rates('{"lead":125,"parts_tiers":[{"up_to":1000,"pct":50},{"up_to":500,"pct":65}]}', true)$$, 'tiers go up', 'parts tiers have to go up');
+select test.blocked($$select save_rates('{"lead":90}', true, false, 30, '{"pay":32,"overhead_month":8000,"techs":2,"paid_hours":40,"billable_hours":26,"margin_pct":50}')$$,
+  'below your break-even', 'a rate under his own break-even is caught');
+select test.ok((select (save_rates('{"lead":90}', true, true, 30, '{"pay":32,"overhead_month":8000,"techs":2,"paid_hours":40,"billable_hours":26,"margin_pct":50}')->>'overridden')::boolean), 'but it''s his call: "keep it anyway"');
+select test.ok((select (r->'calc'->>'break_even')::numeric = 99.50 and (r->'calc'->>'target')::numeric = 199.01
+  from (select save_rates('{"lead":125,"lead_ot":187.5,"helper":65,"helper_ot":97.5,"apprentice":55,"apprentice_ot":82.5,"trip":89,"markup_pct":40,"parts_tiers":[{"up_to":500,"pct":65},{"up_to":1000,"pct":50},{"up_to":null,"pct":45}]}',
+    true, true, 30, '{"pay":32,"overhead_month":8000,"techs":2,"paid_hours":40,"billable_hours":26,"margin_pct":50}') r) x),
+  'break-even and target rate from his own numbers ($99.50 / $199.01 at a 50% margin)');
+select test.ok((select confirmed_by = 'Dana Owner' and confirmed_at is not null from (select my_rates()->>'confirmed_by' confirmed_by, my_rates()->>'confirmed_at' confirmed_at) x), 'recorded: who set the rates, and when');
+select test.ok((select _parts_pct(rates, 100) = 65 and _parts_pct(rates, 750) = 50 and _parts_pct(rates, 5000) = 45 from contractors where id = :ARCTIC), 'the parts markup comes from the cost tier');
+reset role;
+insert into parts (contractor_id, sku, name, unit_cost) values (:ARCTIC, 'TIER-1', 'Contactor', 40), (:ARCTIC, 'TIER-2', 'Condenser fan motor', 600) on conflict do nothing;
+select test.ok((select part_price(id) = 66.00 from parts where sku = 'TIER-1' and contractor_id = :ARCTIC) and (select part_price(id) = 900.00 from parts where sku = 'TIER-2' and contractor_id = :ARCTIC),
+  'a $40 part at 65% = $66; a $600 part at 50% = $900');
+set role authenticated; select test.login(:DANA);
+select from set_tech_pay(:MIKE, 34);
+select test.ok((select bool_or((x->>'pay_rate')::numeric = 34) from jsonb_array_elements(my_rates()->'team') x), 'each tech''s pay, private to the owner');
+
+\echo '=== 86. Subcontractor and fee / permit lines'
+select test.put('sw', (create_work_order((select id from sites where customer_id = test.v('oc') and name = 'Diner'), (select id from issue_types where code='no_cooling'), 'Sub and fee test')).id);
+reset role;
+do $$ begin perform _allow_internal(true); update work_orders set status = 'completed', completed_at = now(), invoice_ready = true where id = test.v('sw'); perform _end_internal(); end $$;
+set role authenticated; select test.login(:PAT);
+create temp table sfb as select save_bill(test.v('sw'), '[{"kind":"labor","description":"Labor","qty":1,"unit":"hr","rate":125},
+  {"kind":"sub","sub_type":"Electrical","vendor":"Bixby Electric","description":"Electrical: new disconnect and whip (subcontracted)","qty":1,"unit":"ea","cost":1000,"markup":15},
+  {"kind":"fee","fee_type":"Permit","description":"City mechanical permit","qty":1,"unit":"ea","cost":75}]'::jsonb, 'AA-8001') j;
+select test.ok((select (x->>'rate')::numeric = 1150 and x->>'vendor' = 'Bixby Electric' from sfb, jsonb_array_elements(j->'lines') x where x->>'kind' = 'sub'), 'the sub: his $1,000 cost + 15% = $1,150 on the bill');
+select test.ok((select (x->>'rate')::numeric = 75 from sfb, jsonb_array_elements(j->'lines') x where x->>'kind' = 'fee'), 'the permit passed through at cost');
+select from send_built_bill(test.v('sw'));
+reset role;
+select test.ok((select not exists (select 1 from jsonb_array_elements(lines) x where x ? 'cost' or x ? 'markup' or x ? 'vendor') and total = 1350 from call_invoices where work_order_id = test.v('sw')),
+  'the customer sees the description and price, not his cost, markup or the sub''s name');
+
+\echo '=== 87. Crew: everyone checks in and out on his own phone'
+update profiles set crew_role = 'helper' where id = :LUIS;
+update sites set lat = 47.9000, lon = -97.0500 where customer_id = test.v('oc') and name = 'Diner';
+set role authenticated; select test.login(:PAT);
+select test.put('cw', (create_work_order((select id from sites where customer_id = test.v('oc') and name = 'Diner'), (select id from issue_types where code='no_cooling'), 'Crew test')).id);
+select test.put('cwv', (assign_work_order(test.v('cw'), :MIKE)).id);
+select test.login(:MIKE);
+select from tech_start(test.v('cwv')); select from tech_arrive(test.v('cwv'), null, 47.9000, -97.0500);
+select test.login(:LUIS);
+select test.ok((select bool_or((c->>'visit_id')::uuid = test.v('cwv')) from jsonb_array_elements(crew_today()->'calls') c), 'the helper sees the call his lead is on');
+select test.blocked($$select crew_check_in((select test.v('cwv')), 47.95, -97.05)$$, 'ft from', 'checking in from down the road isn''t allowed');
+select test.ok((select (crew_check_in(test.v('cwv'), 47.9001, -97.0501)->>'arrived_ok')::boolean), 'checked in on site, his own phone, location checked');
+select test.blocked($$select crew_check_in((select test.v('cwv')), 47.9001, -97.0501)$$, 'still checked in', 'one call at a time: check out first');
+reset role;
+do $$ begin perform set_config('app.override', 'on', true); perform _allow_internal(true);
+  update visits set arrived_at = now() - interval '3 hours', started_at = now() - interval '200 minutes' where id = test.v('cwv');
+  perform _end_internal(); end $$;
+update visit_crew set arrived_at = now() - interval '3 hours' where profile_id = :LUIS and left_at is null;
+select test.put('lc', (select id from visit_crew where profile_id = :LUIS and left_at is null));
+set role authenticated; select test.login(:LUIS);
+select test.ok((select (r->>'left_ok')::boolean from (select crew_check_out(test.v('lc'), 47.9001, -97.0501) r) x), 'he checks out on site: verified');
+reset role;
+update visit_crew set left_at = now() - interval '2 hours' where profile_id = :LUIS and visit_id = test.v('cwv');
+set role authenticated; select test.login(:MIKE);
+select test.ok((select (crew_lead_mark(test.v('cwv'), 'arrived', null, 'Sam (no phone)', 'apprentice')->>'arrived_by') = 'lead'), 'the lead records an apprentice without the app');
+select test.ok((select t->'missing'->0->>'item' = 'crew' and t->'missing'->0->>'message' like 'Sam (no phone) still checked in%' from (select tech_finish_visit(test.v('cwv'), 'completed') t) x),
+  'finishing asks about anyone still checked in');
+select from crew_lead_mark(test.v('cwv'), 'left', (select (c->>'id')::uuid from jsonb_array_elements(visit_crew_list(test.v('cwv'))->'crew') c where c->>'name' = 'Sam (no phone)'));
+reset role;
+select test.ok((select (v->>'helper_verified_h')::numeric between 0.9 and 1.1 and (v->>'helper_unverified_h')::numeric >= 0 and (v->>'apprentice_verified_h')::numeric = 0
+  from (select _verified(test.v('cw')) v) x), 'verified helper time: his own check-in to check-out (1 h); the lead-recorded apprentice isn''t verified');
+select test.ok((select (v->'visits'->0->'crew'->0->>'verified')::boolean and not (v->'visits'->0->'crew'->1->>'verified')::boolean from (select _verified(test.v('cw')) v) x), 'each person shows verified or not');
+do $$ begin perform _allow_internal(true); update work_orders set status = 'completed', completed_at = now(), invoice_ready = true where id = test.v('cw'); perform _end_internal(); end $$;
+set role authenticated; select test.login(:PAT);
+select test.put('cwah', case when (select after_hours from work_orders where id = test.v('cw')) then '00000000-0000-0000-0000-000000000001'::uuid end);
+select test.ok((select bool_or(x->>'kind' = 'helper' and (x->>'rate')::numeric = case when test.v('cwah') is not null then 97.5 else 65 end) from jsonb_array_elements(bill_draft(test.v('cw'))->'lines') x), 'the bill: helper hours at the helper rate (overtime rate after hours)');
+reset role; update contractors set level = 'verify' where id = :ARCTIC;

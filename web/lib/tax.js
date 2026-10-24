@@ -5,7 +5,8 @@
 export const TAX_OPTS = [['sales', 'Taxed'], ['use', 'Built-in (use tax)'], ['none', 'No tax']];
 
 export function defaultTax(kind, area) {
-  if (['labor', 'after_hours', 'helper', 'flat'].includes(kind)) return area?.labor ? 'sales' : 'none';
+  if (['labor', 'after_hours', 'helper', 'apprentice', 'flat', 'sub'].includes(kind)) return area?.labor ? 'sales' : 'none';
+  if (kind === 'fee') return 'none';
   if (kind === 'trip') return area?.trip ? 'sales' : 'none';
   return 'sales';
 }
@@ -33,3 +34,8 @@ export function taxTotals(lines, tax) {
 }
 
 export const pct = (n) => `${Number(n || 0).toFixed(3).replace(/\.?0+$/, '')}%`;
+
+// Subcontractor and fee / permit lines: his cost plus a markup (blank = passed through at cost)
+export const SUB_TYPES = ['Electrical', 'Plumbing', 'Crane / rigging', 'Sheet metal', 'Insulation', 'Roofing', 'Concrete / pad', 'Other'];
+export const FEE_TYPES = ['Permit', 'Inspection fee', 'Professional services', 'Disposal / recycling', 'Equipment rental', 'Other'];
+export const subFeePrice = (cost, markup) => (cost === '' || cost == null ? '' : Math.round(Number(cost) * (1 + Number(markup || 0) / 100) * 100) / 100);

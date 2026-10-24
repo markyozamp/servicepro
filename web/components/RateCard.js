@@ -12,7 +12,10 @@ import { ErrorBox, Notice } from './bits';
 export const RATE_FIELDS = [
   ['regular', 'Regular labor', '/hr'],
   ['after_hours', 'After hours / overtime', '/hr'],
-  ['helper', 'Helper / apprentice', '/hr'],
+  ['helper', 'Helper', '/hr'],
+  ['helper_after_hours', 'Helper, after hours / overtime', '/hr'],
+  ['apprentice', 'Apprentice', '/hr'],
+  ['apprentice_after_hours', 'Apprentice, after hours / overtime', '/hr'],
   ['trip', 'Trip charge', ' per trip'],
   ['markup_pct', 'Parts markup', '%'],
 ];

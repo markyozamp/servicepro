@@ -7,6 +7,7 @@ import { portalFor, signOutLocal, isDemoEmail } from '@/lib/useProfile';
 import DemoBanner, { backToDemo } from '@/components/DemoBanner';
 import * as T from '@/lib/techStore';
 import { time, ago, PRIORITY, KIND, STATUS } from '@/lib/format';
+import { CrewHome } from '@/components/tech/Crew';
 import Job from '@/components/tech/Job';
 import AlertsButton from '@/components/AlertsButton';
 import HeaderMenu from '@/components/HeaderMenu';
@@ -134,6 +135,7 @@ function JobList({ v, onOpen }) {
       {active.length === 0 && !(v.open_calls || []).length && <div className="sec muted">No open jobs right now.</div>}
       {active.map((j) => <JobCard key={j.visit.id} j={j} onOpen={onOpen} />)}
       <OpenCalls calls={v.open_calls || []} />
+      <CrewHome collapsed={active.length > 0} />
       {done.length > 0 && <h3 className="muted" style={{ marginTop: 8 }}>Finished today</h3>}
       {done.map((j) => <JobCard key={j.visit.id} j={j} onOpen={onOpen} />)}
     <AppFooter kind="tech" />

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as T from '@/lib/techStore';
 import { supabase } from '@/lib/supabase';
 import { money, time, date, PRIORITY } from '@/lib/format';
+import { CrewPanel, CrewCloseout, openCrew } from './Crew';
 
 const ETAS = [10, 20, 30, 45, 60, 90];
 
@@ -202,6 +203,7 @@ function VerifyOnSite({ job }) {
       {needsCheckin && <CheckIn job={job} />}
       {!needsCheckin && <CrewLine job={job} />}
       {!needsCheckin && !v.crew_set_at && <Crew job={job} />}
+      {!needsCheckin && <CrewPanel visitId={v.id} />}
       {!needsCheckin && (run ? <PartsRunActive job={job} run={run} /> : (
         <>
           <PartsRunStart job={job} />
@@ -267,13 +269,16 @@ function Leaving({ job }) {
   const [pick, setPick] = useState(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
-  const go = async (outcome) => {
+  const [closeout, setCloseout] = useState(null);
+  const go = async (outcome, crewDone) => {
     setBusy(true);
+    if (!crewDone) { const rows = await openCrew(job.visit.id); if (rows.length) { setCloseout({ rows, outcome }); setBusy(false); return; } }
     const p = await T.position(5000);
     T.act('tech_leave', { p_visit: job.visit.id, p_outcome: outcome, p_note: note.trim() || null, p_lat: p?.lat ?? null, p_lon: p?.lon ?? null }, { label: 'Leaving' });
     setBusy(false);
   };
   const opts = [['completed', '✓ Done'], ['return_needed', '↺ Coming back'], ['parts_needed', '⏳ Waiting for parts']];
+  if (closeout) return <CrewCloseout visitId={job.visit.id} rows={closeout.rows} onCancel={() => setCloseout(null)} onDone={() => { const o = closeout.outcome; setCloseout(null); go(o, true); }} />;
   return (
     <div className="sec">
       <h3>Leaving</h3>
@@ -316,6 +321,7 @@ function OnSite({ job, cat, m, me }) {
       {!needsCheckin && (
         <>
           <CrewLine job={job} />
+          <CrewPanel visitId={v.id} />
           {(service || w.equipment_id) && <Equipment job={job} cat={cat} done={eqDone} />}
           {service && <Photos job={job} />}
           {w.kind === 'pm' && <Checklist job={job} />}
@@ -762,13 +768,16 @@ function Finish({ job, cat, m, eqDone, me }) {
   if (m.pending) missing.push(`Approval for ${m.pending.po} is still pending`);
   if (m.limit != null && m.used > m.limit) missing.push(`Cost ${money(m.used)} is over the approved ${money(m.limit)} — request more`);
 
-  async function finish(outcome, extra = {}) {
+  const [closeout, setCloseout] = useState(null);
+  async function finish(outcome, extra = {}, crewDone = false) {
+    if (!crewDone) { const rows = await openCrew(v.id); if (rows.length) { setCloseout({ rows, outcome, extra }); return; } }
     T.act('tech_finish_visit', { p_visit: v.id, p_outcome: outcome, p_note: note || null, ...extra }, { label: 'Finish visit' });
     const p = await T.position(4000);
     T.act('tech_depart', { p_visit: v.id, p_lat: p?.lat ?? null, p_lon: p?.lon ?? null }, { label: 'Left site' });
     setMode(null);
   }
 
+  if (closeout) return <CrewCloseout visitId={v.id} rows={closeout.rows} onCancel={() => setCloseout(null)} onDone={() => { const c = closeout; setCloseout(null); finish(c.outcome, c.extra, true); }} />;
   return (
     <div className="sec">
       <h3>Finish this visit</h3>

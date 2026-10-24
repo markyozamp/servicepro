@@ -269,6 +269,21 @@ const CONTRACTOR = [
     'No sensors? Add a Typed log for the unit and type the temperature when you check it: same limits, same alarms.',
     'Temperature log (for a claim, your insurer or the health inspector): Temperatures → Temperature log → pick the dates and unit → Open the log. Hour by hour with each hour\'s high and low, a graph with the limits, the alarms and who answered them, door openings per day. Print, save as PDF or download.',
   ]],
+  ['Your rates (Base)', [
+    'Team → Your rates (owner or billing). Labor per hour for lead tech, helper and apprentice, regular and overtime / after hours; the trip charge; parts markup, one percent or by what the part costs you (e.g. up to $500 at 65%, up to $1,000 at 50%, above that 45%).',
+    'You set every rate and tick "I set these rates myself"; it\'s recorded who set them and when. Bills can\'t go out until this is done.',
+    'Help me figure my rate: your pay, burden %, overhead, billable hours and target margin give your break-even and the rate for that margin. A rate under break-even, or one that looks like a typo, asks you to double-check ("Keep it anyway" if it\'s right).',
+    'A customer with a contract rate: Customers → rate card. It can set any of these rates and its own parts markup; its calls use it automatically.',
+  ]],
+  ['Crew: helpers and apprentices check in on their own phones', [
+    'Helper or apprentice: Home → "Helping on a job?" → I\'m here (at the location). Leaving: tap Leaving before you go. Moving to another call: Switch to another job, then I\'m here when you get there.',
+    'Only time between your own check-in and check-out at the location counts as verified. Forgot to check out? Your time shows "no check-out, not verified" to the customer, and hours billed past that need an explanation.',
+    'Lead: the Crew checked in panel shows who\'s here. Someone without the app: + Someone here without the app (recorded by you, not verified). When you leave or finish, anyone still checked in: "They stayed until now", or when each left.',
+  ]],
+  ['Subcontractors, permits and fees on a bill', [
+    'On the bill or quote: + Subcontractor (pick the trade, the sub\'s name, your cost and your markup) or + Fee / permit (permit, inspection, professional services, disposal, equipment rental, other). Leave the markup blank to pass it through at cost.',
+    'The customer sees the description and the price. Your cost, markup and the sub\'s name stay private.',
+  ]],
   ['Sales tax and use tax (Base)', [
     'Team → Sales tax rates (owner or billing): add one rate for each state you work in, plus the cities or special districts with a different total rate. Say whether labor and the trip charge are taxed there. You set and check the rates; the app never supplies one.',
     'A location uses its city\'s rate if the city is on your list, otherwise its state\'s. On any bill or quote you can pick a different rate for that location (for addresses just outside city limits).',

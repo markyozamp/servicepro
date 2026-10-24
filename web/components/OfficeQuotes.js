@@ -8,10 +8,11 @@ import { act } from '@/lib/supabase';
 import { money, date } from '@/lib/format';
 import { TAX_OPTS, defaultTax, taxTotals, pct } from '@/lib/tax';
 import TaxBox from './TaxBox';
+import SubFeeFields from './SubFeeFields';
 
 const STATUS = { draft: ['Draft', 'tone-slate'], sent: ['Sent, waiting', 'tone-amber'], approved: ['Approved', 'tone-green'], declined: ['Declined', 'tone-red'],
   not_chosen: ['Not chosen', 'tone-slate'], withdrawn: ['Withdrawn', 'tone-slate'] };
-const KINDS = [['equipment', 'Equipment'], ['part', 'Part'], ['labor', 'Labor'], ['task', 'Task'], ['other', 'Other']];
+const KINDS = [['equipment', 'Equipment'], ['part', 'Part'], ['labor', 'Labor'], ['task', 'Task'], ['sub', 'Subcontractor'], ['fee', 'Fee / permit'], ['other', 'Other']];
 const amt = (l) => Math.round(Number(l.qty || 0) * Number(l.rate || 0) * 100) / 100;
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -27,7 +28,7 @@ function QuoteEditor({ quote, request, sites, onDone, onCancel }) {
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const edit = (i, k, v) => setF({ ...f, lines: f.lines.map((l, j) => (j === i ? { ...l, [k]: v } : l)) });
   const add = (kind) => setF({ ...f, lines: [...f.lines, { kind, description: '', qty: 1, unit: kind === 'labor' ? 'hr' : 'ea', rate: '', cost: '',
-    tax: kind === 'equipment' ? 'use' : defaultTax(kind, tax?.area) }] });
+    tax: kind === 'equipment' ? 'use' : kind === 'fee' ? 'none' : defaultTax(kind === 'sub' ? 'labor' : kind, tax?.area) }] });
   const total = f.lines.reduce((t, l) => t + amt(l), 0);
   const txInfo = tax ? { on: tax.on, area: tax.area, exempt: !!tax.exempt && (!tax.exempt_until || tax.exempt_until >= today()) } : null;
   const tt = taxTotals(f.lines, txInfo);
@@ -72,11 +73,12 @@ function QuoteEditor({ quote, request, sites, onDone, onCancel }) {
               <tr key={i}>
                 <td><select value={l.kind} onChange={(e) => edit(i, 'kind', e.target.value)} style={{ width: 'auto', marginBottom: 4 }}>{KINDS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>
                   <input value={l.description} onChange={(e) => edit(i, 'description', e.target.value)} placeholder="Description" />
+                  {['sub', 'fee'].includes(l.kind) ? <SubFeeFields l={l} onChange={(n) => setF({ ...f, lines: f.lines.map((x, j) => (j === i ? n : x)) })} /> : null}
                   <div className="row small" style={{ gap: 6, marginTop: 4, alignItems: 'center' }}>
                     {tt.on && <select value={l.tax || defaultTax(l.kind, tt.area)} onChange={(e) => edit(i, 'tax', e.target.value)} style={{ width: 'auto' }} aria-label="Tax on this line">
                       {TAX_OPTS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}</select>}
-                    <label className="row" style={{ gap: 4, fontWeight: 400 }}>your cost/{l.unit || 'ea'}
-                      <input type="number" step="0.01" min="0" value={l.cost ?? ''} onChange={(e) => edit(i, 'cost', e.target.value)} style={{ width: 90 }} placeholder="private" /></label>
+                    {!['sub', 'fee'].includes(l.kind) && <label className="row" style={{ gap: 4, fontWeight: 400 }}>your cost/{l.unit || 'ea'}
+                      <input type="number" step="0.01" min="0" value={l.cost ?? ''} onChange={(e) => edit(i, 'cost', e.target.value)} style={{ width: 90 }} placeholder="private" /></label>}
                   </div></td>
                 <td className="num"><input type="number" step="0.25" min="0" value={l.qty} onChange={(e) => edit(i, 'qty', e.target.value)} style={{ width: 80 }} /></td>
                 <td><input value={l.unit || ''} onChange={(e) => edit(i, 'unit', e.target.value)} style={{ width: 60 }} /></td>
@@ -106,6 +108,8 @@ function QuoteEditor({ quote, request, sites, onDone, onCancel }) {
         <button type="button" onClick={() => add('equipment')}>+ Equipment</button>
         <button type="button" onClick={() => add('part')}>+ Part</button>
         <button type="button" onClick={() => add('labor')}>+ Labor</button>
+        <button type="button" onClick={() => add('sub')}>+ Subcontractor</button>
+        <button type="button" onClick={() => add('fee')}>+ Fee / permit</button>
         {book ? (
           <select value="" onChange={(e) => { const i = book.find((x) => x.id === e.target.value); if (i) setF({ ...f, lines: [...f.lines, { kind: 'task', description: `${i.code ? `${i.code} ` : ''}${i.name}`, qty: 1, unit: 'ea', rate: Number(i.price), tax: 'sales', cost: '' }] }); }} style={{ width: 'auto', maxWidth: 260 }}>
             <option value="">+ From price book…</option>

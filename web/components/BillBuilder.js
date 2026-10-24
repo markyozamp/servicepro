@@ -8,9 +8,10 @@ import { act } from '@/lib/supabase';
 import { money } from '@/lib/format';
 import { TAX_OPTS, defaultTax, lineAmount, taxTotals, pct } from '@/lib/tax';
 import TaxBox from './TaxBox';
+import SubFeeFields from './SubFeeFields';
 
 const h = (n) => `${Number(n || 0).toFixed(2)} h`;
-const KIND = { labor: 'Labor', after_hours: 'After hours', helper: 'Helper', trip: 'Trip', part: 'Part', flat: 'Flat', task: 'Task', equipment: 'Equipment', other: 'Other' };
+const KIND = { labor: 'Labor', after_hours: 'After hours', helper: 'Helper', apprentice: 'Apprentice', trip: 'Trip', part: 'Part', flat: 'Flat', task: 'Task', equipment: 'Equipment', sub: 'Subcontractor', fee: 'Fee / permit', other: 'Other' };
 const amt = lineAmount;
 
 export default function BillBuilder({ wo, busy, onSent, onLight }) {
@@ -49,7 +50,7 @@ export default function BillBuilder({ wo, busy, onSent, onLight }) {
     const i = (book || []).find((x) => x.id === id); if (!i) return;
     setLines([...lines, { kind: 'task', description: `${i.code ? `${i.code} ` : ''}${i.name}`, qty: 1, unit: 'ea', rate: Number(i.price), tax: 'sales', auto: false }]); setDirty(true); setPick('');
   };
-  const add = (kind) => { setLines([...lines, { kind, description: '', qty: 1, unit: kind === 'part' ? 'ea' : '', rate: '', tax: defaultTax(kind, s?.tax?.area), auto: false }]); setDirty(true); };
+  const add = (kind) => { setLines([...lines, { kind, description: '', qty: 1, unit: ['part', 'sub', 'fee'].includes(kind) ? 'ea' : '', rate: '', tax: kind === 'fee' ? 'none' : defaultTax(kind === 'sub' ? 'labor' : kind, s?.tax?.area), auto: false }]); setDirty(true); };
   const remove = (i) => { setLines(lines.filter((_, j) => j !== i)); setDirty(true); };
 
   if (!s) return err ? <div className="error">{err}</div> : <div className="small muted">Building your bill…</div>;
@@ -77,7 +78,8 @@ export default function BillBuilder({ wo, busy, onSent, onLight }) {
             {lines.map((l, i) => (
               <tr key={i}>
                 <td><span className="small muted">{KIND[l.kind] || 'Other'}</span>
-                  <input value={l.description} onChange={(e) => edit(i, 'description', e.target.value)} placeholder="Description" />
+                  <input value={l.description} onChange={(e) => edit(i, 'description', e.target.value)} placeholder={l.kind === 'sub' ? 'What they did (the customer sees this)' : l.kind === 'fee' ? 'e.g. City mechanical permit' : 'Description'} />
+                  {['sub', 'fee'].includes(l.kind) && <SubFeeFields l={l} onChange={(n) => { setLines(lines.map((x, j) => (j === i ? n : x))); setDirty(true); }} />}
                   {tt.on && (
                     <div className="row small" style={{ gap: 6, marginTop: 4, alignItems: 'center' }}>
                       <select value={l.tax || defaultTax(l.kind, tt.area)} onChange={(e) => setTax(i, e.target.value)} style={{ width: 'auto' }} aria-label="Tax on this line">
@@ -112,6 +114,8 @@ export default function BillBuilder({ wo, busy, onSent, onLight }) {
           </select>
         ) : <button type="button" onClick={openBook}>+ From price book</button>}
         <button type="button" onClick={() => add('part')}>+ Part</button>
+        <button type="button" onClick={() => add('sub')}>+ Subcontractor</button>
+        <button type="button" onClick={() => add('fee')}>+ Fee / permit</button>
         <button type="button" onClick={() => add('other')}>+ Other line</button>
         <button type="button" disabled={working} onClick={() => call('rebuild_bill', { p_wo: wo.id }, take)} title="Fills the lines in again from the record; lines you added stay">↻ Rebuild from the record</button>
       </div>

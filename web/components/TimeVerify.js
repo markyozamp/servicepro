@@ -188,8 +188,15 @@ export function VerifyPanel({ wo, side, profile, busy, run: runOuter, visits = [
                     <div className="small">On site {hm(v.onsite_min)}{v.travel_min ? ` · travel ${hm(v.travel_min)}${v.travel_counted_min ? '' : ' (not paid)'}` : ''}
                       {v.parts_run_min ? ` · parts run ${hm(v.parts_run_min)}${v.parts_run_unverified_min ? ' (supplier not confirmed by GPS)' : ''}` : ''}
                       {v.checkin_verified === false ? ' · check-in NOT verified' : ''}</div>
-                    {(v.helpers > 0 || v.helper_min > 0) && (
-                      <div className="small">👷 Crew: {v.tech} + {v.helpers === 1 ? '1 helper' : `${v.helpers} helpers`}{v.crew_names ? ` (${v.crew_names})` : ''} · helper time {hm(v.helper_min)}
+                    {(v.crew || []).length > 0 && (
+                      <div className="small">👷 Crew: {v.crew.map((c, i) => (
+                        <span key={c.id}>{i ? ' · ' : ''}<strong>{c.name}</strong>{c.role === 'apprentice' ? ' (apprentice)' : ''} {time(c.arrived_at)}–{c.left_at ? time(c.left_at) : (v.open ? 'on site' : 'no check-out')}{' '}
+                          {c.verified || (!c.left_at && v.open && c.arrived_by === 'self') ? <span style={{ color: 'var(--green-fg)' }}>✓</span>
+                            : <span style={{ color: 'var(--red-fg)' }}>⚠ {c.arrived_by === 'lead' ? 'recorded by the lead' : !c.left_at ? 'no check-out' : c.left_by !== 'self' ? 'check-out entered by the lead' : 'check-out away from the location'}</span>}</span>
+                      ))}{Number(v.helper_unverified_min) > 0 ? <span className="muted"> · {hm(v.helper_unverified_min)} not verified</span> : null}</div>
+                    )}
+                    {!(v.crew || []).length && (v.helpers > 0 || v.helper_min > 0) && (
+                      <div className="small">👷 Crew: {v.tech} + {v.helpers === 1 ? '1 helper' : `${v.helpers} helpers`}{v.crew_names ? ` (${v.crew_names})` : ''} · helper time {hm(v.helper_min)} <span style={{ color: 'var(--red-fg)' }}>not verified (the helpers didn&apos;t check in on their own phones)</span>
                         {v.crew_confirmed === true ? <span style={{ color: 'var(--green-fg)' }}> · confirmed on site</span>
                           : v.crew_confirmed === false ? <span style={{ color: 'var(--red-fg)' }}> · the location said the count isn&apos;t right</span>
                           : <span className="muted"> · crew size not confirmed</span>}</div>

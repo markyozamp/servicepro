@@ -23,6 +23,7 @@ import AccountingExport from '@/components/AccountingExport';
 import TaxReport from '@/components/TaxReport';
 import TaxSetup from '@/components/TaxSetup';
 import InvoicesPayments from '@/components/InvoicesPayments';
+import YourRates from '@/components/YourRates';
 import Monitoring, { AlarmStrip } from '@/components/Monitoring';
 import OfficeToday from '@/components/OfficeToday';
 import ScrollRow from '@/components/ScrollRow';
@@ -278,7 +279,7 @@ export default function OfficePortal() {
           </div>
         )}
 
-        {tab === 'team' && <><CallRouting profile={profile} logo={logo} onLogo={setLogoOverride} />{(org?.level || 'verify') !== 'verify' && <><InvoiceNumbering profile={profile} /><TaxSetup profile={profile} /><PriceBook profile={profile} /></>}<TeamPanel profile={profile} /></>}
+        {tab === 'team' && <><CallRouting profile={profile} logo={logo} onLogo={setLogoOverride} />{(org?.level || 'verify') !== 'verify' && <><YourRates profile={profile} /><InvoiceNumbering profile={profile} /><TaxSetup profile={profile} /><PriceBook profile={profile} /></>}<TeamPanel profile={profile} /></>}
 
         {tab === 'customers' && <CustomerBook book={book} pick={validPick} onPick={setCpick} onOpenCall={setOpen} admin={!!profile.is_org_admin} onChanged={load} contractorId={profile.contractor_id} canRates={!!(profile.is_org_admin || profile.can_dispatch)} base={(org?.level || 'verify') !== 'verify'} canAdd={!!(profile.is_org_admin || profile.can_dispatch)} />}
 
