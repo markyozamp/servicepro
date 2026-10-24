@@ -626,3 +626,14 @@ table.compare .prospect { background: var(--amber-bg); }
   .billpage .panel { border: none; box-shadow: none; }
   body { background: #fff !important; }
 }
+
+/* Base: the week's schedule */
+.schedtable th, .schedtable td { vertical-align: top; min-width: 120px; }
+.schedtable th:first-child, .schedtable td:first-child { min-width: 110px; }
+.schedtable .today { background: #f4f9ff; }
+.schedtrip { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; text-align: left; margin-bottom: 4px;
+  padding: 5px 7px; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-weight: 400; font-size: 13px; }
+.schedtrip.st-blue { border-left: 4px solid #3b82c4; }
+.schedtrip.st-amber { border-left: 4px solid #d98e04; }
+.schedtrip.st-green { border-left: 4px solid #2e9d5b; }
+.schedtrip.st-slate { border-left: 4px solid #9aa7b4; opacity: .8; }

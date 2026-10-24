@@ -1815,3 +1815,35 @@ select test.login(:RIVAL);
 select test.blocked($$select mark_bill_paid((select test.v('ow')))$$, 'Not allowed', 'nobody else can mark it paid');
 reset role;
 update contractors set level = 'verify' where id = :ARCTIC;
+
+\echo '=== 78. Base: schedule your techs, and timesheets'
+set role authenticated;
+select test.login(:PAT);
+select test.blocked($$select tech_schedule(current_date)$$, 'come with Base', 'scheduling and timesheets are Base features');
+reset role; update contractors set level = 'base' where id = :ARCTIC; set role authenticated;
+select test.login(:PAT);
+select test.ok((select jsonb_array_length(tech_schedule(current_date - 1, 7)->'techs') >= 1), 'the schedule lists the technicians');
+select test.ok((select jsonb_typeof(tech_schedule(current_date - 1, 7)->'unscheduled') = 'array'), 'and the calls that still need a trip');
+select test.put('sw', (create_work_order((select id from sites where customer_id = test.v('oc') and name = 'Diner'), (select id from issue_types where code='no_cooling'), 'Walk-in cooler warm')).id);
+select test.ok((select bool_or((x->>'wo_id')::uuid = test.v('sw')) from jsonb_array_elements(tech_schedule(current_date, 7)->'unscheduled') x), 'a new call shows as needing a trip');
+select test.put('sv', (schedule_trip(test.v('sw'), :MIKE, now() + interval '1 day', now() + interval '1 day 2 hours')).id);
+select test.ok((select bool_or((x->>'visit_id')::uuid = test.v('sv') and (x->>'tech_id')::uuid = :MIKE) from jsonb_array_elements(tech_schedule(current_date, 7)->'visits') x), 'scheduled: it shows on Mike''s row');
+select test.ok((select not bool_or((x->>'wo_id')::uuid = test.v('sw')) from jsonb_array_elements(tech_schedule(current_date, 7)->'unscheduled') x), 'and leaves the needs-a-trip list');
+select test.login(:MIKE);
+select test.blocked($$select tech_schedule(current_date)$$, 'Not allowed', 'techs don''t see the office schedule');
+select from clock('in', now() - interval '3 hours');
+select from clock('break_start', now() - interval '2 hours');
+select from clock('break_end', now() - interval '90 minutes');
+select from clock('out', now() - interval '1 minute');
+select test.login(:PAT);
+select test.ok((select (x->>'paid_min')::int >= 145 from jsonb_array_elements(team_week(date_trunc('week', now())::date)) x where (x->>'id')::uuid = :MIKE),
+  'the week shows Mike''s paid time (shift minus break)');
+select test.ok((select jsonb_array_length(tech_week(:MIKE, date_trunc('week', now())::date)->'entries') >= 2), 'and every punch');
+select test.ok((select profile_id = :MIKE from approve_timesheet(:MIKE, date_trunc('week', now())::date)), 'the office approves the week');
+select test.ok((select (x->>'approved_at') is not null from jsonb_array_elements(team_week(date_trunc('week', now())::date)) x where (x->>'id')::uuid = :MIKE), 'it shows approved');
+select test.blocked($$select team_week('2026-10-21')$$, 'Monday', 'weeks start on Monday');
+select test.blocked($$select mark_payroll_exported(date_trunc('week', now())::date)$$, 'owner or billing', 'dispatch can''t send payroll');
+select test.login(:DANA);
+select test.ok((select mark_payroll_exported(date_trunc('week', now())::date) = 1), 'the owner sends the approved week to payroll');
+reset role;
+update contractors set level = 'verify' where id = :ARCTIC;

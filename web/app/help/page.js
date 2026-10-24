@@ -247,6 +247,17 @@ const CONTRACTOR = [
     'Set how bills are numbered: Team → Invoice numbers (e.g. "PP-" and the next number).',
     'Missing a rate? Put your rates for that customer on the rate card so they fill in next time.',
   ]],
+  ['Schedule your techs (Base)', [
+    'Office → Schedule: the week, one row per technician, every trip on it (scheduled, on the way, on site, done). ‹ › to change weeks.',
+    'Needs a trip lists the calls with no trip yet. Tap Schedule, pick the tech, the day and the from–to time.',
+    'Tap a trip to open the call: move it, change the tech or cancel it from there.',
+  ]],
+  ['Timesheets (Base)', [
+    'Techs clock in, take breaks and clock out on the phone (top of the job list).',
+    'Office → Timesheets: each tech\'s week, paid hours (clocked minus breaks), overtime past 40, time on site and driving from the trips, jobs.',
+    'Tap a tech for their days and punches. Fix a punch with a reason (it\'s kept on the record). Then Approve the week (not your own).',
+    'Owner or billing: Download for payroll (CSV) sends the approved weeks to payroll; after that a punch can\'t be changed.',
+  ]],
   ['Your own customers (Base)', [
     'Customers → + Add a customer: a business or a homeowner, with their first location and the email for bills. They don\'t need a login.',
     'On their page: Edit details, + Location for more locations.',

@@ -16,6 +16,8 @@ import CustomerBook from '@/components/CustomerBook';
 import CallRouting from '@/components/CallRouting';
 import InvoiceNumbering from '@/components/InvoiceNumbering';
 import PriceBook from '@/components/PriceBook';
+import TechSchedule from '@/components/TechSchedule';
+import Timesheets from '@/components/Timesheets';
 import OfficeToday from '@/components/OfficeToday';
 import ScrollRow from '@/components/ScrollRow';
 import ContractorStart from '@/components/ContractorStart';
@@ -173,6 +175,8 @@ export default function OfficePortal() {
         <ScrollRow className="tabs" style={{ marginBottom: 16 }}>
           <button className={tab === 'today' ? 'on' : ''} onClick={() => setTab('today')}>Today{todayCount > 0 && <span className="count">{todayCount}</span>}</button>
           <button className={tab === 'board' ? 'on' : ''} onClick={() => setTab('board')}>Dispatch board</button>
+          {(org?.level || 'verify') !== 'verify' && <button className={tab === 'schedule' ? 'on' : ''} onClick={() => setTab('schedule')}>Schedule</button>}
+          {(org?.level || 'verify') !== 'verify' && <button className={tab === 'time' ? 'on' : ''} onClick={() => setTab('time')}>Timesheets</button>}
           <button className={tab === 'customers' ? 'on' : ''} onClick={() => setTab('customers')}>
             Customers{hotCustomers > 0 && <span className="count">{hotCustomers}</span>}
           </button>
@@ -191,6 +195,8 @@ export default function OfficePortal() {
         </div>
 
         {tab === 'today' && <OfficeToday calls={callsF} flags={flagsF} onOpen={setOpen} />}
+        {tab === 'schedule' && <TechSchedule onOpenCall={setOpen} refreshKey={open} />}
+        {tab === 'time' && <Timesheets profile={profile} />}
 
         {tab === 'board' && isPhone && (
           <ScrollRow className="colchips">
