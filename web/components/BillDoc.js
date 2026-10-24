@@ -2,10 +2,12 @@
 
 // The bill itself (printable): used by the signed-in bill page and the customer's no-login link.
 import { money, dateTime, date } from '@/lib/format';
+import { pct } from '@/lib/tax';
 
 const hm = (min) => { const m = Number(min || 0); return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
 
 export default function BillDoc({ b }) {
+  const taxed = Number(b.sales_tax || 0) > 0;
   return (
     <div className="panel panel-pad stack" style={{ gap: 14 }}>
         <div className="spread" style={{ alignItems: 'flex-start' }}>
@@ -29,8 +31,11 @@ export default function BillDoc({ b }) {
           <thead><tr><th>Description</th><th className="num">Qty</th><th className="num">Rate</th><th className="num">Amount</th></tr></thead>
           <tbody>
             {(b.lines || []).map((l, i) => (
-              <tr key={i}><td>{l.description}</td><td className="num">{Number(l.qty)} {l.unit}</td><td className="num">{l.rate == null ? '' : money(l.rate)}</td><td className="num">{l.amount == null ? '' : money(l.amount)}</td></tr>
+              <tr key={i}><td>{l.description}{taxed && l.tax === 'sales' ? <span className="muted"> T</span> : null}</td><td className="num">{Number(l.qty)} {l.unit}</td><td className="num">{l.rate == null ? '' : money(l.rate)}</td><td className="num">{l.amount == null ? '' : money(l.amount)}</td></tr>
             ))}
+            {(taxed || b.tax_exempt) && <tr><td colSpan={3}>Subtotal</td><td className="num">{money(b.subtotal)}</td></tr>}
+            {taxed && <tr><td colSpan={3}>Sales tax{b.tax_area ? `, ${b.tax_area}` : ''} {pct(b.tax_rate)} <span className="small muted">(on lines marked T)</span></td><td className="num">{money(b.sales_tax)}</td></tr>}
+            {b.tax_exempt && <tr><td colSpan={3}>Sales tax: exempt (certificate on file)</td><td className="num">{money(0)}</td></tr>}
             <tr><td colSpan={3}><strong>Total</strong>{b.paid_at ? <span className="chip tone-green" style={{ marginLeft: 8 }}>PAID {date(b.paid_at)}</span> : null}</td><td className="num"><strong>{money(b.total)}</strong></td></tr>
           </tbody>
         </table>

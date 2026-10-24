@@ -1907,3 +1907,93 @@ select test.ok((select bool_or(x->>'invoice_number' = 'AA-5001') from jsonb_arra
 select test.login(:PAT);
 select test.blocked($$select invoice_export()$$, 'owner or billing', 'dispatch can''t export');
 reset role; update contractors set level = 'verify' where id = :ARCTIC;
+
+\echo '=== 81. Sales tax and use tax (the contractor sets his own rates)'
+reset role; update contractors set level = 'base' where id = :ARCTIC; set role authenticated;
+select test.login(:PAT);
+select test.blocked($$select save_tax_area(null, 'ND', 'ND', null, 5)$$, 'owner or billing', 'only the owner or billing sets tax rates');
+select test.login(:DANA);
+select test.put('tnd', (save_tax_area(null, 'North Dakota', 'nd', null, 5, false, false)->>'id')::uuid);
+select test.put('tgf', (save_tax_area(null, 'Grand Forks ND', 'ND', 'Grand Forks', 7.25, false, false, 'https://example.gov/lookup')->>'id')::uuid);
+select from save_tax_area(null, 'Minnesota', 'MN', null, 6.875, true, false);
+select test.blocked($$select save_tax_area(null, 'again', 'ND', 'grand forks', 7)$$, 'already on your list', 'one rate per city');
+select test.blocked($$select save_tax_area(null, 'x', 'North Dakota', null, 5)$$, 'two-letter state', 'the state is two letters');
+select test.ok((select jsonb_array_length(tax_settings()->'areas') = 3 and not (tax_settings()->>'stale')::boolean), 'his list: two states and a city, checked today');
+select test.ok((select site_tax((select id from sites where customer_id = test.v('oc') and name = 'Diner'))->'area'->>'source' = 'city'), 'a location in Grand Forks gets the Grand Forks rate on its own');
+select test.put('sfg', (add_my_customer_site(test.v('oc'), 'Fargo shop', '55 Main Ave, Fargo, ND 58102')->>'site_id')::uuid);
+select test.ok((select a->>'source' = 'state' and (a->>'rate')::numeric = 5 from (select site_tax(test.v('sfg'))->'area' a) x), 'a city not on his list gets the state rate');
+select test.put('ssd', (add_my_customer_site(test.v('oc'), 'Sioux Falls', '9 Phillips Ave, Sioux Falls, SD 57104')->>'site_id')::uuid);
+select test.ok((select site_tax(test.v('ssd'))->'area' = 'null'::jsonb), 'a state he has no rate for has none');
+-- A bill: labor not taxed in ND, a taxed part, a built-in part (use tax on his cost)
+select test.put('tw', (create_work_order((select id from sites where customer_id = test.v('oc') and name = 'Diner'), (select id from issue_types where code='no_cooling'), 'Taxed bill')).id);
+reset role;
+do $$ begin perform _allow_internal(true); update work_orders set status = 'completed', completed_at = now(), invoice_ready = true where id = test.v('tw'); perform _end_internal(); end $$;
+set role authenticated; select test.login(:PAT);
+create temp table tsum as select save_bill(test.v('tw'), '[{"kind":"labor","description":"Labor","qty":2,"unit":"hr","rate":95},{"kind":"part","description":"Thermostat","qty":1,"unit":"ea","rate":185,"tax":"sales"},{"kind":"part","description":"Water heater","qty":1,"unit":"ea","rate":900,"tax":"use","cost":600}]'::jsonb, 'AA-6001') j;
+select test.ok((select (t->>'subtotal')::numeric = 1275 and (t->>'taxable')::numeric = 185 and (t->>'sales_tax')::numeric = 13.41
+  and (t->>'use_basis')::numeric = 600 and (t->>'use_tax')::numeric = 43.50 and (t->>'total')::numeric = 1288.41 from (select j->'tax' t from tsum) x),
+  'tax only on the taxed part (7.25%); use tax on his $600 cost, not the $900 price');
+select from send_built_bill(test.v('tw'));
+reset role;
+select test.ok((select total = 1288.41 and subtotal = 1275 and sales_tax = 13.41 and tax_area = 'Grand Forks ND' from call_invoices where work_order_id = test.v('tw')), 'the bill: subtotal, sales tax, total');
+select test.ok((select not exists (select 1 from jsonb_array_elements(lines) x where x ? 'cost') from call_invoices where work_order_id = test.v('tw')), 'his cost is not on the customer''s copy');
+select test.ok((select use_tax = 43.50 from invoice_tax where work_order_id = test.v('tw')), 'the use tax he owes is kept on his side');
+create temp table tbl as select token t from bill_links where work_order_id = test.v('tw'); grant select on tbl to anon;
+set role anon; select set_config('request.jwt.claim.sub', '', false);
+select test.ok((select (b->>'sales_tax')::numeric = 13.41 and (b->>'total')::numeric = 1288.41 and not (b->'lines'->2 ? 'cost') from (select bill_public((select t from tbl)) b) x), 'the customer''s link shows the tax, not his cost');
+reset role; set role authenticated;
+-- A location with no rate can't be billed for taxed lines until the office picks one
+select test.login(:PAT);
+select test.put('tw2', (create_work_order(test.v('ssd'), (select id from issue_types where code='no_cooling'), 'No rate')).id);
+reset role;
+do $$ begin perform _allow_internal(true); update work_orders set status = 'completed', completed_at = now(), invoice_ready = true where id = test.v('tw2'); perform _end_internal(); end $$;
+set role authenticated; select test.login(:PAT);
+select from save_bill(test.v('tw2'), '[{"kind":"part","description":"Contactor","qty":1,"unit":"ea","rate":60}]'::jsonb, 'AA-6002');
+select test.blocked($$select send_built_bill((select test.v('tw2')))$$, 'Pick the tax rate', 'no rate for that location: it asks for one before sending');
+select test.ok((select site_tax->'area'->>'source' = 'picked' from (select set_site_tax_area(test.v('ssd'), test.v('tnd')) site_tax) x), 'the office picks the rate for that location');
+select from send_built_bill(test.v('tw2'));
+reset role;
+select test.ok((select sales_tax = 3.00 and total = 63 from call_invoices where work_order_id = test.v('tw2')), 'taxed at the picked rate');
+-- Tax-exempt customer: no sales tax on the bill, use tax still owed
+set role authenticated; select test.login(:PAT);
+select test.blocked($$select set_customer_tax_exempt((select test.v('oc')), true, 'cert 1')$$, 'owner or billing', 'only the owner or billing marks a customer exempt');
+select test.login(:DANA);
+select test.blocked($$select set_customer_tax_exempt((select test.v('oc')), true, '')$$, 'certificate', 'the certificate is noted');
+select test.ok((select (set_customer_tax_exempt(test.v('oc'), true, 'ND E-595E on file', current_date + 365)->>'ok')::boolean), 'marked exempt, certificate on file');
+reset role;
+select test.ok((select (t->>'sales_tax')::numeric = 0 and (t->>'use_tax')::numeric = 43.50 and (t->>'exempt')::boolean
+  from (select _tax_calc(:ARCTIC, (select id from sites where customer_id = test.v('oc') and name = 'Diner'), test.v('oc'),
+    '[{"kind":"part","description":"Thermostat","qty":1,"rate":185,"amount":185,"tax":"sales"},{"kind":"part","description":"Water heater","qty":1,"rate":900,"amount":900,"tax":"use","cost":600}]'::jsonb) t) x),
+  'exempt: no sales tax, but the use tax on built-in parts is still his to pay');
+set role authenticated; select test.login(:DANA);
+select from set_customer_tax_exempt(test.v('oc'), false);
+-- Quotes carry the same tax
+select test.put('tq', (save_quote(null, test.v('sfg'), 'New water heater', '[{"kind":"equipment","description":"80 gal water heater","qty":1,"unit":"ea","rate":3100,"tax":"use","cost":2500},{"kind":"part","description":"Expansion tank","qty":1,"unit":"ea","rate":200,"tax":"sales","cost":120}]'::jsonb)->>'id')::uuid);
+reset role;
+select test.ok((select total = 3310 and subtotal = 3300 and sales_tax = 10 and use_tax = 125 from quotes where id = test.v('tq')), 'the quote: tax on the tank (Fargo is the 5% state rate), use tax on his cost of the heater');
+set role authenticated; select test.login(:DANA);
+select from send_quote(test.v('tq'));
+reset role;
+create temp table tql as select token t from quote_links where quote_id = test.v('tq'); grant select on tql to anon;
+set role anon; select set_config('request.jwt.claim.sub', '', false);
+select test.ok((select (q->>'sales_tax')::numeric = 10 and not exists (select 1 from jsonb_array_elements(q->'lines') x where x ? 'cost') from (select quote_public((select t from tql)) q) x), 'the customer sees the tax, not his cost');
+select from quote_link_decide((select t from tql), true, 'Rita Lund');
+reset role;
+do $$ begin perform _allow_internal(true); update work_orders set status = 'completed', completed_at = now(), invoice_ready = true
+  where id = (select work_order_id from quotes where id = test.v('tq')); perform _end_internal(); end $$;
+select test.put('tqw', (select work_order_id from quotes where id = test.v('tq')));
+set role authenticated; select test.login(:PAT);
+select test.ok((select jsonb_array_length(b->'lines') = 2 and b->'lines'->0->>'tax' = 'use' and (b->>'total')::numeric = 3310
+  from (select bill_draft(test.v('tqw')) b) x), 'the approved quote''s job is billed as quoted, tax and all');
+-- The tax report
+select test.login(:PAT);
+select test.blocked($$select tax_report(current_date - 1, current_date)$$, 'owner or billing', 'dispatch can''t see the tax report');
+select test.login(:DANA);
+select test.ok((select (a->>'sales_tax')::numeric = 13.41 and (a->>'use_tax')::numeric = 43.50 and (a->>'taxable')::numeric = 185
+  from (select x a from jsonb_array_elements(tax_report(current_date - 1, current_date)->'areas') x where x->>'area' = 'Grand Forks ND') y), 'the month: sales tax charged and use tax owed, by rate');
+select test.ok((select count(*) = 1 from jsonb_array_elements(tax_report(current_date - 1, current_date)->'use_lines') x where (x->>'basis')::numeric = 600), 'each built-in part on the use tax list, at his cost');
+select test.ok((select x->>'tax_area' = 'Grand Forks ND' and (x->>'sales_tax')::numeric = 13.41 from jsonb_array_elements(invoice_export(null, null, false)) x where x->>'invoice_number' = 'AA-6001'), 'the QuickBooks file carries the tax');
+select test.ok((select (mark_tax_rates_checked()->>'checked')::int = 3), 'checked this quarter''s rates: one tap');
+reset role;
+update tax_areas set removed_at = now() where contractor_id = :ARCTIC;
+update contractors set level = 'verify' where id = :ARCTIC;

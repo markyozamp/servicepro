@@ -26,6 +26,8 @@ function QuoteCard({ q, canApprove, onDecided, onOpenCall }) {
       <table className="small">
         <tbody>
           {(q.lines || []).map((l, i) => <tr key={i}><td>{l.description}{Number(l.qty) !== 1 ? ` × ${Number(l.qty)}` : ''}</td><td className="num">{money(l.amount)}</td></tr>)}
+          {Number(q.sales_tax) > 0 && <tr><td>Sales tax{q.tax_area ? `, ${q.tax_area}` : ''}</td><td className="num">{money(q.sales_tax)}</td></tr>}
+          {q.tax_exempt && <tr><td className="muted">Sales tax: exempt</td><td className="num">{money(0)}</td></tr>}
           <tr><td><strong>Total</strong></td><td className="num"><strong style={{ fontSize: 18 }}>{money(q.total)}</strong></td></tr>
         </tbody>
       </table>

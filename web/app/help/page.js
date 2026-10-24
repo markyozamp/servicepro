@@ -249,9 +249,16 @@ const CONTRACTOR = [
   ]],
   ['Send bills to QuickBooks (Base)', [
     'Office → Billing → Send bills to QuickBooks (owner or billing). Pick dates if you like, then Find bills. Only bills not sent yet, unless you untick it.',
-    'QuickBooks Online: download QuickBooks Online (CSV), then in QuickBooks: Settings → Import data → Invoices. Up to 100 invoices per file. It doesn\'t work if sales tax is turned on in your QuickBooks.',
+    'QuickBooks Online: download QuickBooks Online (CSV), then in QuickBooks: Settings → Import data → Invoices. Up to 100 invoices per file. It doesn\'t work if sales tax is turned on in your QuickBooks. Sales tax on a bill comes in as a "Sales tax" line; point that product at your sales tax payable account.',
     'QuickBooks Desktop: open "QuickBooks Desktop instead", enter your receivables and income account names, download the .iif, then File → Utilities → Import → IIF Files.',
     'Each bill is marked once downloaded, so it doesn\'t go in twice. Customer list (CSV) helps you add new customers to QuickBooks first.',
+  ]],
+  ['Sales tax and use tax (Base)', [
+    'Team → Sales tax rates (owner or billing): add one rate for each state you work in, plus the cities or special districts with a different total rate. Say whether labor and the trip charge are taxed there. You set and check the rates; the app never supplies one.',
+    'A location uses its city\'s rate if the city is on your list, otherwise its state\'s. On any bill or quote you can pick a different rate for that location (for addresses just outside city limits).',
+    'Each line is Taxed (sales tax on the price, shown on the bill), Built-in (it becomes part of the building: no tax on the bill, you owe use tax on your cost), or No tax. Parts remember Built-in for next time.',
+    'Tax-exempt customer: on the bill, "This customer is tax exempt…", note the certificate. No sales tax on their bills; use tax on built-in parts is still yours.',
+    'Office → Billing → Sales and use tax report: by rate, what you charged and the use tax you owe, with a CSV for your accountant. Each new quarter you\'re reminded to check your rates. Rules differ by state; have your accountant confirm your settings.',
   ]],
   ['Quotes for installs and projects', [
     'Store: + New service call area → Install / project quote → + Ask for quotes. Pick the location, say what you want quoted, tick the contractors, set a date.',

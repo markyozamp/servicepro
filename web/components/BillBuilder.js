@@ -6,10 +6,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { act } from '@/lib/supabase';
 import { money } from '@/lib/format';
+import { TAX_OPTS, defaultTax, lineAmount, taxTotals, pct } from '@/lib/tax';
+import TaxBox from './TaxBox';
 
 const h = (n) => `${Number(n || 0).toFixed(2)} h`;
-const KIND = { labor: 'Labor', after_hours: 'After hours', helper: 'Helper', trip: 'Trip', part: 'Part', flat: 'Flat', task: 'Task', other: 'Other' };
-const amt = (l) => (l.rate === '' || l.rate == null ? null : Math.round(Number(l.qty || 0) * Number(l.rate) * 100) / 100);
+const KIND = { labor: 'Labor', after_hours: 'After hours', helper: 'Helper', trip: 'Trip', part: 'Part', flat: 'Flat', task: 'Task', equipment: 'Equipment', other: 'Other' };
+const amt = lineAmount;
 
 export default function BillBuilder({ wo, busy, onSent, onLight }) {
   const [s, setS] = useState(null);
@@ -37,23 +39,29 @@ export default function BillBuilder({ wo, busy, onSent, onLight }) {
   }
   const save = (after) => call('save_bill', { p_wo: wo.id, p_lines: lines, p_invoice_number: no, p_note: note }, (r) => { take(r); after?.(r); });
   const edit = (i, k, v) => { setLines(lines.map((l, j) => (j === i ? { ...l, [k]: v } : l))); setDirty(true); };
+  const setTax = (i, v) => {
+    const l = lines[i]; edit(i, 'tax', v);
+    if (l.part_id && (v === 'use') !== (l.tax === 'use')) act('set_part_built_in', { p_part: l.part_id, p_built_in: v === 'use' }).catch(() => {});
+  };
+  const refreshTax = async () => { try { const r = await act('bill_draft', { p_wo: wo.id }); setS(r); } catch (x) { setErr(x.message); } };
   const openBook = async () => { try { setBook(await act('price_book', { p_customer: wo.customer_id })); } catch (x) { setErr(x.message); } };
   const addTask = (id) => {
     const i = (book || []).find((x) => x.id === id); if (!i) return;
-    setLines([...lines, { kind: 'task', description: `${i.code ? `${i.code} ` : ''}${i.name}`, qty: 1, unit: 'ea', rate: Number(i.price), auto: false }]); setDirty(true); setPick('');
+    setLines([...lines, { kind: 'task', description: `${i.code ? `${i.code} ` : ''}${i.name}`, qty: 1, unit: 'ea', rate: Number(i.price), tax: 'sales', auto: false }]); setDirty(true); setPick('');
   };
-  const add = (kind) => { setLines([...lines, { kind, description: '', qty: 1, unit: kind === 'part' ? 'ea' : '', rate: '', auto: false }]); setDirty(true); };
+  const add = (kind) => { setLines([...lines, { kind, description: '', qty: 1, unit: kind === 'part' ? 'ea' : '', rate: '', tax: defaultTax(kind, s?.tax?.area), auto: false }]); setDirty(true); };
   const remove = (i) => { setLines(lines.filter((_, j) => j !== i)); setDirty(true); };
 
   if (!s) return err ? <div className="error">{err}</div> : <div className="small muted">Building your bill…</div>;
-  const total = lines.reduce((t, l) => t + (amt(l) || 0), 0);
+  const tt = taxTotals(lines, s.tax);
+  const total = tt.subtotal;
   const labor = lines.filter((l) => ['labor', 'after_hours', 'helper'].includes(l.kind)).reduce((t, l) => t + Number(l.qty || 0), 0);
   const verified = Number(s.verified_h || 0);
   const extra = !s.flat && labor - verified > 0.009;
   const missing = lines.some((l) => l.rate === '' || l.rate == null);
   const cap = s.cap == null ? null : Number(s.cap);
   const over = cap != null && total > cap + 0.004;
-  const ready = lines.length && !missing && no.trim() && total > 0 && (!extra || reason.trim().length >= 5) && (!over || overOk);
+  const ready = lines.length && !missing && !tt.missing && no.trim() && total > 0 && (!extra || reason.trim().length >= 5) && (!over || overOk);
 
   return (
     <div className="stack billbuilder" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 8 }}>
@@ -69,7 +77,16 @@ export default function BillBuilder({ wo, busy, onSent, onLight }) {
             {lines.map((l, i) => (
               <tr key={i}>
                 <td><span className="small muted">{KIND[l.kind] || 'Other'}</span>
-                  <input value={l.description} onChange={(e) => edit(i, 'description', e.target.value)} placeholder="Description" /></td>
+                  <input value={l.description} onChange={(e) => edit(i, 'description', e.target.value)} placeholder="Description" />
+                  {tt.on && (
+                    <div className="row small" style={{ gap: 6, marginTop: 4, alignItems: 'center' }}>
+                      <select value={l.tax || defaultTax(l.kind, tt.area)} onChange={(e) => setTax(i, e.target.value)} style={{ width: 'auto' }} aria-label="Tax on this line">
+                        {TAX_OPTS.map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+                      </select>
+                      {(l.tax || defaultTax(l.kind, tt.area)) === 'use' && <label className="row" style={{ gap: 4, fontWeight: 400 }}>your cost/ea
+                        <input type="number" step="0.01" min="0" value={l.cost ?? ''} onChange={(e) => edit(i, 'cost', e.target.value)} style={{ width: 90 }} placeholder="cost" /></label>}
+                    </div>
+                  )}</td>
                 <td className="num"><input type="number" step="0.25" min="0" value={l.qty} onChange={(e) => edit(i, 'qty', e.target.value)} style={{ width: 80 }} /></td>
                 <td><input value={l.unit || ''} onChange={(e) => edit(i, 'unit', e.target.value)} style={{ width: 60 }} /></td>
                 <td className="num"><input type="number" step="0.01" min="0" value={l.rate ?? ''} onChange={(e) => edit(i, 'rate', e.target.value)} placeholder="rate"
@@ -78,11 +95,15 @@ export default function BillBuilder({ wo, busy, onSent, onLight }) {
                 <td><button type="button" className="linkbtn small" aria-label="Remove line" onClick={() => remove(i)}>✕</button></td>
               </tr>
             ))}
-            <tr><td colSpan={4}><strong>Total</strong>{cap != null && <span className="small muted"> · this call allows {money(cap)}</span>}</td>
-              <td className="num"><strong style={over ? { color: 'var(--red-fg)' } : {}}>{money(total)}</strong></td><td /></tr>
+            {tt.on && <tr><td colSpan={4}>Subtotal{cap != null && <span className="small muted"> · this call allows {money(cap)} before tax</span>}</td><td className="num" style={over ? { color: 'var(--red-fg)' } : {}}>{money(total)}</td><td /></tr>}
+            {tt.on && <tr><td colSpan={4}>{tt.exempt ? 'Sales tax: exempt' : tt.area ? `Sales tax ${pct(tt.rate)} on ${money(tt.taxable)}` : 'Sales tax: pick the rate below'}</td><td className="num">{money(tt.salesTax)}</td><td /></tr>}
+            <tr><td colSpan={4}><strong>Total</strong>{!tt.on && cap != null && <span className="small muted"> · this call allows {money(cap)}</span>}</td>
+              <td className="num"><strong style={!tt.on && over ? { color: 'var(--red-fg)' } : {}}>{money(tt.total)}</strong></td><td /></tr>
           </tbody>
         </table>
       </div>
+      {tt.on && <TaxBox siteId={wo.site_id} onChanged={refreshTax} />}
+      {tt.on && tt.useBasis + tt.noCost > 0 && <div className="small muted">Only you see this: use tax you owe on built-in parts, {money(tt.useTax)} ({pct(tt.rate)} of your {money(tt.useBasis)} cost){tt.noCost ? `. Add your cost on ${tt.noCost} built-in line${tt.noCost > 1 ? 's' : ''}` : ''}.</div>}
       <div className="row small" style={{ gap: 6 }}>
         {book ? (
           <select value={pick} onChange={(e) => addTask(e.target.value)} style={{ width: 'auto', maxWidth: 280 }}>

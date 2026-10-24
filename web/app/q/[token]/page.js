@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { act } from '@/lib/supabase';
 import { money, date, dateTime } from '@/lib/format';
+import { pct } from '@/lib/tax';
 import { LegalFooter } from '@/components/Legal';
 
 export default function CustomerQuote() {
@@ -41,7 +42,10 @@ export default function CustomerQuote() {
         <table className="billtable">
           <thead><tr><th>Description</th><th className="num">Qty</th><th className="num">Price</th><th className="num">Amount</th></tr></thead>
           <tbody>
-            {(qt.lines || []).map((l, i) => <tr key={i}><td>{l.description}</td><td className="num">{Number(l.qty)} {l.unit}</td><td className="num">{money(l.rate)}</td><td className="num">{money(l.amount)}</td></tr>)}
+            {(qt.lines || []).map((l, i) => <tr key={i}><td>{l.description}{Number(qt.sales_tax) > 0 && l.tax === 'sales' ? <span className="muted"> T</span> : null}</td><td className="num">{Number(l.qty)} {l.unit}</td><td className="num">{money(l.rate)}</td><td className="num">{money(l.amount)}</td></tr>)}
+            {(Number(qt.sales_tax) > 0 || qt.tax_exempt) && <tr><td colSpan={3}>Subtotal</td><td className="num">{money(qt.subtotal)}</td></tr>}
+            {Number(qt.sales_tax) > 0 && <tr><td colSpan={3}>Sales tax{qt.tax_area ? `, ${qt.tax_area}` : ''} {pct(qt.tax_rate)} <span className="small muted">(on lines marked T)</span></td><td className="num">{money(qt.sales_tax)}</td></tr>}
+            {qt.tax_exempt && <tr><td colSpan={3}>Sales tax: exempt (certificate on file)</td><td className="num">{money(0)}</td></tr>}
             <tr><td colSpan={3}><strong>Total</strong></td><td className="num"><strong>{money(qt.total)}</strong></td></tr>
           </tbody>
         </table>

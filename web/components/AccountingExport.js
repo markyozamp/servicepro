@@ -30,6 +30,10 @@ export function qboInvoicesCsv(bills, terms) {
       rows.push([b.invoice_number, b.customer, mdy(b.date), mdy(addDays(b.date, terms)), `Net ${terms}`, memo,
         ITEM[l.kind] || 'Service', l.description, n2(l.qty), n2(l.rate), n2(l.amount)]);
     }
+    if (Number(b.sales_tax) > 0) {
+      rows.push([b.invoice_number, b.customer, mdy(b.date), mdy(addDays(b.date, terms)), `Net ${terms}`, memo,
+        'Sales tax', `Sales tax ${b.tax_area || ''} ${Number(b.tax_rate || 0)}%`.replace(/\s+/g, ' '), '1.00', n2(b.sales_tax), n2(b.sales_tax)]);
+    }
   }
   return [head, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n');
 }
@@ -42,7 +46,7 @@ export function qboCustomersCsv(bills) {
   return [head, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n');
 }
 
-export function desktopIif(bills, terms, ar, income) {
+export function desktopIif(bills, terms, ar, income, taxAcct = 'Sales Tax Payable') {
   const out = ['!TRNS\tTRNSTYPE\tDATE\tACCNT\tNAME\tAMOUNT\tDOCNUM\tMEMO\tDUEDATE',
     '!SPL\tTRNSTYPE\tDATE\tACCNT\tNAME\tAMOUNT\tDOCNUM\tMEMO\tQNTY\tPRICE',
     '!ENDTRNS'];
@@ -53,13 +57,17 @@ export function desktopIif(bills, terms, ar, income) {
       out.push(['SPL', 'INVOICE', mdy(b.date), iifCell(income), iifCell(b.customer), n2(-Number(l.amount || 0)), iifCell(b.invoice_number),
         iifCell(l.description), n2(-Number(l.qty || 0)), n2(l.rate)].join('\t'));
     }
+    if (Number(b.sales_tax) > 0) {
+      out.push(['SPL', 'INVOICE', mdy(b.date), iifCell(taxAcct), iifCell(b.customer), n2(-Number(b.sales_tax)), iifCell(b.invoice_number),
+        iifCell(`Sales tax ${b.tax_area || ''} ${Number(b.tax_rate || 0)}%`), '', ''].join('\t'));
+    }
     out.push('ENDTRNS');
   }
   return out.join('\r\n') + '\r\n';
 }
 
 export default function AccountingExport() {
-  const [f, setF] = useState({ from: '', to: '', onlyNew: true, terms: 30, ar: 'Accounts Receivable', income: 'Service Income' });
+  const [f, setF] = useState({ from: '', to: '', onlyNew: true, terms: 30, ar: 'Accounts Receivable', income: 'Service Income', taxAcct: 'Sales Tax Payable' });
   const [bills, setBills] = useState(null);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
@@ -100,11 +108,12 @@ export default function AccountingExport() {
             <div className="row" style={{ alignItems: 'flex-end', marginTop: 6 }}>
               <label className="grow">Receivables account<input value={f.ar} onChange={set('ar')} /></label>
               <label className="grow">Income account<input value={f.income} onChange={set('income')} /></label>
-              <button onClick={() => { save(`invoices-quickbooks-desktop-${stamp}.iif`, desktopIif(bills, Number(f.terms) || 0, f.ar, f.income), 'text/plain'); done('QuickBooks Desktop file'); }}>QuickBooks Desktop (.iif)</button>
+              <label className="grow">Sales tax account<input value={f.taxAcct} onChange={set('taxAcct')} /></label>
+              <button onClick={() => { save(`invoices-quickbooks-desktop-${stamp}.iif`, desktopIif(bills, Number(f.terms) || 0, f.ar, f.income, f.taxAcct), 'text/plain'); done('QuickBooks Desktop file'); }}>QuickBooks Desktop (.iif)</button>
             </div>
             <div className="muted" style={{ marginTop: 4 }}>Use your account names exactly as they are in QuickBooks, and add any new customers there first. Then: File → Utilities → Import → IIF Files.</div>
           </details>
-          <div className="small muted">QuickBooks Online: Settings ⚙ → Import data → Invoices → upload the file, check the columns match, tick &ldquo;add new customers&rdquo; if asked. Note: QuickBooks Online&apos;s invoice import doesn&apos;t work when sales tax is turned on in your QuickBooks; then use the Desktop file or wait for live sync (Pro).</div>
+          <div className="small muted">QuickBooks Online: Settings ⚙ → Import data → Invoices → upload the file, check the columns match, tick &ldquo;add new customers&rdquo; if asked. Note: QuickBooks Online&apos;s invoice import doesn&apos;t work when sales tax is turned on in your QuickBooks; then use the Desktop file or wait for live sync. Sales tax on a bill comes in as a &ldquo;Sales tax&rdquo; line: point that product at your sales tax payable account.</div>
         </div>
       ))}
     </div>
