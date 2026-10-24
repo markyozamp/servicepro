@@ -12,7 +12,6 @@ import TopBar from '@/components/TopBar';
 import CallDetail from '@/components/CallDetail';
 import NewCallForm from '@/components/NewCallForm';
 import StoreSettings, { SETTINGS_TABS, storePerms, tabLabel } from '@/components/StoreSettings';
-import Info from '@/components/Info';
 import AppFooter from '@/components/AppFooter';
 import GettingStarted from '@/components/GettingStarted';
 import LocationPicker from '@/components/LocationPicker';
@@ -21,6 +20,7 @@ import PoLog from '@/components/PoLog';
 import ScrollRow from '@/components/ScrollRow';
 import Presence from '@/components/Presence';
 import WaitingOnYou from '@/components/WaitingOnYou';
+import StoreQuotes from '@/components/StoreQuotes';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox, Notice } from '@/components/bits';
 
 const LIST = `id, site_id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, total_cost, store_po_number,
@@ -342,20 +342,7 @@ export default function StorePortal() {
         <div ref={panelRef} className="anchor" />
         {settings && <StoreSettings key={org?.id || 'org'} tab={settings} setTab={setSettings} onClose={() => { setAddLoc(false); closeArea(); }} startAdding={addLoc} onLocationsChanged={load} me={profile} org={org} hideTabs onOrgChanged={(logoData) => { if (logoData !== undefined) setLogoOverride(logoData); }} />}
         <div ref={workRef} className="anchor" />
-        {project && (
-          <div className="panel panel-pad stack work-panel">
-            <div className="spread"><h2>Install or project quote <span className="soon">Coming soon</span> <Info title="Installs and projects">For bigger work: a new condensing unit, a walk-in freezer, a remodel. You describe the job, pick one or more contractors to quote it, and they send their quotes back on their own letterhead with photos. You compare, approve one, and it runs like any other call: scheduled, verified on arrival, the new equipment added to your list with its warranty.</Info></h2><button onClick={() => closeWork('project')}>Close</button></div>
-            <div><strong>This feature is coming soon.</strong> Here's how it will work when it's ready:</div>
-            <ol className="stack" style={{ gap: 4, margin: 0, paddingLeft: 20 }}>
-              <li>Describe the job and the location, add photos.</li>
-              <li>Pick the contractors you want quotes from (one, or several to compare).</li>
-              <li>Contractors on Service Call Proof <strong>Base, Pro or Enterprise</strong> send a full quote right here: line items, good / better / best options, their logo and terms, photos. Any other contractor can reply with a price and their own PDF.</li>
-              <li>Compare side by side and approve one with a tap.</li>
-              <li>From a Base, Pro or Enterprise contractor, the approved quote becomes the job and PO by itself: scheduled, checked in, verified, and the new equipment and its warranty added to your list.</li>
-            </ol>
-            <div className="small muted">Tip: ask your contractors to join Service Call Proof Base or Pro, and their quotes will come in ready to compare and approve. Until then: open a regular service call and write "Quote for new …" in the description.</div>
-          </div>
-        )}
+        {project && <StoreQuotes profile={profile} sites={allSites} onClose={() => closeWork('project')} onOpenCall={setOpen} />}
 
         {/* Calls a contractor entered from a phone call — confirm your store asked for them */}
         {calls.filter((c) => c.source === 'contractor' && c.mode === 'verify' && !c.store_confirmed_at && !['cancelled'].includes(c.status)).map((c) => (

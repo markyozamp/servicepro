@@ -637,3 +637,7 @@ table.compare .prospect { background: var(--amber-bg); }
 .schedtrip.st-amber { border-left: 4px solid #d98e04; }
 .schedtrip.st-green { border-left: 4px solid #2e9d5b; }
 .schedtrip.st-slate { border-left: 4px solid #9aa7b4; opacity: .8; }
+
+/* Quotes side by side */
+.quotegrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.quotecard table td { padding: 3px 4px; }

@@ -18,6 +18,7 @@ import InvoiceNumbering from '@/components/InvoiceNumbering';
 import PriceBook from '@/components/PriceBook';
 import TechSchedule from '@/components/TechSchedule';
 import Timesheets from '@/components/Timesheets';
+import OfficeQuotes from '@/components/OfficeQuotes';
 import OfficeToday from '@/components/OfficeToday';
 import ScrollRow from '@/components/ScrollRow';
 import ContractorStart from '@/components/ContractorStart';
@@ -190,6 +191,7 @@ export default function OfficePortal() {
             Review queue{reviewFlags.length > 0 && <span className="count">{reviewFlags.length}</span>}
           </button>
           <button className={tab === 'history' ? 'on' : ''} onClick={() => setTab('history')}>Invoiced & cancelled</button>
+          <button className={tab === 'quotes' ? 'on' : ''} onClick={() => setTab('quotes')}>Quotes</button>
           <button className={tab === 'team' ? 'on' : ''} onClick={() => setTab('team')}>Team</button>
         </ScrollRow>
         </div>
@@ -197,6 +199,7 @@ export default function OfficePortal() {
         {tab === 'today' && <OfficeToday calls={callsF} flags={flagsF} onOpen={setOpen} />}
         {tab === 'schedule' && <TechSchedule onOpenCall={setOpen} refreshKey={open} />}
         {tab === 'time' && <Timesheets profile={profile} />}
+        {tab === 'quotes' && <OfficeQuotes book={book} base={(org?.level || 'verify') !== 'verify'} onOpenCall={setOpen} />}
 
         {tab === 'board' && isPhone && (
           <ScrollRow className="colchips">

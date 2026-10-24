@@ -1847,3 +1847,49 @@ select test.login(:DANA);
 select test.ok((select mark_payroll_exported(date_trunc('week', now())::date) = 1), 'the owner sends the approved week to payroll');
 reset role;
 update contractors set level = 'verify' where id = :ARCTIC;
+
+\echo '=== 79. Quotes: the customer asks, contractors quote, the customer picks one'
+reset role; update contractors set level = 'verify' where id = :ARCTIC; set role authenticated;
+select test.login(:DOUG);
+select test.put('qr', (request_quotes(:S121, 'Replace the walk-in cooler condensing unit', 'Unit is 18 years old', array[test.v('PRAIRIE'), :ARCTIC]::uuid[], current_date + 10)->>'id')::uuid);
+reset role;
+select test.ok((select count(*) >= 1 from notifications where dedupe_key = 'qreq:' || test.v('qr')), 'the contractors are asked');
+set role authenticated;
+select test.login(test.v('PETE'));
+select test.ok((select bool_or((x->>'id')::uuid = test.v('qr')) from jsonb_array_elements(my_quotes()->'requests') x), 'the request shows for the contractor');
+select test.put('q1', (save_quote(null, :S121, 'New condensing unit, installed', '[{"kind":"equipment","description":"3 HP condensing unit","qty":1,"unit":"ea","rate":4200},{"kind":"labor","description":"Install and start-up","qty":10,"unit":"hr","rate":95}]'::jsonb, 'Includes removal of the old unit', null, test.v('qr'))->>'id')::uuid);
+reset role;
+select test.ok((select total = 5150 and status = 'draft' from quotes where id = test.v('q1')), 'a Time Verify contractor can answer a request; the total adds up');
+set role authenticated;
+select test.ok((select (send_quote(test.v('q1'))->>'portal')::boolean), 'sent: the store sees it in the portal');
+select test.login(:PAT);
+select test.blocked($$select save_quote(null, '30000000-0000-0000-0000-000000000002', 'Unasked quote', '[{"kind":"other","description":"x","qty":1,"rate":10}]')$$, 'comes with Base', 'quoting without being asked is a Base feature');
+select test.put('q2', (save_quote(null, :S121, 'Condensing unit, our price', '[{"kind":"equipment","description":"Condensing unit","qty":1,"unit":"ea","rate":4900}]'::jsonb, null, null, test.v('qr'))->>'id')::uuid);
+select from send_quote(test.v('q2'));
+select test.login(:MARIA);
+select test.ok((select count(*) = 2 from jsonb_array_elements(store_quotes()->'quotes') x where (x->>'request_id')::uuid = test.v('qr')), 'the store compares both quotes');
+select test.login(:DOUG);
+select test.blocked($$select decide_quote((select test.v('q2')), false)$$, 'Say why', 'saying no needs a reason');
+select test.ok((select (decide_quote(test.v('q1'), true)->>'approved')::boolean), 'the store approves Prairie''s quote');
+reset role;
+select test.ok((select q.status = 'approved' and w.contractor_id = test.v('PRAIRIE') and w.nte = 5150 and w.kind = 'install'
+  from quotes q join work_orders w on w.id = q.work_order_id where q.id = test.v('q1')), 'it became the job: a call to Prairie with the quote as the limit');
+select test.ok((select status = 'not_chosen' from quotes where id = test.v('q2')), 'the other quote is marked not chosen');
+select test.ok((select closed_at is not null from quote_requests where id = test.v('qr')), 'the request is closed');
+select test.ok((select count(*) >= 1 from notifications n join profiles p on p.id = n.user_id where p.contractor_id = :ARCTIC and n.message like '%chose another contractor%'), 'Arctic is told, politely');
+-- A Base contractor quotes their own customer, who approves from the emailed link
+update contractors set level = 'base' where id = :ARCTIC;
+set role authenticated; select test.login(:PAT);
+select test.put('q3', (save_quote(null, (select id from sites where customer_id = test.v('oc') and name = 'Diner'), 'New reach-in cooler', '[{"kind":"equipment","description":"2-door reach-in","qty":1,"unit":"ea","rate":3100}]'::jsonb)->>'id')::uuid);
+select test.ok((select send_quote(test.v('q3'))->>'emailed_to' = 'rita@lakesidediner.example'), 'their own customer gets the quote by email');
+reset role;
+create temp table ql as select token t from quote_links where quote_id = test.v('q3'); grant select on ql to anon;
+set role anon; select set_config('request.jwt.claim.sub', '', false);
+select test.ok((select quote_public((select t from ql))->>'total' = '3100.00'), 'they open it without an account');
+select test.blocked($$select quote_link_decide((select t from ql), true, '')$$, 'Type your name', 'approving needs their name');
+select test.ok((select (quote_link_decide((select t from ql), true, 'Rita Lund')->>'approved')::boolean), 'they approve it');
+select test.blocked($$select quote_link_decide((select t from ql), false, 'Rita', 'changed my mind')$$, 'no longer open', 'it can''t be decided twice');
+reset role;
+select test.ok((select q.decided_name = 'Rita Lund (by link)' and w.id is not null and w.contractor_id = :ARCTIC from quotes q join work_orders w on w.id = q.work_order_id where q.id = test.v('q3')),
+  'recorded with their name, and the job is open');
+update contractors set level = 'verify' where id = :ARCTIC;

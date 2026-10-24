@@ -247,6 +247,12 @@ const CONTRACTOR = [
     'Set how bills are numbered: Team → Invoice numbers (e.g. "PP-" and the next number).',
     'Missing a rate? Put your rates for that customer on the rate card so they fill in next time.',
   ]],
+  ['Quotes for installs and projects', [
+    'Store: + New service call area → Install / project quote → + Ask for quotes. Pick the location, say what you want quoted, tick the contractors, set a date.',
+    'Their quotes come in side by side with every line. Approve: make it the job opens a call to that contractor with the quote total as the limit; the others are told they weren\'t chosen. No thanks asks why, so they can adjust.',
+    'Contractor: Quotes tab. Asked to quote shows the requests: Write a quote (lines, + From price book, notes, good until), then Send the quote. Can\'t quote it tells the customer.',
+    'Base: + New quote for any of your customers. Customers without a login get an email link: they approve or decline there and type their name to sign.',
+  ]],
   ['Schedule your techs (Base)', [
     'Office → Schedule: the week, one row per technician, every trip on it (scheduled, on the way, on site, done). ‹ › to change weeks.',
     'Needs a trip lists the calls with no trip yet. Tap Schedule, pick the tech, the day and the from–to time.',
