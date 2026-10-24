@@ -259,6 +259,7 @@ const CONTRACTOR = [
     'Alarms go to the store\'s list (Who gets alarms) and the contractor\'s office and whoever is on call. Too warm or too cold also opens a service call to the contractor with the readings, unless you turn that off for the unit, or a call is already open for it. A reminder goes out if nobody taps "I\'m on it" in 30 minutes, and a notice when it\'s back to normal.',
     'Also flagged: a sensor that stops reporting, a gateway that goes offline, and a low battery (use lithium batteries in freezers).',
     'No sensors? Add a Typed log for the unit and type the temperature when you check it: same limits, same alarms.',
+    'Temperature log (for a claim, your insurer or the health inspector): Temperatures → Temperature log → pick the dates and unit → Open the log. Hour by hour with each hour\'s high and low, a graph with the limits, the alarms and who answered them, door openings per day. Print, save as PDF or download.',
   ]],
   ['Sales tax and use tax (Base)', [
     'Team → Sales tax rates (owner or billing): add one rate for each state you work in, plus the cities or special districts with a different total rate. Say whether labor and the trip charge are taxed there. You set and check the rates; the app never supplies one.',

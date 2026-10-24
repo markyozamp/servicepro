@@ -196,6 +196,27 @@ function AlarmList({ contacts, sites, onChanged }) {
   );
 }
 
+// The temperature log for a claim or an inspector: pick the location, dates and unit, open it to print or download
+function ReportForm({ sites, devices, siteFilter }) {
+  const today = new Date(); const pad = (n) => String(n).padStart(2, '0');
+  const ymd = (x) => `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`;
+  const [f, setF] = useState({ site: siteFilter || (sites.length === 1 ? sites[0].id : ''), from: ymd(new Date(today.getTime() - 6 * 864e5)), to: ymd(today), unit: '' });
+  const units = devices.filter((x) => x.site_id === f.site);
+  return (
+    <div className="panel panel-pad stack" style={{ gap: 8 }}>
+      <h3 style={{ margin: 0 }}>Temperature log</h3>
+      <div className="small muted">For a product claim, your insurer or the health inspector: hour by hour with each hour&apos;s high and low, a graph, the alarms and door openings. Print it, save it as a PDF, or download it. Up to 31 days at a time.</div>
+      <div className="row" style={{ alignItems: 'flex-end' }}>
+        {sites.length > 1 && <label className="grow">Location<select value={f.site} onChange={(e) => setF({ ...f, site: e.target.value, unit: '' })}><option value="">Pick…</option>{sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>}
+        <label className="grow">Unit<select value={f.unit} onChange={(e) => setF({ ...f, unit: e.target.value })}><option value="">All units</option>{units.map((u) => <option key={u.id} value={u.id}>{u.name}{u.kind === 'door' ? ' (door)' : ''}</option>)}</select></label>
+        <label style={{ flex: '0 0 160px' }}>From<input type="date" value={f.from} onChange={(e) => setF({ ...f, from: e.target.value })} /></label>
+        <label style={{ flex: '0 0 160px' }}>To<input type="date" value={f.to} onChange={(e) => setF({ ...f, to: e.target.value })} /></label>
+        <button disabled={!f.site || !f.from || !f.to} onClick={() => window.open(`/temperature-log?site=${f.site}&from=${f.from}&to=${f.to}${f.unit ? `&unit=${f.unit}` : ''}`, '_blank')}>Open the log</button>
+      </div>
+    </div>
+  );
+}
+
 export default function Monitoring({ sites, onOpenCall, onClose, siteFilter }) {
   const [d, setD] = useState(null);
   const [err, setErr] = useState('');
@@ -239,6 +260,7 @@ export default function Monitoring({ sites, onOpenCall, onClose, siteFilter }) {
       {d.can_manage && !form && <div><button className="primary" onClick={() => setForm(blank(siteFilter || (sites.length === 1 ? sites[0].id : '')))}>+ Add a sensor</button></div>}
       {d.can_manage && <Gateways gateways={d.gateways.filter((g) => !siteFilter || g.site_id === siteFilter)} sites={sites} onChanged={changed} />}
       {d.contacts && <AlarmList contacts={d.contacts} sites={sites} onChanged={() => load()} />}
+      {devs.length > 0 && <ReportForm sites={sites.filter((s) => d.devices.some((x) => x.site_id === s.id))} devices={d.devices} siteFilter={siteFilter} />}
       {d.alarms.some((a) => a.cleared_at) && (
         <details className="small"><summary style={{ cursor: 'pointer' }}>Alarms in the last 7 days</summary>
           <table className="small" style={{ marginTop: 6 }}><tbody>

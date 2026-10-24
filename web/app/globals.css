@@ -641,3 +641,7 @@ table.compare .prospect { background: var(--amber-bg); }
 /* Quotes side by side */
 .quotegrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
 .quotecard table td { padding: 3px 4px; }
+
+/* Temperature log: hour-by-hour tables always print, even when hidden on screen */
+.printonly { display: none; }
+@media print { .printonly { display: block !important; } }

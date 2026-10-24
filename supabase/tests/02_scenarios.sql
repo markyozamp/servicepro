@@ -2091,3 +2091,17 @@ select test.ok((select jsonb_array_length(monitor_history(test.v('fz'), 48)->'re
 reset role;
 update monitor_devices set removed_at = now() where site_id = :S121;
 update monitor_gateways set removed_at = now() where site_id = :S121;
+
+\echo '=== 83. Temperature log report (claims, inspectors)'
+set role authenticated; select test.login(:MARIA);
+create temp table trep as select monitor_report(:S121, current_date - 1, current_date) r;
+select test.ok((select jsonb_array_length(r->'units') >= 3 and r->>'timezone' is not null from trep), 'every unit at the location, in the location''s time zone');
+select test.ok((select bool_or(jsonb_array_length(u->'hours') >= 1 and exists (select 1 from jsonb_array_elements(u->'hours') h where (h->>'out')::boolean))
+  from trep, jsonb_array_elements(r->'units') u where u->>'name' = 'Walk-in freezer' and u->>'kind' = 'temp'), 'hour by hour, with the out-of-range hours flagged');
+select test.ok((select bool_or(jsonb_array_length(u->'alarms') >= 2) from trep, jsonb_array_elements(r->'units') u where u->>'kind' = 'temp' and u->>'name' = 'Walk-in freezer'), 'the alarms in the period');
+select test.ok((select bool_or((d->>'opened')::int >= 1) from trep, jsonb_array_elements(r->'units') u, jsonb_array_elements(u->'doors') d where u->>'kind' = 'door'), 'door openings per day');
+select test.ok((select bool_or(jsonb_array_length(u->'typed') = 2 and u->'typed'->0->>'by' = 'Maria Lopez') from trep, jsonb_array_elements(r->'units') u where u->>'name' = 'Deli case'), 'typed entries with who typed them');
+select test.blocked($$select monitor_report('30000000-0000-0000-0000-000000000002', current_date - 40, current_date)$$, 'Up to 31 days', 'a month at a time');
+select test.login(:RIVAL);
+select test.blocked($$select monitor_report('30000000-0000-0000-0000-000000000002', current_date - 1, current_date)$$, 'Not allowed', 'nobody else''s');
+reset role;
