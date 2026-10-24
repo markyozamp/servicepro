@@ -1997,3 +1997,97 @@ select test.ok((select (mark_tax_rates_checked()->>'checked')::int = 3), 'checke
 reset role;
 update tax_areas set removed_at = now() where contractor_id = :ARCTIC;
 update contractors set level = 'verify' where id = :ARCTIC;
+
+\echo '=== 82. Temperature and door monitoring'
+set role authenticated;
+select test.login(:MARIA);
+select test.blocked($$select save_gateway(null, '30000000-0000-0000-0000-000000000002', 'Back office')$$, 'Only the store''s admin', 'only the store''s admin or its contractor sets up sensors');
+select test.login(:DOUG);
+select test.put('gw', (save_gateway(null, :S121, 'Back office')->>'id')::uuid);
+select test.put('fz', (save_monitor_device(null, :S121, 'temp', 'Walk-in freezer', 'A81758FFFE000001', -10, 10, 30, 10, 60, true, null, null, :ARCTIC)->>'id')::uuid);
+select test.put('dr', (save_monitor_device(null, :S121, 'door', 'Walk-in freezer', 'A81758FFFE000002', null, null, 30, 10, 60, true, null, null, :ARCTIC)->>'id')::uuid);
+select test.put('dl', (save_monitor_device(null, :S121, 'manual', 'Deli case', null, 33, 41, 0, 10, 60, false, null, null, :ARCTIC)->>'id')::uuid);
+select test.blocked($$select save_monitor_device(null, '30000000-0000-0000-0000-000000000002', 'temp', 'Again', 'a81758fffe000001', 0, 10)$$, 'already set up', 'one sensor, one place');
+select test.blocked($$select save_monitor_device(null, '30000000-0000-0000-0000-000000000002', 'temp', 'No limits', 'X1')$$, 'low or high limit', 'a temperature sensor needs its limits');
+reset role;
+create temp table gwt as select token t from monitor_gateways where id = test.v('gw'); grant select on gwt to anon;
+set role anon; select set_config('request.jwt.claim.sub', '', false);
+select test.ok((select (r->>'recorded')::int = 2 and (r->>'not_set_up')::int = 1 from (select monitor_ingest((select t from gwt),
+  '[{"id":"A81758FFFE000001","temp_c":-18,"battery":98},{"id":"A81758FFFE000002","door_open":false},{"id":"24E124UNKNOWN","temp_c":3}]'::jsonb) r) x),
+  'the gateway reports: two sensors recorded, one it hears that isn''t set up yet');
+select test.blocked($$select monitor_ingest('00000000-0000-0000-0000-000000000099', '[]')$$, 'Unknown gateway', 'a wrong address is refused');
+reset role;
+select test.ok((select last_temp_f = -0.4 and battery_pct = 98 and gateway_id = test.v('gw') from monitor_devices where id = test.v('fz')), 'readings in °F, battery noted, sensor tied to its gateway');
+select test.ok(exists (select 1 from monitor_heard where external_id = '24E124UNKNOWN'), 'sensors not set up yet are listed for setup');
+-- The freezer warms up: no alarm until it has been out of range for the set 30 minutes
+set role anon; select set_config('request.jwt.claim.sub', '', false);
+select from monitor_ingest((select t from gwt), '[{"id":"A81758FFFE000001","temp_f":25}]');
+reset role;
+select test.ok(not exists (select 1 from monitor_alarms where device_id = test.v('fz')), 'one warm reading is not an alarm yet');
+update monitor_devices set out_since = now() - interval '31 minutes' where id = test.v('fz');
+select set_config('app.watch_demo', 'on', false); select set_config('app.demo_feed', 'off', false);
+select from monitor_watch();
+select test.ok((select a.kind = 'high' and w.contractor_id = :ARCTIC and w.issue_description like 'Temperature alarm: Walk-in freezer is 25%' and it.code = 'wi_freezer_down'
+  from monitor_alarms a join work_orders w on w.id = a.work_order_id join issue_types it on it.id = w.issue_type_id where a.device_id = test.v('fz') and a.cleared_at is null),
+  'warm 30 min: alarm, and a service call opened to the contractor with the readings');
+select test.ok((select count(distinct user_id) >= 2 from notifications where type = 'alarm' and message like 'ALARM: Store #121 · Walk-in freezer is 25%'
+  and user_id in (:DOUG, :PAT)), 'the store and the contractor''s office are alerted');
+-- The store picks who gets alarms
+set role authenticated; select test.login(:MARIA);
+select test.blocked($$select set_alarm_contact('00000000-0000-0000-0000-0000000000c2', null, true)$$, 'Only your admin', 'only the admin picks the alarm list');
+select test.login(:DOUG);
+select from set_alarm_contact(:MARIA, null, true);
+reset role;
+set role anon; select set_config('request.jwt.claim.sub', '', false);
+select from monitor_ingest((select t from gwt), '[{"id":"A81758FFFE000002","door_open":true}]');
+reset role;
+update monitor_devices set door_since = now() - interval '11 minutes' where id = test.v('dr');
+select from monitor_watch();
+select test.ok(exists (select 1 from notifications where user_id = :MARIA and message like 'ALARM: Store #121 · Walk-in freezer door has been open 11 min%'), 'door open past 10 min: the alarm list is told');
+select test.ok(not exists (select 1 from notifications where user_id = :DOUG and message like '%door has been open%'), 'people off the list aren''t');
+select test.ok(not exists (select 1 from monitor_alarms where device_id = test.v('dr') and work_order_id is not null), 'a door alarm doesn''t open a service call');
+-- Back to normal, then warm again: the call already open takes it
+set role anon; select set_config('request.jwt.claim.sub', '', false);
+select from monitor_ingest((select t from gwt), '[{"id":"A81758FFFE000001","temp_f":-2},{"id":"A81758FFFE000002","door_open":false}]');
+reset role;
+select test.ok((select cleared_at is not null from monitor_alarms where device_id = test.v('fz') and kind = 'high' order by started_at desc limit 1)
+  and exists (select 1 from notifications where user_id = :MARIA and message like 'Back to normal: Store #121 · Walk-in freezer is -2%'), 'back in range: cleared, and they''re told');
+select test.ok(not exists (select 1 from monitor_alarms where device_id = test.v('dr') and cleared_at is null), 'door shut: cleared');
+set role anon; select set_config('request.jwt.claim.sub', '', false);
+select from monitor_ingest((select t from gwt), '[{"id":"A81758FFFE000001","temp_f":22}]');
+reset role;
+update monitor_devices set out_since = now() - interval '40 minutes' where id = test.v('fz');
+select from monitor_watch();
+select test.ok((select count(distinct work_order_id) = 1 and count(*) = 2 from monitor_alarms where device_id = test.v('fz') and kind = 'high'), 'warm again with the call still open: no second call');
+-- Typed log: alarm right away, no call when it's turned off
+set role authenticated; select test.login(:MARIA);
+select test.ok((select (log_temperature(test.v('dl'), 45, 'checked at open')->>'alarm')::boolean), 'a typed reading out of range alarms right away');
+reset role;
+select test.ok((select work_order_id is null from monitor_alarms where device_id = test.v('dl') and cleared_at is null), 'no automatic call when it''s turned off for that unit');
+set role authenticated; select test.login(:MARIA);
+select test.ok((select not (log_temperature(test.v('dl'), 38)->>'alarm')::boolean), 'back in range when typed again');
+-- Battery low, sensor quiet, gateway offline
+reset role;
+set role anon; select set_config('request.jwt.claim.sub', '', false);
+select from monitor_ingest((select t from gwt), '[{"id":"A81758FFFE000002","battery":12}]');
+reset role;
+select test.ok(exists (select 1 from monitor_alarms where device_id = test.v('dr') and kind = 'battery' and cleared_at is null), 'battery low: an alert to replace it');
+update monitor_devices set last_seen_at = now() - interval '2 hours' where id = test.v('fz');
+select from monitor_watch();
+select test.ok(exists (select 1 from monitor_alarms where device_id = test.v('fz') and kind = 'quiet' and cleared_at is null), 'a sensor that stops reporting is flagged');
+update monitor_gateways set last_seen_at = now() - interval '40 minutes' where id = test.v('gw');
+select from monitor_watch();
+select test.ok(exists (select 1 from monitor_alarms where gateway_id = test.v('gw') and kind = 'gateway' and cleared_at is null), 'the gateway going offline is one alarm');
+-- Nobody acknowledged: a reminder; acknowledging stops it
+update monitor_alarms set started_at = now() - interval '31 minutes' where device_id = test.v('fz') and kind = 'high' and cleared_at is null;
+select from monitor_watch();
+select test.ok((select reminded_at is not null from monitor_alarms where device_id = test.v('fz') and kind = 'high' and cleared_at is null), 'no one acknowledged in 30 min: reminded');
+set role authenticated; select test.login(:MARIA);
+select test.ok((select bool_and((ack_alarm((a->>'id')::uuid)->>'ok')::boolean) from jsonb_array_elements(monitor_overview()->'alarms') a where a->>'kind' = 'high' and a->>'cleared_at' is null), 'the store acknowledges it');
+select test.ok((select jsonb_array_length(monitor_overview()->'devices') = 3 and monitor_overview()->'gateways' = '[]'::jsonb), 'store staff see their sensors (not the gateway''s private address)');
+select test.login(:PAT);
+select test.ok((select bool_or(d->>'name' = 'Walk-in freezer' and (d->>'last_temp_f')::numeric = 22) from jsonb_array_elements(monitor_overview()->'devices') d), 'the contractor sees the customer''s sensors live');
+select test.ok((select jsonb_array_length(monitor_history(test.v('fz'), 48)->'readings') >= 4), 'with the history');
+reset role;
+update monitor_devices set removed_at = now() where site_id = :S121;
+update monitor_gateways set removed_at = now() where site_id = :S121;

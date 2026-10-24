@@ -22,6 +22,7 @@ import OfficeQuotes from '@/components/OfficeQuotes';
 import AccountingExport from '@/components/AccountingExport';
 import TaxReport from '@/components/TaxReport';
 import TaxSetup from '@/components/TaxSetup';
+import Monitoring, { AlarmStrip } from '@/components/Monitoring';
 import OfficeToday from '@/components/OfficeToday';
 import ScrollRow from '@/components/ScrollRow';
 import ContractorStart from '@/components/ContractorStart';
@@ -195,6 +196,7 @@ export default function OfficePortal() {
           </button>
           <button className={tab === 'history' ? 'on' : ''} onClick={() => setTab('history')}>Invoiced & cancelled</button>
           <button className={tab === 'quotes' ? 'on' : ''} onClick={() => setTab('quotes')}>Quotes</button>
+          <button className={tab === 'monitor' ? 'on' : ''} onClick={() => setTab('monitor')}>Temperatures</button>
           <button className={tab === 'team' ? 'on' : ''} onClick={() => setTab('team')}>Team</button>
         </ScrollRow>
         </div>
@@ -202,6 +204,8 @@ export default function OfficePortal() {
         {tab === 'today' && <OfficeToday calls={callsF} flags={flagsF} onOpen={setOpen} />}
         {tab === 'schedule' && <TechSchedule onOpenCall={setOpen} refreshKey={open} />}
         {tab === 'time' && <Timesheets profile={profile} />}
+        {tab !== 'monitor' && <AlarmStrip onOpen={() => setTab('monitor')} />}
+        {tab === 'monitor' && <Monitoring sites={(book || []).flatMap((c) => c.sites.map((x) => ({ id: x.site_id, name: `${c.name} · ${x.name}` })))} onOpenCall={setOpen} />}
         {tab === 'quotes' && <OfficeQuotes book={book} base={(org?.level || 'verify') !== 'verify'} onOpenCall={setOpen} />}
 
         {tab === 'board' && isPhone && (

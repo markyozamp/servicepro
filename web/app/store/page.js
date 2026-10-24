@@ -21,6 +21,7 @@ import ScrollRow from '@/components/ScrollRow';
 import Presence from '@/components/Presence';
 import WaitingOnYou from '@/components/WaitingOnYou';
 import StoreQuotes from '@/components/StoreQuotes';
+import Monitoring, { AlarmStrip } from '@/components/Monitoring';
 import { StatusChip, PriorityChip, KindChip, LiveLine, BillLine, ErrorBox, Notice } from '@/components/bits';
 
 const LIST = `id, site_id, number, kind, status, priority, issue_description, created_at, completed_at, invoice_due_at, total_cost, store_po_number,
@@ -53,6 +54,7 @@ export default function StorePortal() {
   const [sound, setSound] = useState(false);
   const [settings, setSettings] = useState(null);   // which Settings tab is open, or null
   const [project, setProject] = useState(false);
+  const [monitor, setMonitor] = useState(false);
   const [locked, setLocked] = useState(false);
   const [logoOverride, setLogoOverride] = useState(undefined);
   const [admins, setAdmins] = useState([]);
@@ -242,7 +244,8 @@ export default function StorePortal() {
             {orgLogo ? <img className="org-logo" src={orgLogo} alt={org?.name || 'Company logo'} /> : <h1>{org?.name || `Your ${place.many}`}</h1>}
             <div style={{ margin: '6px 0 2px' }}><LocationPicker sites={allSites} attention={attention} value={validSite} onChange={pickSite} onGoTo={goTo} openSignal={menuSignal}
               canAdd={storePerms(profile).locations} onAdd={() => { setAddLoc(true); setLocked(false); setSettings('locations'); setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); }} /></div>
-            <div className="muted small">{profile.title || ''}{profile.approval_limit != null ? ` · approves up to ${money(profile.approval_limit)}` : profile.can_approve ? ' · approves any amount' : ''}</div>
+            <div className="muted small">{profile.title || ''}{profile.approval_limit != null ? ` · approves up to ${money(profile.approval_limit)}` : profile.can_approve ? ' · approves any amount' : ''}
+              {' '}<button type="button" className="linkbtn small" onClick={() => { setMonitor(true); setTimeout(() => workRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); }}>🌡 Temperatures</button></div>
           </div>
           {(profile.can_open_calls || profile.is_org_admin) && (
             <div className="order-box">
@@ -342,6 +345,8 @@ export default function StorePortal() {
         <div ref={panelRef} className="anchor" />
         {settings && <StoreSettings key={org?.id || 'org'} tab={settings} setTab={setSettings} onClose={() => { setAddLoc(false); closeArea(); }} startAdding={addLoc} onLocationsChanged={load} me={profile} org={org} hideTabs onOrgChanged={(logoData) => { if (logoData !== undefined) setLogoOverride(logoData); }} />}
         <div ref={workRef} className="anchor" />
+        <AlarmStrip onOpen={() => { setMonitor(true); setTimeout(() => workRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); }} />
+        {monitor && <div className="panel panel-pad work-panel"><Monitoring sites={allSites} siteFilter={validSite} onOpenCall={setOpen} onClose={() => setMonitor(false)} /></div>}
         {project && <StoreQuotes profile={profile} sites={allSites} onClose={() => closeWork('project')} onOpenCall={setOpen} />}
 
         {/* Calls a contractor entered from a phone call — confirm your store asked for them */}

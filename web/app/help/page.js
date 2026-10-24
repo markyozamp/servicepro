@@ -253,6 +253,13 @@ const CONTRACTOR = [
     'QuickBooks Desktop: open "QuickBooks Desktop instead", enter your receivables and income account names, download the .iif, then File → Utilities → Import → IIF Files.',
     'Each bill is marked once downloaded, so it doesn\'t go in twice. Customer list (CSV) helps you add new customers to QuickBooks first.',
   ]],
+  ['Temperatures and doors (sensors)', [
+    'Store: 🌡 Temperatures (under your name). Contractor: the Temperatures tab. Every sensor live: temperature or door, battery, when it was last heard, and the last 48 hours.',
+    'Setup (store admin or your contractor\'s office): + Add a gateway for the building and put its private address into the gateway (Milesight: Network Server → Applications → HTTP data destination, payload codec on). Then + Add a sensor: pick it from the sensors the gateway hears, name it, set the low / high °F and how many minutes out of range before an alarm. Door sensors: how many minutes open before an alarm.',
+    'Alarms go to the store\'s list (Who gets alarms) and the contractor\'s office and whoever is on call. Too warm or too cold also opens a service call to the contractor with the readings, unless you turn that off for the unit, or a call is already open for it. A reminder goes out if nobody taps "I\'m on it" in 30 minutes, and a notice when it\'s back to normal.',
+    'Also flagged: a sensor that stops reporting, a gateway that goes offline, and a low battery (use lithium batteries in freezers).',
+    'No sensors? Add a Typed log for the unit and type the temperature when you check it: same limits, same alarms.',
+  ]],
   ['Sales tax and use tax (Base)', [
     'Team → Sales tax rates (owner or billing): add one rate for each state you work in, plus the cities or special districts with a different total rate. Say whether labor and the trip charge are taxed there. You set and check the rates; the app never supplies one.',
     'A location uses its city\'s rate if the city is on your list, otherwise its state\'s. On any bill or quote you can pick a different rate for that location (for addresses just outside city limits).',
