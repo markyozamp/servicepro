@@ -19,6 +19,7 @@ export default function BillDoc({ b }) {
             <h2 style={{ margin: 0 }}>Invoice {b.invoice_number}</h2>
             <div className="small">{date(b.date)}</div>
             <div className="small">Call #{b.call_number} · {b.po}</div>
+            {b.due_on && !b.paid_at && <div className="small">Due {date(b.due_on)}</div>}
           </div>
         </div>
         <div>
@@ -36,7 +37,8 @@ export default function BillDoc({ b }) {
             {(taxed || b.tax_exempt) && <tr><td colSpan={3}>Subtotal</td><td className="num">{money(b.subtotal)}</td></tr>}
             {taxed && <tr><td colSpan={3}>Sales tax{b.tax_area ? `, ${b.tax_area}` : ''} {pct(b.tax_rate)} <span className="small muted">(on lines marked T)</span></td><td className="num">{money(b.sales_tax)}</td></tr>}
             {b.tax_exempt && <tr><td colSpan={3}>Sales tax: exempt (certificate on file)</td><td className="num">{money(0)}</td></tr>}
-            <tr><td colSpan={3}><strong>Total</strong>{b.paid_at ? <span className="chip tone-green" style={{ marginLeft: 8 }}>PAID {date(b.paid_at)}</span> : null}</td><td className="num"><strong>{money(b.total)}</strong></td></tr>
+            {Number(b.amount_paid) > 0 && !b.paid_at && <tr><td colSpan={3}>Paid so far</td><td className="num">−{money(b.amount_paid)}</td></tr>}
+            <tr><td colSpan={3}><strong>{Number(b.amount_paid) > 0 && !b.paid_at ? 'Balance due' : 'Total'}</strong>{b.paid_at ? <span className="chip tone-green" style={{ marginLeft: 8 }}>PAID {date(b.paid_at)}</span> : null}</td><td className="num"><strong>{money(Number(b.amount_paid) > 0 && !b.paid_at ? b.balance : b.total)}</strong></td></tr>
           </tbody>
         </table>
         {(b.visits || []).length > 0 && (

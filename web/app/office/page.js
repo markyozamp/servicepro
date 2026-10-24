@@ -22,6 +22,7 @@ import OfficeQuotes from '@/components/OfficeQuotes';
 import AccountingExport from '@/components/AccountingExport';
 import TaxReport from '@/components/TaxReport';
 import TaxSetup from '@/components/TaxSetup';
+import InvoicesPayments from '@/components/InvoicesPayments';
 import Monitoring, { AlarmStrip } from '@/components/Monitoring';
 import OfficeToday from '@/components/OfficeToday';
 import ScrollRow from '@/components/ScrollRow';
@@ -189,7 +190,7 @@ export default function OfficePortal() {
             PM{pms.length > 0 && <span className="count" style={{ background: overduePm ? 'var(--red-fg)' : 'var(--ink-3)' }}>{pms.length}</span>}
           </button>
           <button className={tab === 'billing' ? 'on' : ''} onClick={() => setTab('billing')}>
-            Billing{toBill.length > 0 && <span className="count" style={{ background: lateBills ? 'var(--red-fg)' : 'var(--ink-3)' }}>{toBill.length}</span>}
+            {(org?.level || 'verify') !== 'verify' ? 'Invoices & Payments' : 'Billing'}{toBill.length > 0 && <span className="count" style={{ background: lateBills ? 'var(--red-fg)' : 'var(--ink-3)' }}>{toBill.length}</span>}
           </button>
           <button className={tab === 'review' ? 'on' : ''} onClick={() => setTab('review')}>
             Review queue{reviewFlags.length > 0 && <span className="count">{reviewFlags.length}</span>}
@@ -304,8 +305,10 @@ export default function OfficePortal() {
           </div>
         )}
 
-        {tab === 'billing' && (org?.level || 'verify') !== 'verify' && (profile.is_org_admin || profile.can_bill) && <><AccountingExport /><TaxReport /></>}
-        {tab === 'billing' && (
+        {tab === 'billing' && ((org?.level || 'verify') !== 'verify' ? (
+          <InvoicesPayments onOpenCall={setOpen} toBillCount={toBill.length}
+            extras={(profile.is_org_admin || profile.can_bill) ? <><AccountingExport /><TaxReport /></> : null}
+            toBill={(
           <div className="panel tablewrap">
             <table>
               <thead><tr><th>Call</th><th className="hide-sm">Customer</th><th>Invoice due</th><th className="hide-sm">Ready?</th><th className="num hide-sm">Total</th></tr></thead>
@@ -328,7 +331,31 @@ export default function OfficePortal() {
               </tbody>
             </table>
           </div>
-        )}
+            )} />
+        ) : (
+          <div className="panel tablewrap">
+            <table>
+              <thead><tr><th>Call</th><th className="hide-sm">Customer</th><th>Invoice due</th><th className="hide-sm">Ready?</th><th className="num hide-sm">Total</th></tr></thead>
+              <tbody>
+                {toBill.length === 0 && <tr><td colSpan={5} className="muted">Nothing waiting to be invoiced.</td></tr>}
+                {toBill.map((w) => {
+                  const d = daysUntil(w.invoice_due_at);
+                  return (
+                    <tr key={w.id} className="click" onClick={() => setOpen(w.id)}>
+                      <td><strong>#{w.number}</strong><div className="small muted">completed {date(w.completed_at)}</div><div className="small muted phone-show">{w.customers?.name} · {w.sites?.name}</div></td>
+                      <td className="hide-sm">{w.customers?.name}<div className="small muted">{w.sites?.name}</div></td>
+                      <td>{d < 0 ? <span className="chip tone-red">LATE {-d} days — customer notified</span>
+                        : <span className={`chip ${d <= 2 ? 'tone-amber' : 'tone-slate'}`}>{date(w.invoice_due_at)} ({d} days)</span>}</td>
+                      <td className="hide-sm">{w.mode === 'verify' ? <span className="chip tone-amber">Enter invoice (Time Verify)</span>
+                        : w.invoice_ready ? <span className="chip tone-green">Ready</span> : <span className="chip tone-red">{blockingByWo[w.id] || 0} to review</span>}</td>
+                      <td className="num hide-sm">{w.mode === 'verify' ? '—' : money(w.total_cost)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ))}
 
         {tab === 'review' && (
           <div className="panel tablewrap">
@@ -385,7 +412,7 @@ export default function OfficePortal() {
         <button className={tab === 'today' ? 'on' : ''} onClick={() => go('today')}><span className="ic">⚡</span>Today{todayCount > 0 && <span className="badge">{todayCount}</span>}</button>
         <button className={tab === 'board' ? 'on' : ''} onClick={() => go('board')}><span className="ic">▦</span>Board</button>
         <button className={tab === 'customers' ? 'on' : ''} onClick={() => go('customers')}><span className="ic">🏪</span>Customers{hotCustomers > 0 && <span className="badge">{hotCustomers}</span>}</button>
-        <button className={tab === 'billing' ? 'on' : ''} onClick={() => go('billing')}><span className="ic">$</span>Billing{lateBills > 0 && <span className="badge">{lateBills}</span>}</button>
+        <button className={tab === 'billing' ? 'on' : ''} onClick={() => go('billing')}><span className="ic">$</span>{(org?.level || 'verify') !== 'verify' ? 'Invoices' : 'Billing'}{lateBills > 0 && <span className="badge">{lateBills}</span>}</button>
         <button className={['pm', 'review', 'history', 'team'].includes(tab) || moreOpen ? 'on' : ''} onClick={() => setMoreOpen(!moreOpen)}><span className="ic">☰</span>More{reviewFlags.length + overduePm > 0 && <span className="badge">{reviewFlags.length + overduePm}</span>}</button>
       </nav>}
 

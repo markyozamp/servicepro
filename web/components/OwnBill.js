@@ -34,12 +34,12 @@ export default function OwnBill({ wo, busy, onChanged }) {
     <div className="panel panel-pad stack" style={{ gap: 8 }}>
       <div className="spread">
         <h3 style={{ margin: 0 }}>Invoice {inv.number} · {money(inv.total)}</h3>
-        <span className={`chip ${paid ? 'tone-green' : 'tone-amber'}`}>{paid ? `Paid ${dateTime(inv.paid_at)}` : 'Not paid yet'}</span>
+        <span className={`chip ${paid ? 'tone-green' : 'tone-amber'}`}>{paid ? `Paid ${dateTime(inv.paid_at)}` : Number(inv.amount_paid) > 0 ? `Paid ${money(inv.amount_paid)}, ${money(Number(inv.total) - Number(inv.amount_paid))} owed` : 'Not paid yet'}</span>
       </div>
       <div className="small">{inv.emailed_to ? <>Emailed to <strong>{inv.emailed_to}</strong>{inv.emailed_at ? ` · ${dateTime(inv.emailed_at)}` : ''}</> : 'Sent to their portal.'}{inv.flat ? ' · flat rate' : ''}</div>
       <div className="row" style={{ gap: 6 }}>
         <a className="btnlink" href={`/bill/${wo.id}`} target="_blank" rel="noreferrer"><button type="button">View / print</button></a>
-        {!paid && <button className="primary" onClick={() => { const n = window.prompt('Paid how? (optional, e.g. check 2210)', ''); if (n !== null) run('mark_bill_paid', { p_wo: wo.id, p_paid: true, p_note: n.trim() || null }, 'Marked paid.'); }}>Mark paid</button>}
+        {!paid && <button className="primary" onClick={() => { const n = window.prompt('Paid in full. How? (optional, e.g. check 2210). For part of it, use Invoices & Payments.', ''); if (n !== null) run('mark_bill_paid', { p_wo: wo.id, p_paid: true, p_note: n.trim() || null }, 'Marked paid.'); }}>Mark paid</button>}
         {paid && <button onClick={() => run('mark_bill_paid', { p_wo: wo.id, p_paid: false }, 'Marked not paid.')}>Not paid after all</button>}
         {!paid && <button onClick={() => setEdit(true)}>Change the bill</button>}
       </div>

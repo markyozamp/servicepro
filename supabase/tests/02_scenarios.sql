@@ -2105,3 +2105,54 @@ select test.blocked($$select monitor_report('30000000-0000-0000-0000-00000000000
 select test.login(:RIVAL);
 select test.blocked($$select monitor_report('30000000-0000-0000-0000-000000000002', current_date - 1, current_date)$$, 'Not allowed', 'nobody else''s');
 reset role;
+
+\echo '=== 84. Invoices & Payments (owed to you, payments, reminders, statements)'
+reset role; update contractors set level = 'base' where id = :ARCTIC; set role authenticated;
+select test.login(:PAT);
+select test.blocked($$select set_payment_terms(15, true)$$, 'owner or billing', 'only the owner or billing sets terms');
+select test.login(:DANA);
+select from set_payment_terms(30, true, '{1,15,30}');
+-- a fresh bill to their own customer: $500
+select test.put('pw', (create_work_order((select id from sites where customer_id = test.v('oc') and name = 'Diner'), (select id from issue_types where code='no_cooling'), 'Payments test')).id);
+reset role;
+do $$ begin perform _allow_internal(true); update work_orders set status = 'completed', completed_at = now(), invoice_ready = true where id = test.v('pw'); perform _end_internal(); end $$;
+set role authenticated; select test.login(:PAT);
+select from save_bill(test.v('pw'), '[{"kind":"labor","description":"Labor","qty":4,"unit":"hr","rate":100,"tax":"none"},{"kind":"other","description":"Refrigerant","qty":1,"unit":"lb","rate":100,"tax":"none"}]'::jsonb, 'AA-7001');
+select from send_built_bill(test.v('pw'));
+select test.ok((select bool_or(x->>'invoice_number' = 'AA-7001' and (x->>'balance')::numeric = 500) from jsonb_array_elements(receivables()->'open') x), 'the invoice shows as owed');
+select test.blocked($$select record_payment((select test.v('pw')), 600)$$, 'more than', 'can''t take more than is owed');
+select test.ok((select (r->>'balance')::numeric = 300 and not (r->>'paid_in_full')::boolean from (select record_payment(test.v('pw'), 200, current_date, 'check', '2210') r) x), 'a partial payment: $300 left');
+select test.ok((select (r->>'paid_in_full')::boolean from (select record_payment(test.v('pw'), 300, current_date, 'card', 'last 4 1234') r) x), 'the rest: paid in full');
+reset role;
+select test.ok((select paid_at is not null and amount_paid = 500 from call_invoices where work_order_id = test.v('pw')), 'the invoice is marked paid');
+set role authenticated; select test.login(:PAT);
+select test.blocked($$select void_payment((select (p->>'id')::uuid from jsonb_array_elements(receivables()->'payments') p where p->>'reference' = '2210'), 'bounced')$$, 'owner or billing', 'only the owner or billing voids a payment');
+select test.login(:DANA);
+select test.blocked($$select void_payment((select (p->>'id')::uuid from jsonb_array_elements(receivables()->'payments') p where p->>'reference' = '2210'), '')$$, 'Say why', 'voiding needs a reason');
+select from void_payment((select (p->>'id')::uuid from jsonb_array_elements(receivables()->'payments') p where p->>'reference' = '2210'), 'check bounced');
+reset role;
+select test.ok((select paid_at is null and amount_paid = 300 from call_invoices where work_order_id = test.v('pw')), 'a bounced check: owed again, the void kept on the record');
+select test.ok((select voided_at is not null and void_reason = 'check bounced' from invoice_payments where reference = '2210'), 'the voided payment stays, with why');
+-- aging and reminders: make it 20 days past due
+update call_invoices set entered_at = now() - interval '50 days' where work_order_id = test.v('pw');
+set role authenticated; select test.login(:DANA);
+select test.ok((select (receivables()->'aging'->>'d30')::numeric >= 200), 'aging: it sits in 1–30 days past due');
+select test.ok((select bool_or((x->>'customer_id')::uuid = test.v('oc') and (x->>'owed')::numeric >= 200) from jsonb_array_elements(receivables()->'by_customer') x), 'totals per customer');
+reset role;
+select set_config('app.watch_demo', 'on', false);
+select from payment_reminders();
+select test.ok((select reminders_sent = 2 from call_invoices where work_order_id = test.v('pw')), '20 days late: the firmer reminder (stage 2) went out');
+select test.ok(exists (select 1 from email_queue where subject = 'Past due: invoice AA-7001 from Arctic Air Mechanical (demo)'), 'by email, to a customer without a login');
+update call_invoices set entered_at = now() - interval '70 days' where work_order_id = test.v('pw');
+select from payment_reminders();
+select test.ok(exists (select 1 from notifications where user_id = :DANA and message like 'Call them: invoice AA-7001%'), '40 days late: the office is told to call them');
+-- statement and summary
+set role authenticated; select test.login(:DANA);
+select test.ok((select jsonb_array_length(customer_statement(test.v('oc'))->'invoices') >= 1), 'the customer''s statement lists what''s open');
+select test.ok((select (email_statement(test.v('oc'))->>'emailed_to') = 'rita@lakesidediner.example'), 'and can be emailed');
+select test.ok((select (s->'collected'->>'total')::numeric >= 300 and (s->'collected'->'by_method'->>'card')::numeric = 300
+  from (select billing_summary(current_date - 365, current_date) s) x), 'the summary: collected, by how it was paid');
+select test.ok((select (mark_bill_paid(test.v('pw'), true, 'cash at the counter')->>'paid')::boolean), 'one-tap Mark paid records the balance as a payment');
+reset role;
+select test.ok((select amount_paid = total and paid_at is not null from call_invoices where work_order_id = test.v('pw')), 'paid in full');
+update contractors set level = 'verify', remind_unpaid = false where id = :ARCTIC;

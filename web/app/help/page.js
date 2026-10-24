@@ -247,6 +247,14 @@ const CONTRACTOR = [
     'Set how bills are numbered: Team → Invoice numbers (e.g. "PP-" and the next number).',
     'Missing a rate? Put your rates for that customer on the rate card so they fill in next time.',
   ]],
+  ['Invoices & Payments (Base)', [
+    'Office → Invoices & Payments. To bill: finished calls with no invoice yet. Owed to you: every unpaid invoice by age (not due yet, 1–30, 31–60, 61–90, 90+ days late), by invoice or by customer.',
+    'Got paid? Tap Payment on the invoice: the amount (part is fine), the date, how (check, cash, card, transfer) and the check number. The balance updates; paid in full shows PAID on the invoice.',
+    'A mistake or a bounced check: Paid → Void, and say why. It stays on the record and the invoice is owed again.',
+    'Statement: By customer → Statement (print / PDF) or Email it (each open invoice with its link).',
+    'Settings & reports: when invoices are due (30 days unless you change it, or per customer), and payment reminders: a friendly email, a firmer one, then your office is told to call them. Summary for any dates (billed, collected by how, still owed) and a download for your accountant.',
+    'No QuickBooks needed: we bill and collect; your accountant (or QuickBooks) keeps the books.',
+  ]],
   ['Send bills to QuickBooks (Base)', [
     'Office → Billing → Send bills to QuickBooks (owner or billing). Pick dates if you like, then Find bills. Only bills not sent yet, unless you untick it.',
     'QuickBooks Online: download QuickBooks Online (CSV), then in QuickBooks: Settings → Import data → Invoices. Up to 100 invoices per file. It doesn\'t work if sales tax is turned on in your QuickBooks. Sales tax on a bill comes in as a "Sales tax" line; point that product at your sales tax payable account.',
