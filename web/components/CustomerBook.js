@@ -162,18 +162,19 @@ function RemovedCustomers({ onChanged }) {
 
 export default function CustomerBook({ book, pick, onPick, onOpenCall, admin = false, onChanged = () => {}, contractorId, canRates = false, base = false, canAdd = false }) {
   const [adding, setAdding] = useState(false);
+  const addBar = canAdd && (base ? (adding ? <AddMyCustomer onCancel={() => setAdding(false)} onAdded={(r) => { setAdding(false); onChanged(); setTimeout(() => onPick(`c:${r.customer_id}`), 400); }} />
+    : <div className="row"><button onClick={() => setAdding(true)}>+ Add a customer</button><span className="small muted">Your own customers: businesses or homeowners, with their bills emailed to them.</span></div>)
+    : <div className="small muted">Adding your own customers (not just the ones who invited you) comes with Base. See ⬆ Upgrade.</div>);
   const custId = pick?.startsWith('c:') ? pick.slice(2) : pick?.startsWith('s:') ? book.find((c) => c.sites.some((s) => s.site_id === pick.slice(2)))?.customer_id : null;
   const siteId = pick?.startsWith('s:') ? pick.slice(2) : null;
   const one = custId && book.find((c) => c.customer_id === custId);
-  if (one) return <CustomerPage c={one} siteId={siteId} onBack={() => onPick('')} onOpenCall={onOpenCall} admin={admin} onChanged={onChanged} contractorId={contractorId} canRates={canRates} />;
+  if (one) return <>{addBar}<CustomerPage c={one} siteId={siteId} onBack={() => onPick('')} onOpenCall={onOpenCall} admin={admin} onChanged={onChanged} contractorId={contractorId} canRates={canRates} /></>;
 
   const reasons = (c) => [...new Set(c.sites.flatMap((s) => s.reasons))];
   const sorted = [...book].sort((a, b) => reasons(b).length - reasons(a).length || a.name.localeCompare(b.name));
   return (
     <>
-    {canAdd && (base ? (adding ? <AddMyCustomer onCancel={() => setAdding(false)} onAdded={(r) => { setAdding(false); onChanged(); setTimeout(() => onPick(`c:${r.customer_id}`), 400); }} />
-      : <div className="row"><button onClick={() => setAdding(true)}>+ Add a customer</button><span className="small muted">Your own customers: businesses or homeowners, with their bills emailed to them.</span></div>)
-      : <div className="small muted">Adding your own customers (not just the ones who invited you) comes with Base. See ⬆ Upgrade.</div>)}
+    {addBar}
     <div className="panel">
       <table>
         <thead><tr><th>Customer</th><th className="num">Open</th><th className="num hide-sm">To bill</th><th className="num hide-sm">This year</th></tr></thead>
